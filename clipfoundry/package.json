@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d22e6f7f5d64d503a06e423251375e615643f35111eaca9a8238b41a0862e1ba
-size 262
+{
+  "name": "clipfoundry",
+  "version": "1.0.0",
+  "description": "Clipfoundry — AI long-form to ranked viral clips",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

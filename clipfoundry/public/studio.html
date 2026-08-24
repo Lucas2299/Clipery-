@@ -1,3 +1,256 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5a4773f0a5b27dd33f721b401c0475fc1c63f0997e4d31707818815e98282f59
-size 12855
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Studio · Clipfoundry</title>
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      /* Hard overrides so mode panels always can toggle */
+      #view-long, #view-rank { display: block; }
+      #view-rank.is-hidden, #view-long.is-hidden { display: none !important; }
+      .mode-btns { display: flex; gap: 0.65rem; flex-wrap: wrap; margin: 0 0 1.25rem; }
+      .mode-btn {
+        min-width: 148px; padding: 0.9rem 1.5rem !important; font-size: 0.98rem !important;
+        font-weight: 700 !important; border-radius: 999px !important; cursor: pointer !important;
+        pointer-events: auto !important; z-index: 20; position: relative;
+      }
+      .mode-btn.on {
+        background: linear-gradient(135deg, #ff4d6d, #ff8a4c) !important;
+        color: #fff !important; border: none !important;
+        box-shadow: 0 8px 24px rgba(255,77,109,0.35) !important;
+      }
+      .mode-btn.off {
+        background: transparent !important; color: #f4f1ea !important;
+        border: 1px solid rgba(255,255,255,0.2) !important; box-shadow: none !important;
+      }
+      .rank-slots { display: flex; flex-direction: column; gap: 0.65rem; }
+      .slot-card {
+        border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+        background: rgba(0,0,0,0.25); padding: 0.85rem 0.95rem;
+      }
+      .slot-top { display:flex; justify-content:space-between; margin-bottom:0.5rem; font-size:0.85rem; font-weight:700; }
+      .slot-row { display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; }
+      .slot-row input[type=url] { flex:1; min-width:160px; }
+      .slot-name { font-size:0.78rem; color:#9a96a8; margin:0.4rem 0 0; word-break:break-all; }
+      .one-source { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:0.9rem; }
+      .one-source input[type=url] { flex:1; min-width:180px; }
+    </style>
+  </head>
+  <body class="studio-app">
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+
+    <header class="header studio-header">
+      <div class="header-inner">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
+          </span>
+          Clipfoundry
+        </a>
+        <nav class="nav">
+          <a href="/studio" class="active">Studio</a>
+          <a href="/library">Library</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="studio-main">
+      <div class="container studio-shell">
+        <div class="studio-page-head"><h1>Studio</h1></div>
+
+        <div class="mode-btns" id="mode-btns">
+          <button type="button" class="btn mode-btn on" id="btn-long" onclick="window.setStudioMode('long')">Long form</button>
+          <button type="button" class="btn mode-btn off" id="btn-rank" onclick="window.setStudioMode('rank')">Rank video</button>
+        </div>
+
+        <!-- LONG FORM: 1 source -->
+        <section class="pro-card" id="view-long">
+          <div class="pro-card-head">
+            <div>
+              <h2>Long form</h2>
+              <p>Add <strong>one</strong> video. AI finds moments and ranks which clips are most likely to go viral.</p>
+            </div>
+          </div>
+
+          <div class="one-source">
+            <label class="btn btn-ghost" for="long-file" style="cursor:pointer;margin:0">
+              <input id="long-file" type="file" accept="video/*,.mp4,.mov,.webm" hidden />
+              Add file
+            </label>
+            <span class="pro-or">or</span>
+            <input id="long-url" class="pro-input" type="text" inputmode="url" placeholder="https://youtube.com/watch?v=..." />
+          </div>
+          <p class="pro-filename" id="long-fname" hidden></p>
+
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="long-go">Generate clips</button>
+          <p class="form-msg" id="long-msg"></p>
+
+          <div id="long-status" class="status-box" style="display:none;margin-top:1rem">
+            <div class="status-top">
+              <strong id="long-stage">Working…</strong>
+              <span class="status-pct" id="long-pct">0%</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="long-fill"></div></div>
+            <p class="muted" id="long-detail"></p>
+          </div>
+          <div id="long-results" style="display:none;margin-top:1.2rem">
+            <div class="results-head">
+              <h3 id="long-title">Clips</h3>
+              <a class="btn btn-ghost btn-sm" id="long-job" href="/library">Library</a>
+            </div>
+            <div class="clip-grid" id="long-grid"></div>
+          </div>
+        </section>
+
+        <!-- RANK: up to 5 -->
+        <section class="pro-card is-hidden" id="view-rank">
+          <div class="pro-card-head">
+            <div>
+              <h2>Rank video</h2>
+              <p>Add up to <strong>5</strong> videos. Output looks like TikTok list rankings (title + 1. 2. 3. countdown).</p>
+            </div>
+            <span class="pro-badge" id="rank-badge">0 / 5</span>
+          </div>
+
+          <label class="field-label" for="rank-title-input" style="margin-bottom:0.35rem">Video title (yellow top text)</label>
+          <input
+            id="rank-title-input"
+            class="pro-input"
+            type="text"
+            maxlength="28"
+            placeholder="e.g. Dog Videos"
+            style="margin-bottom:1rem;width:100%"
+          />
+
+          <div class="rank-slots" id="rank-slots">
+            <div class="slot-card" data-i="0">
+              <div class="slot-top"><span>Video 1</span><span class="slot-state" id="st0">Empty</span></div>
+              <div class="slot-row">
+                <label class="btn btn-ghost btn-sm" for="f0" style="cursor:pointer;margin:0"><input id="f0" type="file" accept="video/*" hidden />Add file</label>
+                <span class="pro-or">or</span>
+                <input id="u0" class="pro-input" type="text" inputmode="url" placeholder="Paste link" />
+              </div>
+              <input id="name0" class="pro-input" type="text" maxlength="40" placeholder="Video name (shown on ranking)" style="margin-top:0.45rem;width:100%" />
+              <p class="slot-name" id="n0" hidden></p>
+            </div>
+            <div class="slot-card" data-i="1">
+              <div class="slot-top"><span>Video 2</span><span class="slot-state" id="st1">Empty</span></div>
+              <div class="slot-row">
+                <label class="btn btn-ghost btn-sm" for="f1" style="cursor:pointer;margin:0"><input id="f1" type="file" accept="video/*" hidden />Add file</label>
+                <span class="pro-or">or</span>
+                <input id="u1" class="pro-input" type="text" inputmode="url" placeholder="Paste link" />
+              </div>
+              <input id="name1" class="pro-input" type="text" maxlength="40" placeholder="Video name (shown on ranking)" style="margin-top:0.45rem;width:100%" />
+              <p class="slot-name" id="n1" hidden></p>
+            </div>
+            <div class="slot-card" data-i="2">
+              <div class="slot-top"><span>Video 3</span><span class="slot-state" id="st2">Empty</span></div>
+              <div class="slot-row">
+                <label class="btn btn-ghost btn-sm" for="f2" style="cursor:pointer;margin:0"><input id="f2" type="file" accept="video/*" hidden />Add file</label>
+                <span class="pro-or">or</span>
+                <input id="u2" class="pro-input" type="text" inputmode="url" placeholder="Paste link" />
+              </div>
+              <input id="name2" class="pro-input" type="text" maxlength="40" placeholder="Video name (shown on ranking)" style="margin-top:0.45rem;width:100%" />
+              <p class="slot-name" id="n2" hidden></p>
+            </div>
+            <div class="slot-card" data-i="3">
+              <div class="slot-top"><span>Video 4</span><span class="slot-state" id="st3">Empty</span></div>
+              <div class="slot-row">
+                <label class="btn btn-ghost btn-sm" for="f3" style="cursor:pointer;margin:0"><input id="f3" type="file" accept="video/*" hidden />Add file</label>
+                <span class="pro-or">or</span>
+                <input id="u3" class="pro-input" type="text" inputmode="url" placeholder="Paste link" />
+              </div>
+              <input id="name3" class="pro-input" type="text" maxlength="40" placeholder="Video name (shown on ranking)" style="margin-top:0.45rem;width:100%" />
+              <p class="slot-name" id="n3" hidden></p>
+            </div>
+            <div class="slot-card" data-i="4">
+              <div class="slot-top"><span>Video 5</span><span class="slot-state" id="st4">Empty</span></div>
+              <div class="slot-row">
+                <label class="btn btn-ghost btn-sm" for="f4" style="cursor:pointer;margin:0"><input id="f4" type="file" accept="video/*" hidden />Add file</label>
+                <span class="pro-or">or</span>
+                <input id="u4" class="pro-input" type="text" inputmode="url" placeholder="Paste link" />
+              </div>
+              <input id="name4" class="pro-input" type="text" maxlength="40" placeholder="Video name (shown on ranking)" style="margin-top:0.45rem;width:100%" />
+              <p class="slot-name" id="n4" hidden></p>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-lg btn-block" id="rank-go" style="margin-top:1.1rem">Generate ranking video</button>
+          <p class="form-msg" id="rank-msg"></p>
+
+          <div id="rank-status" class="status-box" style="display:none;margin-top:1rem">
+            <div class="status-top">
+              <strong id="rank-stage">Working…</strong>
+              <span class="status-pct" id="rank-pct">0%</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="rank-fill"></div></div>
+            <p class="muted" id="rank-detail"></p>
+          </div>
+          <div id="rank-results" style="display:none;margin-top:1.2rem">
+            <div id="rank-comp"></div>
+            <h3 class="results-label" id="rank-title">Ranked clips</h3>
+            <div class="clip-grid" id="rank-grid"></div>
+            <div class="rank-actions" style="margin-top:0.75rem">
+              <a class="btn btn-ghost" id="rank-job" href="/library">Library</a>
+              <button type="button" class="btn btn-ghost" id="rank-new">New</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer studio-footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipfoundry</a>
+        <div>© <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <!-- Mode switch INLINE so it always works even if studio.js fails -->
+    <script>
+      window.setStudioMode = function (mode) {
+        var isLong = mode !== "rank";
+        var vl = document.getElementById("view-long");
+        var vr = document.getElementById("view-rank");
+        var bl = document.getElementById("btn-long");
+        var br = document.getElementById("btn-rank");
+        if (vl) {
+          vl.classList.toggle("is-hidden", !isLong);
+          vl.style.display = isLong ? "block" : "none";
+        }
+        if (vr) {
+          vr.classList.toggle("is-hidden", isLong);
+          vr.style.display = isLong ? "none" : "block";
+        }
+        if (bl) {
+          bl.classList.toggle("on", isLong);
+          bl.classList.toggle("off", !isLong);
+        }
+        if (br) {
+          br.classList.toggle("on", !isLong);
+          br.classList.toggle("off", isLong);
+        }
+        try {
+          var u = new URL(location.href);
+          if (isLong) u.searchParams.delete("tool");
+          else u.searchParams.set("tool", "rank");
+          history.replaceState({}, "", u.pathname + (u.searchParams.toString() ? "?" + u.searchParams.toString() : ""));
+        } catch (e) {}
+      };
+      // boot from URL
+      try {
+        if (new URLSearchParams(location.search).get("tool") === "rank") window.setStudioMode("rank");
+        else window.setStudioMode("long");
+      } catch (e) {
+        window.setStudioMode("long");
+      }
+      document.getElementById("year").textContent = new Date().getFullYear();
+    </script>
+    <script src="/shared.js"></script>
+    <script src="/studio.js"></script>
+  </body>
+</html>

@@ -1,3 +1,784 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:25f295c176ba11ddaa1083c5cbdc50b27e62e7581e69fa1a83e3f6fca48acb72
-size 24797
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const { URL } = require("url");
+const crypto = require("crypto");
+const {
+  processVideo,
+  readJob,
+  listJobs,
+  createLinkBoard,
+  getLinkBoard,
+  readLinkBoards,
+  MODES,
+  UPLOADS,
+} = require("./lib/clipEngine");
+const {
+  processMultiRank,
+  processLinksToRankingVideo,
+  downloadUrl,
+} = require("./lib/linkVideoEngine");
+
+const PORT = process.env.PORT || 3000;
+const ROOT = __dirname;
+const PUBLIC = path.join(ROOT, "public");
+const DATA_DIR = path.join(ROOT, "data");
+const WAITLIST_FILE = path.join(DATA_DIR, "waitlist.json");
+const JOBS_DIR = path.join(DATA_DIR, "jobs");
+
+for (const d of [DATA_DIR, UPLOADS, JOBS_DIR, path.join(PUBLIC, "clips")]) {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+}
+if (!fs.existsSync(WAITLIST_FILE)) {
+  fs.writeFileSync(WAITLIST_FILE, JSON.stringify({ signups: [] }, null, 2));
+}
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".ico": "image/x-icon",
+  ".mp4": "video/mp4",
+  ".webm": "video/webm",
+  ".mov": "video/quicktime",
+  ".woff2": "font/woff2",
+};
+
+// Pretty routes → static files
+const ROUTES = {
+  "/": "index.html",
+  "/studio": "studio.html",
+  "/studio.html": "studio.html",
+  "/rank": "rank.html",
+  "/rank.html": "rank.html",
+  "/library": "library.html",
+  "/library.html": "library.html",
+  "/pricing": "pricing.html",
+  "/pricing.html": "pricing.html",
+  "/waitlist": "waitlist.html",
+  "/waitlist.html": "waitlist.html",
+  "/job": "job.html",
+  "/job.html": "job.html",
+};
+
+let busy = false;
+const queue = [];
+
+function readWaitlist() {
+  try {
+    const data = JSON.parse(fs.readFileSync(WAITLIST_FILE, "utf8"));
+    if (!data || !Array.isArray(data.signups)) return { signups: [] };
+    return data;
+  } catch {
+    return { signups: [] };
+  }
+}
+
+function writeWaitlist(data) {
+  fs.writeFileSync(WAITLIST_FILE, JSON.stringify(data, null, 2));
+}
+
+function send(res, status, body, headers = {}) {
+  const payload = typeof body === "string" ? body : JSON.stringify(body);
+  res.writeHead(status, {
+    "Content-Type": headers["Content-Type"] || "application/json; charset=utf-8",
+    "Cache-Control": headers["Cache-Control"] || "no-store",
+    ...headers,
+  });
+  res.end(payload);
+}
+
+function parseBody(req, max = 120 * 1024 * 1024) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on("data", (chunk) => {
+      size += chunk.length;
+      if (size > max) {
+        reject(new Error("Body too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on("end", () => resolve(Buffer.concat(chunks)));
+    req.on("error", reject);
+  });
+}
+
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function parseMultipart(buf, contentType) {
+  const m = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType || "");
+  if (!m) throw new Error("Missing multipart boundary");
+  const boundary = m[1] || m[2];
+  const sep = Buffer.from(`--${boundary}`);
+  const parts = [];
+  let start = buf.indexOf(sep) + sep.length;
+  while (start < buf.length) {
+    if (buf[start] === 45 && buf[start + 1] === 45) break;
+    if (buf[start] === 13 && buf[start + 1] === 10) start += 2;
+    const next = buf.indexOf(sep, start);
+    if (next < 0) break;
+    const part = buf.subarray(start, next - 2);
+    const headerEnd = part.indexOf("\r\n\r\n");
+    if (headerEnd < 0) {
+      start = next + sep.length;
+      continue;
+    }
+    const header = part.subarray(0, headerEnd).toString("utf8");
+    const body = part.subarray(headerEnd + 4);
+    const nameMatch = /name="([^"]+)"/i.exec(header);
+    const fileMatch = /filename="([^"]*)"/i.exec(header);
+    parts.push({
+      name: nameMatch ? nameMatch[1] : "",
+      filename: fileMatch ? fileMatch[1] : null,
+      body,
+    });
+    start = next + sep.length;
+  }
+  return parts;
+}
+
+function serveFile(req, res, fullPath) {
+  fs.stat(fullPath, (err, st) => {
+    if (err || !st.isFile()) {
+      // SPA-ish fallback for unknown paths → 404 page
+      const notFound = path.join(PUBLIC, "404.html");
+      if (fs.existsSync(notFound) && !fullPath.endsWith("404.html")) {
+        res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
+        fs.createReadStream(notFound).pipe(res);
+        return;
+      }
+      send(res, 404, { error: "Not found" });
+      return;
+    }
+    const ext = path.extname(fullPath).toLowerCase();
+    const type = MIME[ext] || "application/octet-stream";
+    const range = req.headers.range;
+    if (range && (ext === ".mp4" || ext === ".webm" || ext === ".mov")) {
+      const m = /bytes=(\d+)-(\d*)/.exec(range);
+      if (m) {
+        const start = parseInt(m[1], 10);
+        const end = m[2] ? parseInt(m[2], 10) : st.size - 1;
+        const chunk = end - start + 1;
+        res.writeHead(206, {
+          "Content-Range": `bytes ${start}-${end}/${st.size}`,
+          "Accept-Ranges": "bytes",
+          "Content-Length": chunk,
+          "Content-Type": type,
+          "Cache-Control": "public, max-age=3600",
+        });
+        fs.createReadStream(fullPath, { start, end }).pipe(res);
+        return;
+      }
+    }
+    res.writeHead(200, {
+      "Content-Type": type,
+      "Content-Length": st.size,
+      "Accept-Ranges": "bytes",
+      "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=3600",
+    });
+    fs.createReadStream(fullPath).pipe(res);
+  });
+}
+
+function serveStatic(req, res, pathname) {
+  // strip query already done by URL
+  let clean = pathname.split("?")[0];
+  // Studio is the hub — Rank video lives under Studio
+  if (clean === "/rank" || clean === "/rank.html") {
+    res.writeHead(302, { Location: "/studio?tool=rank", "Cache-Control": "no-store" });
+    res.end();
+    return;
+  }
+  if (ROUTES[clean]) {
+    return serveFile(req, res, path.join(PUBLIC, ROUTES[clean]));
+  }
+  // /job/abc → job.html (client reads id)
+  if (/^\/job\/[a-f0-9]+$/i.test(clean)) {
+    return serveFile(req, res, path.join(PUBLIC, "job.html"));
+  }
+  if (/^\/board\/[a-f0-9]+$/i.test(clean)) {
+    return serveFile(req, res, path.join(PUBLIC, "rank.html"));
+  }
+
+  let filePath = clean === "/" ? "/index.html" : clean;
+  filePath = path.normalize(filePath).replace(/^(\.\.[/\\])+/, "");
+  const full = path.join(PUBLIC, filePath);
+  if (!full.startsWith(PUBLIC)) {
+    send(res, 403, { error: "Forbidden" });
+    return;
+  }
+  serveFile(req, res, full);
+}
+
+function seedJob(jobId, extra = {}) {
+  const jobSeed = {
+    id: jobId,
+    status: "queued",
+    stage: "queued",
+    progress: 1,
+    mode: extra.mode || "viral",
+    createdAt: new Date().toISOString(),
+    sourceName: extra.sourceName || "video",
+    clips: [],
+    rankings: [],
+    error: null,
+    ...extra,
+  };
+  fs.writeFileSync(
+    path.join(JOBS_DIR, `${jobId}.json`),
+    JSON.stringify(jobSeed, null, 2)
+  );
+  return jobSeed;
+}
+
+async function runQueueItem(item) {
+  busy = true;
+  try {
+    if (item.type === "multi-rank") {
+      await processMultiRank(item.sources, item.meta);
+    } else if (item.type === "link-rank-video") {
+      await processLinksToRankingVideo(item.links, item.meta);
+    } else if (item.type === "from-url") {
+      const { writeJob, readJob } = require("./lib/clipEngine");
+      let job = readJob(item.meta.jobId);
+      if (job) {
+        job.status = "processing";
+        job.stage = "downloading";
+        job.progress = 5;
+        writeJob(job);
+      }
+      const outBase = path.join(UPLOADS, `${item.meta.jobId}-src`);
+      const got = await downloadUrl(item.url, outBase);
+      if (job) {
+        job = readJob(item.meta.jobId) || job;
+        job.sourceName = got.title || item.url;
+        writeJob(job);
+      }
+      await processVideo(got.file, {
+        ...item.meta,
+        sourceName: got.title || item.meta.sourceName || "video",
+      });
+    } else {
+      await processVideo(item.sourcePath, item.meta);
+    }
+  } catch (e) {
+    console.error("Job failed:", e.message);
+    try {
+      const { writeJob, readJob } = require("./lib/clipEngine");
+      const id = item.meta && item.meta.jobId;
+      if (id) {
+        const job = readJob(id);
+        if (job && job.status !== "done") {
+          job.status = "error";
+          job.error = e.message || String(e);
+          job.progress = 0;
+          writeJob(job);
+        }
+      }
+    } catch (_) {}
+  } finally {
+    busy = false;
+    if (queue.length) {
+      const next = queue.shift();
+      runQueueItem(next);
+    }
+  }
+}
+
+function enqueue(sourcePath, meta) {
+  const item = { type: "single", sourcePath, meta };
+  if (busy) {
+    queue.push(item);
+    return { queued: true, position: queue.length };
+  }
+  runQueueItem(item);
+  return { queued: false, position: 0 };
+}
+
+function enqueueItem(item) {
+  if (busy) {
+    queue.push(item);
+    return { queued: true, position: queue.length };
+  }
+  runQueueItem(item);
+  return { queued: false, position: 0 };
+}
+
+function normalizeMode(m) {
+  const mode = String(m || "viral").toLowerCase();
+  return MODES[mode] ? mode : "viral";
+}
+
+const server = http.createServer(async (req, res) => {
+  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  const pathname = url.pathname;
+
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  try {
+    // Health
+    if (pathname === "/api/health" && req.method === "GET") {
+      return send(res, 200, {
+        ok: true,
+        service: "clipfoundry",
+        modes: Object.keys(MODES),
+        busy,
+        queue: queue.length,
+        jobs: listJobs(5).length,
+      });
+    }
+
+    // Modes
+    if (pathname === "/api/modes" && req.method === "GET") {
+      return send(res, 200, {
+        ok: true,
+        modes: Object.values(MODES).map((m) => ({
+          id: m.id,
+          label: m.label,
+          description: m.description,
+          targetMin: m.targetMin,
+          targetMax: m.targetMax,
+          maxClips: m.maxClips,
+        })),
+      });
+    }
+
+    // Waitlist
+    if (pathname === "/api/waitlist" && req.method === "GET") {
+      const data = readWaitlist();
+      return send(res, 200, {
+        count: data.signups.length,
+        recent: data.signups.slice(-8).map((s) => ({
+          name: s.name ? s.name.split(" ")[0] : "Creator",
+          role: s.role || "creator",
+          at: s.createdAt,
+        })),
+      });
+    }
+
+    if (pathname === "/api/waitlist" && req.method === "POST") {
+      const buf = await parseBody(req, 1e6);
+      const body = JSON.parse(buf.toString("utf8") || "{}");
+      const email = String(body.email || "")
+        .trim()
+        .toLowerCase();
+      const name = String(body.name || "").trim().slice(0, 80);
+      const role = String(body.role || "creator").trim().slice(0, 40);
+      const source = String(body.source || "landing").trim().slice(0, 40);
+      const interest = String(body.interest || "").trim().slice(0, 200);
+
+      if (!isValidEmail(email)) {
+        return send(res, 400, { ok: false, error: "Please enter a valid email." });
+      }
+
+      const data = readWaitlist();
+      const existing = data.signups.find((s) => s.email === email);
+      if (existing) {
+        return send(res, 200, {
+          ok: true,
+          already: true,
+          position: data.signups.findIndex((s) => s.email === email) + 1,
+          count: data.signups.length,
+          message: "You're already on the list.",
+        });
+      }
+      data.signups.push({
+        email,
+        name,
+        role,
+        source,
+        interest,
+        createdAt: new Date().toISOString(),
+      });
+      writeWaitlist(data);
+      return send(res, 201, {
+        ok: true,
+        already: false,
+        position: data.signups.length,
+        count: data.signups.length,
+        message: "You're on the list.",
+      });
+    }
+
+    // List jobs
+    if (pathname === "/api/jobs" && req.method === "GET") {
+      const jobs = listJobs(40).map((j) => ({
+        id: j.id,
+        status: j.status,
+        mode: j.mode,
+        modeLabel: j.modeLabel,
+        sourceName: j.sourceName,
+        progress: j.progress,
+        createdAt: j.createdAt,
+        completedAt: j.completedAt,
+        clipCount: (j.clips || []).length,
+        duration: j.duration,
+        error: j.error,
+        hasCompilation: !!(j.compilation && j.compilation.url),
+        topScore: j.clips?.[0]?.score || j.rankings?.[0]?.score || null,
+      }));
+      return send(res, 200, { ok: true, jobs });
+    }
+
+    // Sample clip
+    if (pathname === "/api/clip/sample" && req.method === "POST") {
+      return send(res, 410, {
+        ok: false,
+        error: "Demo videos removed. Upload your own video in Studio.",
+      });
+      const buf = await parseBody(req, 1e6);
+      let body = {};
+      try {
+        body = JSON.parse(buf.toString("utf8") || "{}");
+      } catch {
+        body = {};
+      }
+      const mode = normalizeMode(body.mode || url.searchParams.get("mode"));
+      const sample = path.join(PUBLIC, "samples", "demo-podcast.mp4");
+      if (!fs.existsSync(sample)) {
+        return send(res, 410, { ok: false, error: "Demo videos removed. Upload your own video." });
+      }
+      const jobId = crypto.randomBytes(6).toString("hex");
+      const dest = path.join(UPLOADS, `${jobId}-sample.mp4`);
+      fs.copyFileSync(sample, dest);
+      seedJob(jobId, {
+        mode,
+        sourceName: `demo-podcast.mp4 (${mode})`,
+      });
+      const q = enqueue(dest, {
+        jobId,
+        sourceName: `demo-podcast.mp4 (${mode})`,
+        mode,
+      });
+      return send(res, 202, {
+        ok: true,
+        jobId,
+        mode,
+        ...q,
+        message: "Clipping sample…",
+        jobUrl: `/job/${jobId}`,
+      });
+    }
+
+    // Upload clip
+    if (pathname === "/api/clip/upload" && req.method === "POST") {
+      const ct = req.headers["content-type"] || "";
+      if (!ct.includes("multipart/form-data")) {
+        return send(res, 400, {
+          ok: false,
+          error: "Send multipart form with field 'video'.",
+        });
+      }
+      const buf = await parseBody(req);
+      const parts = parseMultipart(buf, ct);
+      const filePart = parts.find(
+        (p) =>
+          (p.name === "video" || p.name === "videos" || p.name === "file") &&
+          p.body &&
+          p.body.length > 1000
+      );
+      const modePart = parts.find((p) => p.name === "mode");
+      const mode = normalizeMode(
+        modePart ? modePart.body.toString("utf8") : "viral"
+      );
+
+      if (!filePart || !filePart.body?.length) {
+        console.error("Single upload parts:", parts.map((p) => ({ name: p.name, filename: p.filename, len: p.body?.length })));
+        return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
+      }
+      if (filePart.body.length > 100 * 1024 * 1024) {
+        return send(res, 400, { ok: false, error: "Max upload size is 100MB." });
+      }
+
+      const orig = filePart.filename || "upload.mp4";
+      let ext = path.extname(orig).toLowerCase() || ".mp4";
+      const allowed = [".mp4", ".mov", ".webm", ".mkv", ".m4v", ""];
+      if (ext && !allowed.includes(ext)) {
+        // still accept if browser sent odd name — sniff not available, default mp4
+        ext = ".mp4";
+      }
+      if (!ext) ext = ".mp4";
+
+      const jobId = crypto.randomBytes(6).toString("hex");
+      const dest = path.join(UPLOADS, `${jobId}${ext}`);
+      fs.writeFileSync(dest, filePart.body);
+      seedJob(jobId, { mode, sourceName: orig });
+      const q = enqueue(dest, { jobId, sourceName: orig, mode });
+      return send(res, 202, {
+        ok: true,
+        jobId,
+        mode,
+        ...q,
+        message: "Upload received. Processing…",
+        jobUrl: `/job/${jobId}`,
+      });
+    }
+
+    // Long-form from URL (YouTube etc.)
+    if (pathname === "/api/clip/from-url" && req.method === "POST") {
+      const buf = await parseBody(req, 1e6);
+      let body = {};
+      try {
+        body = JSON.parse(buf.toString("utf8") || "{}");
+      } catch {
+        body = {};
+      }
+      const videoUrl = String(body.url || "").trim();
+      const mode = normalizeMode(body.mode || "viral");
+      if (!videoUrl || !/^https?:\/\//i.test(videoUrl)) {
+        return send(res, 400, { ok: false, error: "Paste a valid video link (YouTube works best)." });
+      }
+      const jobId = crypto.randomBytes(6).toString("hex");
+      seedJob(jobId, {
+        mode,
+        sourceName: videoUrl.slice(0, 80),
+      });
+      const q = enqueueItem({
+        type: "from-url",
+        url: videoUrl,
+        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode },
+      });
+      return send(res, 202, {
+        ok: true,
+        jobId,
+        mode,
+        ...q,
+        message: "Downloading and clipping…",
+        jobUrl: `/job/${jobId}`,
+      });
+    }
+
+    // Job status
+    if (pathname.startsWith("/api/clip/status/") && req.method === "GET") {
+      const id = pathname.split("/").pop();
+      if (!/^[a-f0-9]+$/i.test(id || "")) {
+        return send(res, 400, { ok: false, error: "Bad job id" });
+      }
+      const job = readJob(id);
+      if (!job) return send(res, 404, { ok: false, error: "Job not found" });
+      return send(res, 200, { ok: true, job });
+    }
+
+    // Link ranking boards
+    if (pathname === "/api/rank/links" && req.method === "GET") {
+      const boards = readLinkBoards().map((b) => ({
+        id: b.id,
+        name: b.name,
+        niche: b.niche,
+        createdAt: b.createdAt,
+        summary: b.summary,
+      }));
+      return send(res, 200, { ok: true, boards });
+    }
+
+    if (pathname === "/api/rank/links" && req.method === "POST") {
+      const buf = await parseBody(req, 2e6);
+      const body = JSON.parse(buf.toString("utf8") || "{}");
+      let links = body.links;
+      // Allow paste blob: one URL per line, optional "url | hook | views | duration"
+      if ((!links || !links.length) && body.paste) {
+        links = String(body.paste)
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            const bits = line.split("|").map((s) => s.trim());
+            return {
+              url: bits[0],
+              hook: bits[1] || "",
+              views: bits[2] ? Number(String(bits[2]).replace(/[^\d.]/g, "")) : 0,
+              durationSec: bits[3] ? Number(bits[3]) : 0,
+              notes: bits[4] || "",
+            };
+          });
+      }
+      if (!links || !links.length) {
+        return send(res, 400, {
+          ok: false,
+          error: "Add at least one TikTok / short-form link.",
+        });
+      }
+      if (links.length > 40) {
+        return send(res, 400, { ok: false, error: "Max 40 links per board." });
+      }
+      const board = createLinkBoard({
+        name: body.name || "Link ranking",
+        niche: body.niche || "general",
+        links,
+      });
+      return send(res, 201, {
+        ok: true,
+        board,
+        boardUrl: `/rank?board=${board.id}`,
+      });
+    }
+
+    if (pathname.startsWith("/api/rank/links/") && req.method === "GET") {
+      const id = pathname.split("/").pop();
+      const board = getLinkBoard(id);
+      if (!board) return send(res, 404, { ok: false, error: "Board not found" });
+      return send(res, 200, { ok: true, board });
+    }
+
+
+    // ---- Multi-link → ranking VIDEO ----
+    if (pathname === "/api/rank/video/links" && req.method === "POST") {
+      const buf = await parseBody(req, 2e6);
+      const body = JSON.parse(buf.toString("utf8") || "{}");
+      let links = body.links;
+      if ((!links || !links.length) && body.paste) {
+        links = String(body.paste)
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            const bits = line.split("|").map((s) => s.trim());
+            return {
+              url: bits[0],
+              hook: bits[1] || "",
+              views: bits[2] ? Number(String(bits[2]).replace(/[^\d.]/g, "")) : 0,
+              durationSec: bits[3] ? Number(bits[3]) : 0,
+              notes: bits[4] || "",
+            };
+          });
+      }
+      // sample pack shortcut
+      if (body.useSamplePack) {
+        return send(res, 410, {
+          ok: false,
+          error: "Demo pack removed. Upload your videos or paste real links.",
+        });
+      }
+      if (!links || links.length < 2) {
+        return send(res, 400, { ok: false, error: "Add 2–5 video links." });
+      }
+      if (links.length > 5) {
+        return send(res, 400, { ok: false, error: "Maximum 5 links." });
+      }
+      const jobId = crypto.randomBytes(6).toString("hex");
+      seedJob(jobId, {
+        mode: "link-rank-video",
+        modeLabel: "Link ranking video",
+        sourceName: body.name || `${links.length} links → ranking video`,
+      });
+      const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
+      const q = enqueueItem({
+        type: "link-rank-video",
+        links,
+        meta: {
+          jobId,
+          sourceName: boardTitle,
+          boardTitle,
+        },
+      });
+      return send(res, 202, {
+        ok: true,
+        jobId,
+        ...q,
+        message: "Building ranking video from links…",
+        jobUrl: `/job/${jobId}`,
+      });
+    }
+
+    // Multi-file upload → ranking video
+    if (pathname === "/api/rank/video/upload" && req.method === "POST") {
+      const ct = req.headers["content-type"] || "";
+      if (!ct.includes("multipart/form-data")) {
+        return send(res, 400, { ok: false, error: "Send multipart with videos[] files." });
+      }
+      const buf = await parseBody(req, 200 * 1024 * 1024);
+      const parts = parseMultipart(buf, ct);
+      const files = parts.filter((p) => {
+        const n = String(p.name || "");
+        const isVideoField =
+          n === "videos" ||
+          n === "videos[]" ||
+          n === "video" ||
+          n.startsWith("videos");
+        return isVideoField && p.body && p.body.length > 1000;
+      });
+      if (files.length < 2) {
+        return send(res, 400, {
+          ok: false,
+          error: files.length ? "Add at least 2 videos (max 5)." : "No video file received.",
+        });
+      }
+      if (files.length > 5) {
+        return send(res, 400, { ok: false, error: "Maximum 5 videos." });
+      }
+      const jobId = crypto.randomBytes(6).toString("hex");
+      const sources = [];
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        if (f.body.length > 40 * 1024 * 1024) {
+          return send(res, 400, { ok: false, error: `File too large: ${f.filename} (max 40MB each)` });
+        }
+        const rawName = f.filename || `video-${i + 1}.mp4`;
+        let ext = path.extname(rawName).toLowerCase() || ".mp4";
+        if (![".mp4", ".mov", ".webm", ".mkv", ".m4v"].includes(ext)) ext = ".mp4";
+        const dest = path.join(UPLOADS, `${jobId}-${i}${ext}`);
+        fs.writeFileSync(dest, f.body);
+        const labelPart = parts.find((p) => p.name === `label_${i}`);
+        const customLabel = labelPart
+          ? String(labelPart.body.toString("utf8") || "").trim().slice(0, 40)
+          : "";
+        sources.push({
+          path: dest,
+          label:
+            customLabel ||
+            path.basename(rawName, path.extname(rawName)) ||
+            `video-${i + 1}`,
+          url: null,
+        });
+      }
+      const titlePart = parts.find((p) => p.name === "title");
+      const boardTitle = String(titlePart ? titlePart.body.toString("utf8") : "Top Videos")
+        .trim()
+        .slice(0, 28) || "Top Videos";
+      seedJob(jobId, {
+        mode: "link-rank-video",
+        modeLabel: "Link ranking video",
+        sourceName: boardTitle,
+      });
+      const q = enqueueItem({
+        type: "multi-rank",
+        sources,
+        meta: { jobId, sourceName: boardTitle, boardTitle },
+      });
+      return send(res, 202, {
+        ok: true,
+        jobId,
+        ...q,
+        message: "Building ranking video from uploads…",
+        jobUrl: `/job/${jobId}`,
+      });
+    }
+
+    serveStatic(req, res, pathname);
+  } catch (e) {
+    console.error(e);
+    send(res, 500, { ok: false, error: e.message || "Server error" });
+  }
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Clipfoundry running on http://0.0.0.0:${PORT}`);
+});
