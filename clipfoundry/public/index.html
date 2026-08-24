@@ -30,26 +30,21 @@
       /* Living background */
       .bg-live{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
 
-      /* Moving picture backdrop — slow cinematic pan/zoom over a film-reel render */
+      /* Film-reel texture — faint static base under the motion layer */
       .bg-pic{
-        position:absolute;inset:-9%;
+        position:absolute;inset:0;
         background:url("/bg-reel.jpg") center/cover no-repeat;
-        filter:saturate(1.18);
-        opacity:.5;
-        animation:bgDrift 38s ease-in-out infinite alternate;
-        will-change:transform;
+        filter:saturate(1.15);
+        opacity:.22;
       }
-      @keyframes bgDrift{
-        0%{transform:translate3d(0,0,0) scale(1.02)}
-        50%{transform:translate3d(-2.6%,-1.8%,0) scale(1.11)}
-        100%{transform:translate3d(2.4%,2%,0) scale(1.05)}
-      }
-      /* Readability veil — keeps the picture visible but text crisp */
+      /* GIF-like animated layer — canvas light show in brand colors */
+      #bgfx{position:absolute;inset:0;width:100%;height:100%}
+      /* Readability veil — keeps text crisp over the moving lights */
       .bg-veil{
         position:absolute;inset:0;
         background:
-          radial-gradient(ellipse 90% 62% at 50% 0%,rgba(8,8,12,.42) 0%,rgba(8,8,12,.08) 55%,transparent 100%),
-          linear-gradient(180deg,rgba(8,8,12,.3) 0%,rgba(8,8,12,.12) 34%,rgba(8,8,12,.35) 72%,var(--bg) 100%);
+          radial-gradient(ellipse 90% 62% at 50% 0%,rgba(8,8,12,.5) 0%,rgba(8,8,12,.18) 55%,transparent 100%),
+          linear-gradient(180deg,rgba(8,8,12,.38) 0%,rgba(8,8,12,.14) 34%,rgba(8,8,12,.3) 72%,var(--bg) 100%);
       }
 
       .orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;animation:orbFloat 12s ease-in-out infinite}
@@ -282,6 +277,7 @@
   <body>
     <div class="bg-live" aria-hidden="true">
       <div class="bg-pic"></div>
+      <canvas id="bgfx"></canvas>
       <div class="bg-veil"></div>
       <div class="orb orb-a"></div>
       <div class="orb orb-b"></div>
@@ -581,6 +577,153 @@
           el.style.transitionDelay = (i % 6) * 0.06 + "s";
           io.observe(el);
         });
+      })();
+    </script>
+
+    <script>
+      /* GIF-like moving background — flowing neon ribbons, rising particles,
+         drifting clip frames. Drawn live in brand colors on <canvas id="bgfx">. */
+      (function () {
+        var canvas = document.getElementById("bgfx");
+        if (!canvas || !canvas.getContext) return;
+        var ctx = canvas.getContext("2d");
+        var W = 0, H = 0, DPR = 1, t = 0;
+        var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var COLORS = ["#ff4d6d", "#ff8a4c", "#8b7cff"];
+
+        function resize() {
+          DPR = Math.min(window.devicePixelRatio || 1, 2);
+          W = canvas.clientWidth; H = canvas.clientHeight;
+          canvas.width = Math.round(W * DPR);
+          canvas.height = Math.round(H * DPR);
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        }
+
+        var P = [];
+        function seedParticles() {
+          P = [];
+          var n = Math.max(22, Math.min(46, Math.round(W / 30)));
+          for (var i = 0; i < n; i++) {
+            P.push({
+              x: Math.random() * W,
+              y: Math.random() * H,
+              r: 1 + Math.random() * 2.3,
+              s: 0.16 + Math.random() * 0.5,
+              drift: (Math.random() - 0.5) * 0.3,
+              c: COLORS[(Math.random() * COLORS.length) | 0],
+              a: 0.16 + Math.random() * 0.42,
+              tw: Math.random() * Math.PI * 2
+            });
+          }
+        }
+
+        var F = [];
+        function seedFrames() {
+          F = [];
+          var n = W < 720 ? 4 : 7;
+          for (var i = 0; i < n; i++) {
+            var hgt = 100 + Math.random() * 160;
+            F.push({
+              x: Math.random() * W,
+              y: Math.random() * H,
+              w: hgt * 0.62,
+              h: hgt,
+              vx: (Math.random() - 0.5) * 0.2,
+              vy: -(0.09 + Math.random() * 0.16),
+              rot: (Math.random() - 0.5) * 0.5,
+              vr: (Math.random() - 0.5) * 0.0011,
+              c: COLORS[i % COLORS.length],
+              a: 0.05 + Math.random() * 0.09
+            });
+          }
+        }
+
+        function ribbon(yc, amp, amp2, k1, k2, sp, sp2, col1, col2, width, alpha) {
+          var grad = ctx.createLinearGradient(0, 0, W, 0);
+          grad.addColorStop(0, "rgba(0,0,0,0)");
+          grad.addColorStop(0.18, col1);
+          grad.addColorStop(0.55, col2);
+          grad.addColorStop(0.85, col1);
+          grad.addColorStop(1, "rgba(0,0,0,0)");
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = width;
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          for (var x = -60; x <= W + 60; x += 28) {
+            var y = yc + Math.sin(x * k1 + t * sp) * amp + Math.sin(x * k2 - t * sp2 + yc * 0.01) * amp2;
+            if (x === -60) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+
+        function rrect(x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.arcTo(x + w, y, x + w, y + h, r);
+          ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r);
+          ctx.arcTo(x, y, x + w, y, r);
+          ctx.closePath();
+        }
+
+        function draw() {
+          ctx.clearRect(0, 0, W, H);
+          ctx.globalCompositeOperation = "lighter";
+
+          var base = H * 0.44;
+          // soft glow bodies
+          ribbon(base,            72, 26, 0.0042, 0.011,  0.50, 0.42, COLORS[0], COLORS[2], 92, 0.055);
+          ribbon(base + H * 0.12, 60, 22, 0.0038, 0.010, -0.42, 0.36, COLORS[1], COLORS[0], 72, 0.05);
+          ribbon(base - H * 0.13, 55, 20, 0.0050, 0.013,  0.34, 0.30, COLORS[2], COLORS[1], 58, 0.045);
+          // bright cores
+          ribbon(base,            72, 26, 0.0042, 0.011,  0.50, 0.42, COLORS[0], COLORS[2], 2.6, 0.34);
+          ribbon(base + H * 0.12, 60, 22, 0.0038, 0.010, -0.42, 0.36, COLORS[1], COLORS[0], 2.1, 0.3);
+          ribbon(base - H * 0.13, 55, 20, 0.0050, 0.013,  0.34, 0.30, COLORS[2], COLORS[1], 1.7, 0.26);
+
+          // drifting 9:16 clip frames
+          for (var i = 0; i < F.length; i++) {
+            var f = F[i];
+            f.x += f.vx; f.y += f.vy; f.rot += f.vr;
+            if (f.y + f.h < -60) { f.y = H + 40; f.x = Math.random() * W; }
+            if (f.x + f.w < -80) f.x = W + 40;
+            if (f.x > W + 80) f.x = -f.w - 40;
+            ctx.save();
+            ctx.translate(f.x + f.w / 2, f.y + f.h / 2);
+            ctx.rotate(f.rot + Math.sin(t * 0.35 + i * 1.7) * 0.07);
+            ctx.globalAlpha = f.a;
+            ctx.strokeStyle = f.c;
+            ctx.lineWidth = 2;
+            rrect(-f.w / 2, -f.h / 2, f.w, f.h, 14);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // rising twinkling particles
+          for (var j = 0; j < P.length; j++) {
+            var p = P[j];
+            p.y -= p.s; p.x += p.drift + Math.sin(t * 0.6 + p.tw) * 0.18;
+            if (p.y < -12) { p.y = H + 12; p.x = Math.random() * W; }
+            if (p.x < -12) p.x = W + 12; else if (p.x > W + 12) p.x = -12;
+            var tw = 0.55 + 0.45 * Math.sin(t * 1.7 + p.tw);
+            ctx.globalAlpha = p.a * tw;
+            ctx.fillStyle = p.c;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          ctx.globalAlpha = 1;
+          ctx.globalCompositeOperation = "source-over";
+        }
+
+        function loop() { t += 0.016; draw(); requestAnimationFrame(loop); }
+
+        function boot() {
+          resize(); seedParticles(); seedFrames();
+          if (reduced) { draw(); } else { requestAnimationFrame(loop); }
+        }
+        window.addEventListener("resize", function () { resize(); seedParticles(); seedFrames(); if (reduced) draw(); });
+        boot();
       })();
     </script>
   </body>
