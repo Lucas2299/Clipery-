@@ -1,3 +1,114 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:05249cbc08ff300a60d1b6e585b9218096b40d5c7653ae4a8f3113b3800a5868
-size 5156
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Waitlist · Clipfoundry</title>
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
+          </span>
+          Clipfoundry
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/studio" data-nav>Studio</a>
+          <a href="/rank" data-nav>Rank video</a>
+          <a href="/library" data-nav class="nav-hide-sm">Library</a>
+          <a href="/pricing" data-nav>Pricing</a>
+          <a class="btn btn-primary btn-sm" href="/waitlist" data-nav>Waitlist</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page container">
+      <div class="waitlist-card">
+        <div>
+          <div class="eyebrow">Founding waitlist</div>
+          <h1 style="font-size: clamp(1.7rem, 3vw, 2.2rem); letter-spacing: -0.03em; margin-bottom: 0.75rem">
+            Get early access to Clipfoundry service seats
+          </h1>
+          <p class="muted">
+            The studio demo is open now. The waitlist is for founding DFY clients — locked rates, pilot batch,
+            and priority onboarding.
+          </p>
+          <div class="perks">
+            <div class="perk">Founding price locked for 3 months</div>
+            <div class="perk">Free pilot batch when invited</div>
+            <div class="perk">No spam — launch updates only</div>
+          </div>
+          <p style="margin-top: 1.25rem">
+            <a href="/studio" style="color: var(--accent-2); font-weight: 600">Or try the studio free →</a>
+          </p>
+        </div>
+
+        <div class="waitlist-form-wrap">
+          <div id="form-success" class="form-success-state" aria-live="polite">
+            <div class="big-check">✓</div>
+            <h3>You’re on the list</h3>
+            <p id="success-text">We’ll email you when your seat opens.</p>
+            <div class="position-badge" id="position-badge">#—</div>
+          </div>
+
+          <form id="waitlist-form" novalidate>
+            <h3 style="margin-bottom: 0.25rem">Reserve your spot</h3>
+            <p class="dim" style="margin-bottom: 1rem">No card required.</p>
+            <div class="form-row">
+              <label for="name">Name</label>
+              <input id="name" name="name" type="text" autocomplete="name" placeholder="Alex Rivera" />
+            </div>
+            <div class="form-row">
+              <label for="email">Email *</label>
+              <input id="email" name="email" type="email" autocomplete="email" required placeholder="you@studio.com" />
+            </div>
+            <div class="form-row">
+              <label for="role">I am a…</label>
+              <select id="role" name="role">
+                <option value="creator">Creator / YouTuber / Podcaster</option>
+                <option value="brand">Brand / business</option>
+                <option value="agency">Agency / freelancer</option>
+                <option value="coach">Coach / course seller</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <label for="interest">Most interested in</label>
+              <select id="interest" name="interest">
+                <option value="long-to-shorts">Long video → viral clips</option>
+                <option value="ranking">Ranking analysis</option>
+                <option value="tiktok-rank">TikTok link ranking</option>
+                <option value="both">Everything</option>
+                <option value="autopilot">Full autopilot posting</option>
+              </select>
+            </div>
+            <p class="form-msg" id="form-msg" role="status"></p>
+            <button class="btn btn-primary btn-block btn-lg" type="submit" id="submit-btn">Join the waitlist</button>
+            <div style="margin-top: 0.85rem; display: flex; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap">
+              <span class="count-pill"><span id="waitlist-count">0</span> on the list</span>
+              <span class="dim">Free · cancel anytime later</span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipfoundry</a>
+        <div>© <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+    <script src="/waitlist.js"></script>
+  </body>
+</html>

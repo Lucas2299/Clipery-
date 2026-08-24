@@ -1,3 +1,138 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:730a142d15fcaeee9bb2ee7860aca2fa35ca931cc568e621aa8c22f4817036d6
-size 5526
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Make ranking video · Clipfoundry</title>
+    <meta name="description" content="Upload videos or paste links. Get a ranking video." />
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-2" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
+          </span>
+          Clipfoundry
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/studio" data-nav>Studio</a>
+          <a href="/rank" data-nav>Rank video</a>
+          <a href="/library" data-nav>Library</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page container rank-simple">
+      <div class="page-hero rank-hero">
+        <h1>Make a ranking video</h1>
+        <p>Add videos → we rank them → you get #1 #2 #3 clips + one countdown video.</p>
+      </div>
+
+      <div class="rank-shell">
+        <div class="rank-tabs" role="tablist">
+          <button type="button" class="rank-tab active" id="tab-upload">1. Upload files</button>
+          <button type="button" class="rank-tab" id="tab-links">2. Paste links</button>
+        </div>
+
+        <div class="rank-body">
+          <!-- UPLOAD -->
+          <div id="pane-upload">
+            <p class="hint" style="margin-top: 0">
+              <strong>Recommended for TikTok.</strong> Save videos to your device, then choose them here.
+              Pick one or more files.
+            </p>
+
+            <div class="upload-box" id="upload-box">
+              <input
+                id="multi-input"
+                class="file-input-overlay"
+                type="file"
+                accept="video/*,.mp4,.mov,.webm,.m4v"
+                multiple
+              />
+              <div class="upload-box-inner" id="upload-box-inner">
+                <div class="upload-icon">↑</div>
+                <div class="drop-title" id="multi-label">Tap here to choose videos</div>
+                <div class="drop-sub">MP4, MOV, WEBM · you can select multiple</div>
+              </div>
+            </div>
+
+            <ul class="file-list" id="file-list"></ul>
+
+            <button type="button" class="btn btn-primary btn-lg btn-block" id="btn-multi-upload">
+              Create ranking video
+            </button>
+            <p class="form-msg" id="up-msg" role="status"></p>
+          </div>
+
+          <!-- LINKS -->
+          <div id="pane-links" style="display: none">
+            <p class="hint" style="margin-top: 0">
+              Paste video links (one per line). YouTube works best here. TikTok downloads are often blocked — use Upload files instead.
+            </p>
+            <label class="field-label" for="vr-paste">Links</label>
+            <textarea
+              id="vr-paste"
+              class="rank-textarea"
+              rows="6"
+              placeholder="https://www.youtube.com/shorts/xxxxx
+https://youtu.be/yyyyy
+https://www.youtube.com/watch?v=zzzzz"
+            ></textarea>
+            <button type="button" class="btn btn-primary btn-lg btn-block" id="vr-submit">
+              Create ranking video from links
+            </button>
+            <p class="form-msg" id="vr-msg" role="status"></p>
+          </div>
+
+          <!-- STATUS -->
+          <div id="vr-status" class="status-box" style="display: none; margin-top: 1.25rem">
+            <div class="status-top">
+              <strong id="vr-stage">Working…</strong>
+              <span class="status-pct" id="vr-pct">0%</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="vr-fill"></div></div>
+            <p class="muted" id="vr-detail"></p>
+          </div>
+
+          <!-- RESULTS -->
+          <div id="vr-results" style="display: none; margin-top: 1.5rem">
+            <div id="comp-host"></div>
+            <h3 class="results-label" id="vr-title">Ranked clips</h3>
+            <div class="clip-grid" id="vr-grid"></div>
+            <div class="rank-actions">
+              <a class="btn btn-ghost" id="vr-open-job" href="/library">Open in library</a>
+              <button type="button" class="btn btn-ghost" id="btn-again">Make another</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p class="hint" style="text-align: center; margin-top: 1.25rem">
+        Want clips from one long video instead? <a href="/studio" style="color: var(--accent-2); font-weight: 600">Open Studio</a>
+      </p>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipfoundry</a>
+        <div class="footer-links">
+          <a href="/studio">Studio</a>
+          <a href="/rank">Rank</a>
+          <a href="/library">Library</a>
+        </div>
+        <div>© <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+    <script src="/rank.js"></script>
+  </body>
+</html>

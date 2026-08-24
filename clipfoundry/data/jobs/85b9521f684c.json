@@ -1,3 +1,467 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2b74c2e97899ba11c8b51b2807683077c3f457d87700c96eae217902f90c731b
-size 9598
+{
+  "id": "85b9521f684c",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-08-23T12:01:13.348Z",
+  "sourceName": "85b9521f684c-src.mp4",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 89,
+      "title": "Cold-open hook",
+      "start": 79.33,
+      "end": 101.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 89,
+        "hook": 98,
+        "length": 96,
+        "pacing": 72,
+        "retention": 85,
+        "cta": 45,
+        "energy": 62,
+        "punch": 84
+      },
+      "url": "/clips/85b9521f684c/clip-1.mp4",
+      "downloadName": "viral-rank1-85b9521f684c.mp4"
+    },
+    {
+      "rank": 2,
+      "score": 88,
+      "title": "Scroll-stop moment",
+      "start": 259.17,
+      "end": 281.17,
+      "duration": 22,
+      "dimensions": {
+        "total": 88,
+        "hook": 88,
+        "length": 96,
+        "pacing": 75,
+        "retention": 86,
+        "cta": 45,
+        "energy": 59,
+        "punch": 95
+      },
+      "url": "/clips/85b9521f684c/clip-2.mp4",
+      "downloadName": "viral-rank2-85b9521f684c.mp4"
+    },
+    {
+      "rank": 3,
+      "score": 87,
+      "title": "Cold-open hook",
+      "start": 0,
+      "end": 20,
+      "duration": 20,
+      "dimensions": {
+        "total": 87,
+        "hook": 98,
+        "length": 96,
+        "pacing": 70,
+        "retention": 85,
+        "cta": 45,
+        "energy": 59,
+        "punch": 84
+      },
+      "url": "/clips/85b9521f684c/clip-3.mp4",
+      "downloadName": "viral-rank3-85b9521f684c.mp4"
+    },
+    {
+      "rank": 4,
+      "score": 87,
+      "title": "Scroll-stop moment",
+      "start": 135.33,
+      "end": 157.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 87,
+        "hook": 88,
+        "length": 96,
+        "pacing": 71,
+        "retention": 84,
+        "cta": 45,
+        "energy": 60,
+        "punch": 84
+      },
+      "url": "/clips/85b9521f684c/clip-4.mp4",
+      "downloadName": "viral-rank4-85b9521f684c.mp4"
+    },
+    {
+      "rank": 5,
+      "score": 86,
+      "title": "Cold-open hook",
+      "start": 93.33,
+      "end": 115.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 86,
+        "hook": 98,
+        "length": 96,
+        "pacing": 70,
+        "retention": 84,
+        "cta": 45,
+        "energy": 59,
+        "punch": 84
+      },
+      "url": "/clips/85b9521f684c/clip-5.mp4",
+      "downloadName": "viral-rank5-85b9521f684c.mp4"
+    },
+    {
+      "rank": 6,
+      "score": 86,
+      "title": "Cold-open hook",
+      "start": 107.33,
+      "end": 129.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 86,
+        "hook": 88,
+        "length": 96,
+        "pacing": 71,
+        "retention": 84,
+        "cta": 45,
+        "energy": 60,
+        "punch": 84
+      },
+      "url": "/clips/85b9521f684c/clip-6.mp4",
+      "downloadName": "viral-rank6-85b9521f684c.mp4"
+    },
+    {
+      "rank": 7,
+      "score": 86,
+      "title": "Scroll-stop moment",
+      "start": 149.33,
+      "end": 162.13,
+      "duration": 12.8,
+      "dimensions": {
+        "total": 86,
+        "hook": 88,
+        "length": 96,
+        "pacing": 73,
+        "retention": 84,
+        "cta": 45,
+        "energy": 64,
+        "punch": 84
+      },
+      "url": "/clips/85b9521f684c/clip-7.mp4",
+      "downloadName": "viral-rank7-85b9521f684c.mp4"
+    },
+    {
+      "rank": 8,
+      "score": 85,
+      "title": "Scroll-stop moment",
+      "start": 273.17,
+      "end": 295.17,
+      "duration": 22,
+      "dimensions": {
+        "total": 85,
+        "hook": 88,
+        "length": 96,
+        "pacing": 71,
+        "retention": 84,
+        "cta": 45,
+        "energy": 61,
+        "punch": 84
+      },
+      "url": "/clips/85b9521f684c/clip-8.mp4",
+      "downloadName": "viral-rank8-85b9521f684c.mp4"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 89,
+      "title": "Cold-open hook",
+      "start": 79.33,
+      "end": 101.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 89,
+        "hook": 98,
+        "length": 96,
+        "pacing": 72,
+        "retention": 85,
+        "cta": 45,
+        "energy": 62,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 2,
+      "score": 88,
+      "title": "Scroll-stop moment",
+      "start": 259.17,
+      "end": 281.17,
+      "duration": 22,
+      "dimensions": {
+        "total": 88,
+        "hook": 88,
+        "length": 96,
+        "pacing": 75,
+        "retention": 86,
+        "cta": 45,
+        "energy": 59,
+        "punch": 95
+      }
+    },
+    {
+      "rank": 3,
+      "score": 87,
+      "title": "Cold-open hook",
+      "start": 0,
+      "end": 20,
+      "duration": 20,
+      "dimensions": {
+        "total": 87,
+        "hook": 98,
+        "length": 96,
+        "pacing": 70,
+        "retention": 85,
+        "cta": 45,
+        "energy": 59,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 4,
+      "score": 87,
+      "title": "Scroll-stop moment",
+      "start": 135.33,
+      "end": 157.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 87,
+        "hook": 88,
+        "length": 96,
+        "pacing": 71,
+        "retention": 84,
+        "cta": 45,
+        "energy": 60,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 5,
+      "score": 86,
+      "title": "Cold-open hook",
+      "start": 93.33,
+      "end": 115.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 86,
+        "hook": 98,
+        "length": 96,
+        "pacing": 70,
+        "retention": 84,
+        "cta": 45,
+        "energy": 59,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 6,
+      "score": 86,
+      "title": "Cold-open hook",
+      "start": 107.33,
+      "end": 129.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 86,
+        "hook": 88,
+        "length": 96,
+        "pacing": 71,
+        "retention": 84,
+        "cta": 45,
+        "energy": 60,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 7,
+      "score": 86,
+      "title": "Scroll-stop moment",
+      "start": 149.33,
+      "end": 162.13,
+      "duration": 12.8,
+      "dimensions": {
+        "total": 86,
+        "hook": 88,
+        "length": 96,
+        "pacing": 73,
+        "retention": 84,
+        "cta": 45,
+        "energy": 64,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 8,
+      "score": 85,
+      "title": "Scroll-stop moment",
+      "start": 273.17,
+      "end": 295.17,
+      "duration": 22,
+      "dimensions": {
+        "total": 85,
+        "hook": 88,
+        "length": 96,
+        "pacing": 71,
+        "retention": 84,
+        "cta": 45,
+        "energy": 61,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 9,
+      "score": 84,
+      "title": "Cold-open hook",
+      "start": 50.33,
+      "end": 79.33,
+      "duration": 29,
+      "dimensions": {
+        "total": 84,
+        "hook": 98,
+        "length": 78,
+        "pacing": 70,
+        "retention": 73,
+        "cta": 45,
+        "energy": 59,
+        "punch": 83
+      }
+    },
+    {
+      "rank": 10,
+      "score": 84,
+      "title": "Cold-open hook",
+      "start": 121.33,
+      "end": 143.33,
+      "duration": 22,
+      "dimensions": {
+        "total": 84,
+        "hook": 88,
+        "length": 96,
+        "pacing": 71,
+        "retention": 84,
+        "cta": 45,
+        "energy": 60,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 11,
+      "score": 83,
+      "title": "Cold-open hook",
+      "start": 27.93,
+      "end": 36.63,
+      "duration": 8.7,
+      "dimensions": {
+        "total": 83,
+        "hook": 98,
+        "length": 78,
+        "pacing": 69,
+        "retention": 73,
+        "cta": 45,
+        "energy": 57,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 12,
+      "score": 80,
+      "title": "Scroll-stop moment",
+      "start": 218.4,
+      "end": 248.23,
+      "duration": 29.83,
+      "dimensions": {
+        "total": 80,
+        "hook": 88,
+        "length": 78,
+        "pacing": 70,
+        "retention": 72,
+        "cta": 45,
+        "energy": 58,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 13,
+      "score": 79,
+      "title": "Viral angle",
+      "start": 287.17,
+      "end": 309.17,
+      "duration": 22,
+      "dimensions": {
+        "total": 79,
+        "hook": 76,
+        "length": 96,
+        "pacing": 72,
+        "retention": 85,
+        "cta": 45,
+        "energy": 62,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 14,
+      "score": 76,
+      "title": "Scroll-stop moment",
+      "start": 171.47,
+      "end": 205.47,
+      "duration": 34,
+      "dimensions": {
+        "total": 76,
+        "hook": 88,
+        "length": 78,
+        "pacing": 70,
+        "retention": 70,
+        "cta": 45,
+        "energy": 58,
+        "punch": 84
+      }
+    },
+    {
+      "rank": 15,
+      "score": 70,
+      "title": "Cold-open hook",
+      "start": 39.53,
+      "end": 46.6,
+      "duration": 7.07,
+      "dimensions": {
+        "total": 70,
+        "hook": 98,
+        "length": 40,
+        "pacing": 73,
+        "retention": 59,
+        "cta": 45,
+        "energy": 62,
+        "punch": 86
+      }
+    },
+    {
+      "rank": 16,
+      "score": 66,
+      "title": "Scroll-stop moment",
+      "start": 251.97,
+      "end": 259.17,
+      "duration": 7.2,
+      "dimensions": {
+        "total": 66,
+        "hook": 88,
+        "length": 40,
+        "pacing": 71,
+        "retention": 58,
+        "cta": 45,
+        "energy": 60,
+        "punch": 84
+      }
+    }
+  ],
+  "error": null,
+  "duration": 967.48,
+  "candidateCount": 16,
+  "sceneCount": 49,
+  "completedAt": "2026-08-23T12:02:02.668Z"
+}

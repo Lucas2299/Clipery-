@@ -1,3 +1,224 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:609448832ee53b80083da3ba57bff39abba4c7bab450baa8fbe2872e8f9de808
-size 4947
+{
+  "id": "5a02b4e3ff20",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "link-rank-video",
+  "modeLabel": "Link ranking video",
+  "createdAt": "2026-08-23T11:03:13.522Z",
+  "sourceName": "Test pack",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 82,
+      "title": "3 lines that close",
+      "sourceUrl": "sample:clip2.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 82,
+        "hook": 85,
+        "length": 96,
+        "pacing": 58,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 58
+      },
+      "url": "/clips/5a02b4e3ff20/rank-1.mp4",
+      "downloadName": "rank-1-5a02b4e3ff20.mp4"
+    },
+    {
+      "rank": 2,
+      "score": 81,
+      "title": "Stop guessing prices",
+      "sourceUrl": "sample:clip1.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 81,
+        "hook": 90,
+        "length": 96,
+        "pacing": 58,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 57
+      },
+      "url": "/clips/5a02b4e3ff20/rank-2.mp4",
+      "downloadName": "rank-2-5a02b4e3ff20.mp4"
+    },
+    {
+      "rank": 3,
+      "score": 81,
+      "title": "Free trials kill urgency",
+      "sourceUrl": "sample:clip3.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 81,
+        "hook": 85,
+        "length": 96,
+        "pacing": 58,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 59
+      },
+      "url": "/clips/5a02b4e3ff20/rank-3.mp4",
+      "downloadName": "rank-3-5a02b4e3ff20.mp4"
+    },
+    {
+      "rank": 4,
+      "score": 79,
+      "title": "10k mindset flip",
+      "sourceUrl": "sample:clip4.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 79,
+        "hook": 85,
+        "length": 96,
+        "pacing": 55,
+        "retention": 73,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 51
+      },
+      "url": "/clips/5a02b4e3ff20/rank-4.mp4",
+      "downloadName": "rank-4-5a02b4e3ff20.mp4"
+    },
+    {
+      "rank": 5,
+      "score": 79,
+      "title": "Comment PRICE CTA",
+      "sourceUrl": "sample:clip5.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 79,
+        "hook": 85,
+        "length": 96,
+        "pacing": 57,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 56
+      },
+      "url": "/clips/5a02b4e3ff20/rank-5.mp4",
+      "downloadName": "rank-5-5a02b4e3ff20.mp4"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 82,
+      "title": "3 lines that close",
+      "url": "sample:clip2.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 82,
+        "hook": 85,
+        "length": 96,
+        "pacing": 58,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 58
+      }
+    },
+    {
+      "rank": 2,
+      "score": 81,
+      "title": "Stop guessing prices",
+      "url": "sample:clip1.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 81,
+        "hook": 90,
+        "length": 96,
+        "pacing": 58,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 57
+      }
+    },
+    {
+      "rank": 3,
+      "score": 81,
+      "title": "Free trials kill urgency",
+      "url": "sample:clip3.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 81,
+        "hook": 85,
+        "length": 96,
+        "pacing": 58,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 59
+      }
+    },
+    {
+      "rank": 4,
+      "score": 79,
+      "title": "10k mindset flip",
+      "url": "sample:clip4.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 79,
+        "hook": 85,
+        "length": 96,
+        "pacing": 55,
+        "retention": 73,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 51
+      }
+    },
+    {
+      "rank": 5,
+      "score": 79,
+      "title": "Comment PRICE CTA",
+      "url": "sample:clip5.mp4",
+      "duration": 12,
+      "dimensions": {
+        "total": 79,
+        "hook": 85,
+        "length": 96,
+        "pacing": 57,
+        "retention": 75,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 56
+      }
+    }
+  ],
+  "compilation": {
+    "url": "/clips/5a02b4e3ff20/ranking-compilation.mp4",
+    "downloadName": "ranking-video-5a02b4e3ff20.mp4",
+    "title": "Full ranking video (countdown)"
+  },
+  "errors": [],
+  "error": null,
+  "sources": [
+    {
+      "label": "Stop guessing prices",
+      "url": "sample:clip1.mp4"
+    },
+    {
+      "label": "3 lines that close",
+      "url": "sample:clip2.mp4"
+    },
+    {
+      "label": "Free trials kill urgency",
+      "url": "sample:clip3.mp4"
+    },
+    {
+      "label": "10k mindset flip",
+      "url": "sample:clip4.mp4"
+    },
+    {
+      "label": "Comment PRICE CTA",
+      "url": "sample:clip5.mp4"
+    }
+  ],
+  "completedAt": "2026-08-23T11:03:33.512Z"
+}

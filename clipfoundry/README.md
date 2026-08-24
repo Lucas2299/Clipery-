@@ -1,3 +1,41 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8e784460bfd2ab0a1424ea97e7a4abbe7b912a6ee68aa1fbd95cca4d26b2e545
-size 928
+# Clipfoundry
+
+Full working AI clip studio:
+
+- **Studio** — upload or sample → Viral clips **or** Ranking analysis
+- **Rank links** — paste TikTok/short URLs → scored board + playbook
+- **Library / Job pages** — every job saved, clips playable & downloadable
+- **Pricing + Waitlist**
+
+## Run
+
+```bash
+cd clipfoundry
+npm start
+```
+
+Open http://localhost:3000
+
+## Routes
+
+| Path | Page |
+|------|------|
+| `/` | Landing |
+| `/studio` | Clip engine (mode switcher) |
+| `/rank` | TikTok link ranking |
+| `/library` | All jobs |
+| `/job/:id` | Job detail + live progress |
+| `/pricing` | Packages |
+| `/waitlist` | Founding waitlist |
+
+## API
+
+- `GET /api/health`
+- `GET /api/modes`
+- `POST /api/clip/sample` `{ mode: "viral"|"ranking" }`
+- `POST /api/clip/upload` multipart `video` + `mode`
+- `GET /api/clip/status/:id`
+- `GET /api/jobs`
+- `GET/POST /api/rank/links`
+- `GET /api/rank/links/:id`
+- `GET/POST /api/waitlist`

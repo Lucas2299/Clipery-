@@ -1,3 +1,65 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f2618abbecc5a39722d386e6d8691bef911d6aaeeca4512d26082e194222ec5e
-size 2499
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Library · Clipfoundry</title>
+    <meta name="description" content="All your Clipfoundry jobs and ranked clips." />
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
+          </span>
+          Clipfoundry
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/studio" data-nav>Studio</a>
+          <a href="/rank" data-nav>Rank video</a>
+          <a href="/library" data-nav>Library</a>
+          <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
+          <a class="btn btn-primary btn-sm" href="/studio">New clip job</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page container">
+      <div class="page-hero" style="display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-end">
+        <div>
+          <div class="eyebrow">Library</div>
+          <h1>Your clip jobs</h1>
+          <p>Every studio run is saved here. Open a job to replay clips, see rankings, and download MP4s.</p>
+        </div>
+        <button type="button" class="btn btn-ghost" id="btn-refresh">Refresh</button>
+      </div>
+
+      <div id="job-list" class="job-list">
+        <div class="empty">Loading…</div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipfoundry</a>
+        <div class="footer-links">
+          <a href="/studio">Studio</a>
+          <a href="/rank">Rank</a>
+          <a href="/library">Library</a>
+          <a href="/waitlist">Waitlist</a>
+        </div>
+        <div>© <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+    <script src="/library.js"></script>
+  </body>
+</html>
