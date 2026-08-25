@@ -1,7 +1,7 @@
 {
-  "name": "clipfoundry",
+  "name": "clipery",
   "version": "1.0.0",
-  "description": "Clipfoundry — AI long-form to ranked viral clips",
+  "description": "Clipery — AI long-form to ranked viral clips",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

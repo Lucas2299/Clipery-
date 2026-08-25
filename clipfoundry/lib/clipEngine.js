@@ -337,7 +337,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
     `drawtext=text='${title}':fontsize=30:fontcolor=white:x=24:y=36:font=Sans`,
     `drawtext=text='${sub}':fontsize=20:fontcolor=white@0.8:x=24:y=78:font=Sans`,
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
-    `drawtext=text='Clipfoundry ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
+    `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
   ].join(",");
 
   await run(

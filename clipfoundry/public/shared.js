@@ -1,4 +1,4 @@
-/* Clipfoundry shared client utilities */
+/* Clipery shared client utilities */
 (function (global) {
   function $(sel, root) {
     return (root || document).querySelector(sel);

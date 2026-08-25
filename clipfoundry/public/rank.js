@@ -378,5 +378,5 @@
     if ((a.getAttribute("href") || "") === "/rank") a.classList.add("active");
   });
 
-  console.log("[Clipfoundry] Rank page ready");
+  console.log("[Clipery] Rank page ready");
 })();

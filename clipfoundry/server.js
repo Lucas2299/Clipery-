@@ -338,7 +338,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/health" && req.method === "GET") {
       return send(res, 200, {
         ok: true,
-        service: "clipfoundry",
+        service: "clipery",
         modes: Object.keys(MODES),
         busy,
         queue: queue.length,
@@ -780,5 +780,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Clipfoundry running on http://0.0.0.0:${PORT}`);
+  console.log(`Clipery running on http://0.0.0.0:${PORT}`);
 });
