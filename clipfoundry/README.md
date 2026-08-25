@@ -1,4 +1,4 @@
-# Clipfoundry
+# Clipery
 
 Full working AI clip studio:
 

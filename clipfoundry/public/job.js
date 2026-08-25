@@ -29,7 +29,7 @@
   }
 
   function render(job) {
-    document.title = (job.sourceName || "Job") + " · Clipfoundry";
+    document.title = (job.sourceName || "Job") + " · Clipery";
     if (title) title.textContent = job.sourceName || "Clip job";
     if (meta) {
       meta.textContent =
