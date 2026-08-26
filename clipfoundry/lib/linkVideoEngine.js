@@ -641,7 +641,7 @@ async function processMultiRank(sources, options = {}) {
     await concatVideos(listFile, compPath);
 
     if (options.subtitles) {
-      const sr = await tryAddSubtitles(compPath);
+      const sr = await tryAddSubtitles(compPath, options.subStyle);
       if (sr.applied) job.subtitlesApplied = true;
       else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
     }

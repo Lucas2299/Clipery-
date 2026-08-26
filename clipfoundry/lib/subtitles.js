@@ -14,10 +14,48 @@ const { execFile, spawnSync } = require("child_process");
 const PY = process.env.PYTHON || "python3";
 const TRANSCRIBE_PY = path.join(__dirname, "transcribe.py");
 
-// TikTok-style: white bold text, black outline, bottom-center, above the watermark strip.
-const CAPTION_STYLE =
-  "Fontname=DejaVu Sans,Fontsize=13,PrimaryColour=&H00FFFFFF," +
-  "OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=120";
+// TikTok-style defaults: white bold text, black outline, bottom-center, above the watermark strip.
+// ASS colors are &HAABBGGRR (blue-green-red order!). BorderStyle 1 = outline, 3 = backdrop box.
+const SUB_COLORS = {
+  white: "&H00FFFFFF",
+  yellow: "&H004CE7FF",
+  pink: "&H006D4DFF", // Clipery #FF4D6D
+  orange: "&H004C8AFF", // Clipery #FF8A4C
+};
+const SUB_SIZES = { small: 11, medium: 13, large: 16 };
+// position → always bottom-center alignment (renders true-center horizontally on our
+// libass); vertical placement tuned via MarginV (ASS script units, 384 = full height):
+// bottom ≈ above the watermark strip · middle ≈ screen center · top ≈ below the title strip.
+const SUB_POSITIONS = {
+  bottom: { alignment: 2, margin: 28 },
+  middle: { alignment: 2, margin: 130 },
+  top: { alignment: 2, margin: 235 },
+};
+
+/** Validate free-form style input against whitelists. Always returns a complete style. */
+function normalizeSubStyle(input = {}) {
+  const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
+  return {
+    color: pick(input.color, SUB_COLORS, "white"),
+    size: pick(input.size, SUB_SIZES, "medium"),
+    pos: pick(input.pos, SUB_POSITIONS, "bottom"),
+    style: String(input.style).toLowerCase() === "box" ? "box" : "outline",
+  };
+}
+
+function buildCaptionStyle(sub = {}) {
+  const s = normalizeSubStyle(sub);
+  const p = SUB_POSITIONS[s.pos];
+  const deco =
+    s.style === "box"
+      ? "BorderStyle=3,Outline=8,Shadow=0,BackColour=&H78000000"
+      : "BorderStyle=1,Outline=2,Shadow=0,BackColour=&H00000000";
+  return (
+    `Fontname=DejaVu Sans,Fontsize=${SUB_SIZES[s.size]},` +
+    `PrimaryColour=${SUB_COLORS[s.color]},OutlineColour=&H00000000,` +
+    `${deco},Alignment=${p.alignment},MarginV=${p.margin}`
+  );
+}
 
 let engineCache = null;
 function subtitlesAvailable() {
@@ -71,9 +109,9 @@ async function transcribeToSrt(mediaPath, srtPath) {
 }
 
 /** Burn SRT into video, atomically replacing it. Returns true on success. */
-async function burnSubtitles(videoPath, srtPath) {
+async function burnSubtitles(videoPath, srtPath, subStyle = {}) {
   const tmpOut = videoPath + ".subbed.mp4";
-  const vf = `subtitles='${escFilterPath(srtPath)}':force_style='${CAPTION_STYLE}'`;
+  const vf = `subtitles='${escFilterPath(srtPath)}':force_style='${buildCaptionStyle(subStyle)}'`;
   try {
     await run(
       "ffmpeg",
@@ -102,7 +140,7 @@ async function burnSubtitles(videoPath, srtPath) {
  * Full pass: transcribe + burn captions into a rendered clip in place.
  * Keeps the .srt next to the video (downloadable captions file). Never throws.
  */
-async function tryAddSubtitles(videoPath) {
+async function tryAddSubtitles(videoPath, subStyle = {}) {
   if (!subtitlesAvailable()) return { applied: false, reason: "engine-missing" };
   const srt = videoPath.replace(/\.mp4$/i, "") + ".subtitles.srt";
   const n = await transcribeToSrt(videoPath, srt);
@@ -110,8 +148,8 @@ async function tryAddSubtitles(videoPath) {
     try { fs.unlinkSync(srt); } catch {}
     return { applied: false, reason: "no-speech-detected" };
   }
-  const applied = await burnSubtitles(videoPath, srt);
+  const applied = await burnSubtitles(videoPath, srt, subStyle);
   return applied ? { applied: true, captions: n } : { applied: false, reason: "burn-failed" };
 }
 
-module.exports = { subtitlesAvailable, tryAddSubtitles, transcribeToSrt, burnSubtitles };
+module.exports = { subtitlesAvailable, tryAddSubtitles, transcribeToSrt, burnSubtitles, normalizeSubStyle, buildCaptionStyle };

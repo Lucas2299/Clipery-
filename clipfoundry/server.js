@@ -18,6 +18,7 @@ const {
   processLinksToRankingVideo,
   downloadUrl,
 } = require("./lib/linkVideoEngine");
+const { normalizeSubStyle } = require("./lib/subtitles");
 
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
@@ -324,6 +325,16 @@ function wantSubtitles(v) {
   return v === true || ["1", "true", "on", "yes"].includes(String(v ?? "").toLowerCase().trim());
 }
 
+// get is a lookup: (fieldName) => string value (multipart part or JSON field)
+function readSubStyle(get) {
+  return normalizeSubStyle({
+    color: get("subColor"),
+    size: get("subSize"),
+    pos: get("subPos"),
+    style: get("subStyle"),
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = url.pathname;
@@ -523,12 +534,16 @@ const server = http.createServer(async (req, res) => {
 
       const subsPart = parts.find((p) => p.name === "subtitles");
       const subtitles = wantSubtitles(subsPart ? subsPart.body.toString("utf8") : "");
+      const subStyle = readSubStyle((n) => {
+        const p = parts.find((x) => x.name === n);
+        return p ? p.body.toString("utf8") : "";
+      });
 
       const jobId = crypto.randomBytes(6).toString("hex");
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
-      seedJob(jobId, { mode, sourceName: orig, subtitles });
-      const q = enqueue(dest, { jobId, sourceName: orig, mode, subtitles });
+      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle });
+      const q = enqueue(dest, { jobId, sourceName: orig, mode, subtitles, subStyle });
       return send(res, 202, {
         ok: true,
         jobId,
@@ -554,16 +569,18 @@ const server = http.createServer(async (req, res) => {
         return send(res, 400, { ok: false, error: "Paste a valid video link (YouTube works best)." });
       }
       const subtitles = wantSubtitles(body.subtitles);
+      const subStyle = readSubStyle((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode,
         sourceName: videoUrl.slice(0, 80),
         subtitles,
+        subStyle,
       });
       const q = enqueueItem({
         type: "from-url",
         url: videoUrl,
-        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles },
+        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle },
       });
       return send(res, 202, {
         ok: true,
@@ -683,12 +700,14 @@ const server = http.createServer(async (req, res) => {
         return send(res, 400, { ok: false, error: "Maximum 5 links." });
       }
       const subtitles = wantSubtitles(body.subtitles);
+      const subStyle = readSubStyle((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: body.name || `${links.length} links → ranking video`,
         subtitles,
+        subStyle,
       });
       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
       const q = enqueueItem({
@@ -699,6 +718,7 @@ const server = http.createServer(async (req, res) => {
           sourceName: boardTitle,
           boardTitle,
           subtitles,
+          subStyle,
         },
       });
       return send(res, 202, {
@@ -767,16 +787,21 @@ const server = http.createServer(async (req, res) => {
         .slice(0, 28) || "Top Videos";
       const subsPartUpload = parts.find((p) => p.name === "subtitles");
       const subtitles = wantSubtitles(subsPartUpload ? subsPartUpload.body.toString("utf8") : "");
+      const subStyle = readSubStyle((n) => {
+        const p = parts.find((x) => x.name === n);
+        return p ? p.body.toString("utf8") : "";
+      });
       seedJob(jobId, {
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: boardTitle,
         subtitles,
+        subStyle,
       });
       const q = enqueueItem({
         type: "multi-rank",
         sources,
-        meta: { jobId, sourceName: boardTitle, boardTitle, subtitles },
+        meta: { jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle },
       });
       return send(res, 202, {
         ok: true,

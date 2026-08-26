@@ -522,7 +522,7 @@ async function processVideo(sourcePath, options = {}) {
       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
       await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode);
       if (options.subtitles) {
-        const sr = await tryAddSubtitles(outFile);
+        const sr = await tryAddSubtitles(outFile, options.subStyle);
         if (sr.applied) job.subtitlesApplied = true;
         else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
       }
