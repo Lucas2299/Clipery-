@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const crypto = require("crypto");
+const { tryAddSubtitles } = require("./subtitles");
 
 const execFileAsync = promisify(execFile);
 
@@ -425,6 +426,7 @@ async function processVideo(sourcePath, options = {}) {
     modeLabel: mode.label,
     createdAt: new Date().toISOString(),
     sourceName: options.sourceName || path.basename(sourcePath),
+    subtitles: !!options.subtitles,
     clips: [],
     rankings: [],
     error: null,
@@ -519,6 +521,11 @@ async function processVideo(sourcePath, options = {}) {
       const label = `#${i + 1} VIRAL ${vScore}`;
       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
       await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode);
+      if (options.subtitles) {
+        const sr = await tryAddSubtitles(outFile);
+        if (sr.applied) job.subtitlesApplied = true;
+        else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
+      }
       clips.push({
         rank: i + 1,
         score: c.score,

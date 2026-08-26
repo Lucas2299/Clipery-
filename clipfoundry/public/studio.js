@@ -229,16 +229,19 @@
 
       try {
         var res, data;
+        var subsEl = document.getElementById("long-subs");
+        var wantSubs = subsEl ? subsEl.checked : true;
         if (fileObj) {
           var fd = new FormData();
           fd.append("video", fileObj, fileObj.name || "video.mp4");
           fd.append("mode", "viral");
+          fd.append("subtitles", wantSubs ? "1" : "0");
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: url, mode: "viral" }),
+            body: JSON.stringify({ url: url, mode: "viral", subtitles: wantSubs }),
           });
         }
         var text = await res.text();
@@ -440,6 +443,8 @@
       try {
         var res, data, text;
         var boardTitle = (($("rank-title-input") && $("rank-title-input").value) || "").trim() || "Top Videos";
+        var rankSubsEl = document.getElementById("rank-subs");
+        var wantRankSubs = rankSubsEl ? rankSubsEl.checked : true;
         if (fileList.length) {
           var fd = new FormData();
           fileList.forEach(function (item, idx) {
@@ -447,6 +452,7 @@
             fd.append("label_" + idx, item.label || "");
           });
           fd.append("title", boardTitle);
+          fd.append("subtitles", wantRankSubs ? "1" : "0");
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -456,6 +462,7 @@
               name: boardTitle,
               boardTitle: boardTitle,
               links: links,
+              subtitles: wantRankSubs,
             }),
           });
         }

@@ -3,6 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const crypto = require("crypto");
+const { tryAddSubtitles } = require("./subtitles");
 
 const execFileAsync = promisify(execFile);
 
@@ -638,6 +639,12 @@ async function processMultiRank(sources, options = {}) {
     const compName = "ranking-compilation.mp4";
     const compPath = path.join(outDir, compName);
     await concatVideos(listFile, compPath);
+
+    if (options.subtitles) {
+      const sr = await tryAddSubtitles(compPath);
+      if (sr.applied) job.subtitlesApplied = true;
+      else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
+    }
 
     job.compilation = {
       url: `/clips/${id}/${compName}`,
