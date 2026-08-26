@@ -320,6 +320,10 @@ function normalizeMode(m) {
   return MODES[mode] ? mode : "viral";
 }
 
+function wantSubtitles(v) {
+  return v === true || ["1", "true", "on", "yes"].includes(String(v ?? "").toLowerCase().trim());
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = url.pathname;
@@ -517,11 +521,14 @@ const server = http.createServer(async (req, res) => {
       }
       if (!ext) ext = ".mp4";
 
+      const subsPart = parts.find((p) => p.name === "subtitles");
+      const subtitles = wantSubtitles(subsPart ? subsPart.body.toString("utf8") : "");
+
       const jobId = crypto.randomBytes(6).toString("hex");
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
-      seedJob(jobId, { mode, sourceName: orig });
-      const q = enqueue(dest, { jobId, sourceName: orig, mode });
+      seedJob(jobId, { mode, sourceName: orig, subtitles });
+      const q = enqueue(dest, { jobId, sourceName: orig, mode, subtitles });
       return send(res, 202, {
         ok: true,
         jobId,
@@ -546,15 +553,17 @@ const server = http.createServer(async (req, res) => {
       if (!videoUrl || !/^https?:\/\//i.test(videoUrl)) {
         return send(res, 400, { ok: false, error: "Paste a valid video link (YouTube works best)." });
       }
+      const subtitles = wantSubtitles(body.subtitles);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode,
         sourceName: videoUrl.slice(0, 80),
+        subtitles,
       });
       const q = enqueueItem({
         type: "from-url",
         url: videoUrl,
-        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode },
+        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles },
       });
       return send(res, 202, {
         ok: true,
@@ -673,11 +682,13 @@ const server = http.createServer(async (req, res) => {
       if (links.length > 5) {
         return send(res, 400, { ok: false, error: "Maximum 5 links." });
       }
+      const subtitles = wantSubtitles(body.subtitles);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: body.name || `${links.length} links → ranking video`,
+        subtitles,
       });
       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
       const q = enqueueItem({
@@ -687,6 +698,7 @@ const server = http.createServer(async (req, res) => {
           jobId,
           sourceName: boardTitle,
           boardTitle,
+          subtitles,
         },
       });
       return send(res, 202, {
@@ -753,15 +765,18 @@ const server = http.createServer(async (req, res) => {
       const boardTitle = String(titlePart ? titlePart.body.toString("utf8") : "Top Videos")
         .trim()
         .slice(0, 28) || "Top Videos";
+      const subsPartUpload = parts.find((p) => p.name === "subtitles");
+      const subtitles = wantSubtitles(subsPartUpload ? subsPartUpload.body.toString("utf8") : "");
       seedJob(jobId, {
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: boardTitle,
+        subtitles,
       });
       const q = enqueueItem({
         type: "multi-rank",
         sources,
-        meta: { jobId, sourceName: boardTitle, boardTitle },
+        meta: { jobId, sourceName: boardTitle, boardTitle, subtitles },
       });
       return send(res, 202, {
         ok: true,

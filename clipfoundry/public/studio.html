@@ -37,6 +37,12 @@
       .slot-name { font-size:0.78rem; color:#9a96a8; margin:0.4rem 0 0; word-break:break-all; }
       .one-source { display:flex; flex-wrap:wrap; gap:0.6rem; align-items:center; margin-bottom:0.9rem; }
       .one-source input[type=url] { flex:1; min-width:180px; }
+      .sub-toggle {
+        display:flex; align-items:center; gap:0.55rem; cursor:pointer;
+        margin:0.2rem 0 0.85rem; font-size:0.88rem; color:#d8d4e4; user-select:none;
+      }
+      .sub-toggle input { accent-color:#ff4d6d; width:16px; height:16px; cursor:pointer; }
+      .sub-toggle .sub-hint { color:#9a96a8; font-size:0.78rem; }
     </style>
   </head>
   <body class="studio-app">
@@ -87,6 +93,10 @@
           </div>
           <p class="pro-filename" id="long-fname" hidden></p>
 
+          <label class="sub-toggle" for="long-subs">
+            <input type="checkbox" id="long-subs" checked />
+            <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
+          </label>
           <button type="button" class="btn btn-primary btn-lg btn-block" id="long-go">Generate clips</button>
           <p class="form-msg" id="long-msg"></p>
 
@@ -180,6 +190,10 @@
             </div>
           </div>
 
+          <label class="sub-toggle" for="rank-subs" style="margin-top:0.9rem">
+            <input type="checkbox" id="rank-subs" checked />
+            <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
+          </label>
           <button type="button" class="btn btn-primary btn-lg btn-block" id="rank-go" style="margin-top:1.1rem">Generate ranking video</button>
           <p class="form-msg" id="rank-msg"></p>
 
