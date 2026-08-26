@@ -5,6 +5,27 @@
     return document.getElementById(id);
   }
 
+  function collectSubStyle(prefix) {
+    function gv(key) {
+      var e = $(prefix + "-sub-" + key);
+      return e ? e.value : "";
+    }
+    return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style") };
+  }
+
+  function wireSubToggle(toggleId, gridId) {
+    var t = $(toggleId);
+    var g = $(gridId);
+    if (!t || !g) return;
+    function sync() {
+      g.classList.toggle("subs-off", !t.checked);
+    }
+    t.addEventListener("change", sync);
+    sync();
+  }
+  wireSubToggle("long-subs", "long-substyle");
+  wireSubToggle("rank-subs", "rank-substyle");
+
   function setMsg(node, text, isErr) {
     if (!node) return;
     node.textContent = text || "";
@@ -231,17 +252,30 @@
         var res, data;
         var subsEl = document.getElementById("long-subs");
         var wantSubs = subsEl ? subsEl.checked : true;
+        var longStyle = collectSubStyle("long");
         if (fileObj) {
           var fd = new FormData();
           fd.append("video", fileObj, fileObj.name || "video.mp4");
           fd.append("mode", "viral");
           fd.append("subtitles", wantSubs ? "1" : "0");
+          fd.append("subColor", longStyle.color);
+          fd.append("subSize", longStyle.size);
+          fd.append("subPos", longStyle.pos);
+          fd.append("subStyle", longStyle.style);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: url, mode: "viral", subtitles: wantSubs }),
+            body: JSON.stringify({
+              url: url,
+              mode: "viral",
+              subtitles: wantSubs,
+              subColor: longStyle.color,
+              subSize: longStyle.size,
+              subPos: longStyle.pos,
+              subStyle: longStyle.style,
+            }),
           });
         }
         var text = await res.text();
@@ -445,6 +479,7 @@
         var boardTitle = (($("rank-title-input") && $("rank-title-input").value) || "").trim() || "Top Videos";
         var rankSubsEl = document.getElementById("rank-subs");
         var wantRankSubs = rankSubsEl ? rankSubsEl.checked : true;
+        var rankStyle = collectSubStyle("rank");
         if (fileList.length) {
           var fd = new FormData();
           fileList.forEach(function (item, idx) {
@@ -453,6 +488,10 @@
           });
           fd.append("title", boardTitle);
           fd.append("subtitles", wantRankSubs ? "1" : "0");
+          fd.append("subColor", rankStyle.color);
+          fd.append("subSize", rankStyle.size);
+          fd.append("subPos", rankStyle.pos);
+          fd.append("subStyle", rankStyle.style);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -463,6 +502,10 @@
               boardTitle: boardTitle,
               links: links,
               subtitles: wantRankSubs,
+              subColor: rankStyle.color,
+              subSize: rankStyle.size,
+              subPos: rankStyle.pos,
+              subStyle: rankStyle.style,
             }),
           });
         }
