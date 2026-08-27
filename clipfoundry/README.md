@@ -15,6 +15,13 @@ cd clipfoundry
 # Optional: auto-subtitles (TikTok-style captions, on/off per job in Studio)
 # needs Python + the PocketSphinx speech engine on the server:
 pip install pocketsphinx
+
+## Deploying
+
+- **Docker hosting (Railway / Render / Fly.io):** connect the repo — the included
+  `Dockerfile` installs Node, ffmpeg, yt-dlp and the subtitle engine automatically
+  on every deploy. Nothing else to do.
+- **Plain VPS (Ubuntu/Debian):** run once: `sudo bash setup.sh`, then `npm start`.
 npm start
 ```
 
