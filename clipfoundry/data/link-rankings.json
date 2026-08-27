@@ -1,3 +1,251 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2b7767b9eb2e306e683cacbe21214136dc1d49df2d4beed96abdcc285c1e995b
-size 6332
+{
+  "boards": [
+    {
+      "id": "71e7893506",
+      "name": "Sample niche research",
+      "niche": "creator economy",
+      "createdAt": "2026-08-23T10:59:37.994Z",
+      "items": [
+        {
+          "url": "https://www.tiktok.com/@creator/video/734000111",
+          "hook": "Stop guessing your prices",
+          "views": 850000,
+          "durationSec": 21,
+          "notes": "question hook",
+          "platform": "tiktok",
+          "score": 89,
+          "dimensions": {
+            "total": 89,
+            "views": 88,
+            "hook": 90,
+            "length": 95,
+            "platform": 68
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)",
+            "TikTok-native format",
+            "Question hook"
+          ],
+          "rank": 1
+        },
+        {
+          "url": "https://www.tiktok.com/@creator/video/734000222",
+          "hook": "3 lines that close deals",
+          "views": 420000,
+          "durationSec": 27,
+          "notes": "list tips",
+          "platform": "tiktok",
+          "score": 86,
+          "dimensions": {
+            "total": 86,
+            "views": 88,
+            "hook": 90,
+            "length": 95,
+            "platform": 68
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)",
+            "TikTok-native format",
+            "List / tips structure"
+          ],
+          "rank": 2
+        },
+        {
+          "url": "https://www.youtube.com/shorts/abc123xyz",
+          "hook": "Free trials kill urgency",
+          "views": 190000,
+          "durationSec": 18,
+          "notes": "hot take",
+          "platform": "youtube",
+          "score": 84,
+          "dimensions": {
+            "total": 84,
+            "views": 88,
+            "hook": 90,
+            "length": 95,
+            "platform": 66
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)"
+          ],
+          "rank": 3
+        },
+        {
+          "url": "https://www.instagram.com/reel/xyz789",
+          "hook": "The $10k mindset flip",
+          "views": 96000,
+          "durationSec": 24,
+          "notes": "story face",
+          "platform": "instagram",
+          "score": 83,
+          "dimensions": {
+            "total": 83,
+            "views": 78,
+            "hook": 90,
+            "length": 95,
+            "platform": 65
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)"
+          ],
+          "rank": 4
+        },
+        {
+          "url": "https://www.tiktok.com/@creator/video/734000333",
+          "hook": "Comment PRICE for the template",
+          "views": 61000,
+          "durationSec": 15,
+          "notes": "cta",
+          "platform": "tiktok",
+          "score": 83,
+          "dimensions": {
+            "total": 83,
+            "views": 78,
+            "hook": 90,
+            "length": 95,
+            "platform": 68
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)",
+            "TikTok-native format"
+          ],
+          "rank": 5
+        }
+      ],
+      "playbook": [
+        {
+          "pattern": "Tight hook text",
+          "count": 5
+        },
+        {
+          "pattern": "Sweet-spot length (15–28s)",
+          "count": 5
+        },
+        {
+          "pattern": "TikTok-native format",
+          "count": 3
+        },
+        {
+          "pattern": "Question hook",
+          "count": 1
+        },
+        {
+          "pattern": "List / tips structure",
+          "count": 1
+        }
+      ],
+      "summary": {
+        "count": 5,
+        "avgScore": 85,
+        "topScore": 89
+      }
+    },
+    {
+      "id": "13548d24f4",
+      "name": "Final test board",
+      "niche": "saas",
+      "createdAt": "2026-08-23T10:54:59.504Z",
+      "items": [
+        {
+          "url": "https://www.tiktok.com/@x/video/111",
+          "hook": "Stop guessing prices?",
+          "views": 900000,
+          "durationSec": 19,
+          "notes": "question",
+          "platform": "tiktok",
+          "score": 89,
+          "dimensions": {
+            "total": 89,
+            "views": 88,
+            "hook": 90,
+            "length": 95,
+            "platform": 68
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)",
+            "TikTok-native format",
+            "Question hook"
+          ],
+          "rank": 1
+        },
+        {
+          "url": "https://youtube.com/shorts/abc",
+          "hook": "Free trials kill urgency",
+          "views": 150000,
+          "durationSec": 17,
+          "notes": "hot take cta",
+          "platform": "youtube",
+          "score": 88,
+          "dimensions": {
+            "total": 88,
+            "views": 88,
+            "hook": 90,
+            "length": 95,
+            "platform": 66
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)"
+          ],
+          "rank": 2
+        },
+        {
+          "url": "https://www.tiktok.com/@x/video/222",
+          "hook": "3 lines that close",
+          "views": 400000,
+          "durationSec": 26,
+          "notes": "list tips",
+          "platform": "tiktok",
+          "score": 86,
+          "dimensions": {
+            "total": 86,
+            "views": 88,
+            "hook": 90,
+            "length": 95,
+            "platform": 68
+          },
+          "patterns": [
+            "Tight hook text",
+            "Sweet-spot length (15–28s)",
+            "TikTok-native format",
+            "List / tips structure"
+          ],
+          "rank": 3
+        }
+      ],
+      "playbook": [
+        {
+          "pattern": "Tight hook text",
+          "count": 3
+        },
+        {
+          "pattern": "Sweet-spot length (15–28s)",
+          "count": 3
+        },
+        {
+          "pattern": "TikTok-native format",
+          "count": 2
+        },
+        {
+          "pattern": "Question hook",
+          "count": 1
+        },
+        {
+          "pattern": "List / tips structure",
+          "count": 1
+        }
+      ],
+      "summary": {
+        "count": 3,
+        "avgScore": 88,
+        "topScore": 89
+      }
+    }
+  ]
+}

@@ -1,3 +1,74 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:314cb775f20713d118c9f6ef66a7f8afe6cb1665ec27fe1fbcf21374fd5e0548
-size 2662
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Job · Clipery</title>
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
+          </span>
+          Clipery
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/studio" data-nav>Studio</a>
+          <a href="/rank" data-nav>Rank video</a>
+          <a href="/library" data-nav>Library</a>
+          <a href="https://openart.ai/suite/create-image" data-nav title="Image Generator — generate stunning images from text prompts">Images</a>
+          <a class="btn btn-primary btn-sm" href="/studio">New job</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page container">
+      <div class="page-hero">
+        <div class="eyebrow">Job detail</div>
+        <h1 id="job-title">Loading…</h1>
+        <p id="job-meta" class="muted"></p>
+      </div>
+
+      <div id="status-box" class="status-box hide">
+        <div class="status-top">
+          <div>
+            <strong id="status-stage">…</strong>
+          </div>
+          <span class="status-pct" id="status-pct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <p class="muted" id="status-detail"></p>
+      </div>
+
+      <p class="form-msg error" id="job-error"></p>
+
+      <div id="comp-host" style="margin-bottom: 1.5rem"></div>
+      <div id="clips-host"></div>
+      <div id="table-host" style="margin-top: 1.5rem"></div>
+      <div id="errors-host" style="margin-top: 1rem"></div>
+
+      <div class="inline-actions" style="margin-top: 2rem; justify-content: flex-start">
+        <a class="btn btn-ghost" href="/library">← Back to library</a>
+        <a class="btn btn-primary" href="/studio">Run another</a>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipery</a>
+        <div>© <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="/shared.js"></script>
+    <script src="/job.js"></script>
+  </body>
+</html>

@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e38bbd053685f2acf7771d3af4b552ff657e61e4cd8826552c92b8e775a9a81d
-size 296
+{
+  "id": "aa8c200fd358",
+  "status": "error",
+  "stage": "probing",
+  "progress": 0,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-08-23T11:13:15.834Z",
+  "sourceName": "a.mp4",
+  "clips": [],
+  "rankings": [],
+  "error": "Video is too short. Use at least ~15 seconds."
+}

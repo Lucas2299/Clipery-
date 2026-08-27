@@ -1,3 +1,95 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:04e77ad62825a78f62b198b6259108682048150c50f90379f84e0d2840e34d9d
-size 1936
+{
+  "id": "dd2640782825",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-08-23T10:54:23.829Z",
+  "sourceName": "uptest.mp4",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 75,
+      "title": "Viral angle",
+      "start": 0,
+      "end": 20,
+      "duration": 20,
+      "dimensions": {
+        "total": 75,
+        "hook": 76,
+        "length": 96,
+        "pacing": 58,
+        "retention": 80,
+        "cta": 45,
+        "energy": 58,
+        "punch": 57
+      },
+      "url": "/clips/dd2640782825/clip-1.mp4",
+      "downloadName": "viral-rank1-dd2640782825.mp4"
+    },
+    {
+      "rank": 2,
+      "score": 74,
+      "title": "Viral angle",
+      "start": 10,
+      "end": 25.08,
+      "duration": 15.08,
+      "dimensions": {
+        "total": 74,
+        "hook": 72,
+        "length": 96,
+        "pacing": 50,
+        "retention": 77,
+        "cta": 70,
+        "energy": 58,
+        "punch": 40
+      },
+      "url": "/clips/dd2640782825/clip-2.mp4",
+      "downloadName": "viral-rank2-dd2640782825.mp4"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 75,
+      "title": "Viral angle",
+      "start": 0,
+      "end": 20,
+      "duration": 20,
+      "dimensions": {
+        "total": 75,
+        "hook": 76,
+        "length": 96,
+        "pacing": 58,
+        "retention": 80,
+        "cta": 45,
+        "energy": 58,
+        "punch": 57
+      }
+    },
+    {
+      "rank": 2,
+      "score": 74,
+      "title": "Viral angle",
+      "start": 10,
+      "end": 25.08,
+      "duration": 15.08,
+      "dimensions": {
+        "total": 74,
+        "hook": 72,
+        "length": 96,
+        "pacing": 50,
+        "retention": 77,
+        "cta": 70,
+        "energy": 58,
+        "punch": 40
+      }
+    }
+  ],
+  "error": null,
+  "duration": 25.08,
+  "candidateCount": 2,
+  "sceneCount": 0,
+  "completedAt": "2026-08-23T10:54:29.859Z"
+}

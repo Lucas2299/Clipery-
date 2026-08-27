@@ -1,3 +1,110 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:a3b66fd01d9341407d15684bc6077ad8b9e1c5942893cdcce6da3feed86e40d9
-size 4328
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pricing · Clipery</title>
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/">
+          <span class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
+          </span>
+          Clipery
+        </a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/studio" data-nav>Studio</a>
+          <a href="/rank" data-nav>Rank video</a>
+          <a href="/library" data-nav class="nav-hide-sm">Library</a>
+          <a href="/pricing" data-nav>Pricing</a>
+          <a href="https://openart.ai/suite/create-image" data-nav class="nav-hide-sm" title="Image Generator — generate stunning images from text prompts">Images</a>
+          <a class="btn btn-primary btn-sm" href="/waitlist">Join waitlist</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page container">
+      <div class="page-hero" style="text-align: center; margin-inline: auto">
+        <div class="eyebrow">Founding pricing</div>
+        <h1>Service packages when you’re ready to scale</h1>
+        <p style="margin-inline: auto">
+          The studio demo is free to try. These packages are the done-for-you Clipery desk —
+          human taste pass, weekly volume, and TikTok research. Join the waitlist to lock founding rates.
+        </p>
+      </div>
+
+      <div class="pricing-grid">
+        <div class="price-card">
+          <h3>Spark</h3>
+          <div class="price">$497 <span>/ mo</span></div>
+          <p class="blurb">Creators testing short-form consistency.</p>
+          <ul>
+            <li>1 long video / week</li>
+            <li>Viral or Ranking mode</li>
+            <li>12–20 ranked clips</li>
+            <li>Drive delivery</li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="/waitlist">Join waitlist</a>
+        </div>
+        <div class="price-card featured">
+          <span class="tag">Most popular</span>
+          <h3>Foundry</h3>
+          <div class="price">$997 <span>/ mo</span></div>
+          <p class="blurb">Full clip engine for serious publishers.</p>
+          <ul>
+            <li>Up to 4 long videos / mo</li>
+            <li>40–80 ranked clips</li>
+            <li>Brand kit + caption styles</li>
+            <li>TikTok link research (15/mo)</li>
+            <li>Posting calendar</li>
+          </ul>
+          <a class="btn btn-primary btn-block" href="/waitlist">Join waitlist</a>
+        </div>
+        <div class="price-card">
+          <h3>Autopilot</h3>
+          <div class="price">$1,997 <span>/ mo</span></div>
+          <p class="blurb">Hands-off growth for brands &amp; teams.</p>
+          <ul>
+            <li>Everything in Foundry</li>
+            <li>We schedule &amp; post</li>
+            <li>Weekly performance review</li>
+            <li>Competitor TikTok tracking</li>
+            <li>Priority turnaround</li>
+          </ul>
+          <a class="btn btn-ghost btn-block" href="/waitlist">Join waitlist</a>
+        </div>
+      </div>
+
+      <div class="cta-band" style="margin-top: 2.5rem">
+        <h2>Want to try before you buy?</h2>
+        <p>Run the live studio now — sample video and uploads both work.</p>
+        <div class="inline-actions">
+          <a class="btn btn-primary" href="/studio">Open studio</a>
+          <a class="btn btn-ghost" href="/rank">Rank video</a>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipery</a>
+        <div class="footer-links">
+          <a href="/studio">Studio</a>
+          <a href="/rank">Rank</a>
+          <a href="/library">Library</a>
+          <a href="/waitlist">Waitlist</a>
+        </div>
+        <div>© <span id="year"></span></div>
+      </div>
+    </footer>
+    <script src="/shared.js"></script>
+  </body>
+</html>

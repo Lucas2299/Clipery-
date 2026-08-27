@@ -1,3 +1,1 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:abd4e2f3f169751aeb064b2313724625bafc97284108b9c318428485c6d0ee28
-size 65
+Shared chrome is inlined per page for zero-build static hosting.
