@@ -1,3 +1,64 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:cf26aa6bbeb4e7cf985de9a0b93f6fc4feb0da2058aec5d2a3e0c120a42cbb37
-size 1343
+{
+  "id": "f049e7774f78",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "link-rank-video",
+  "modeLabel": "Link ranking video",
+  "createdAt": "2026-08-23T11:15:48.637Z",
+  "sourceName": "1 uploads → ranking video",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 62,
+      "title": "a",
+      "sourceUrl": null,
+      "duration": 3,
+      "dimensions": {
+        "total": 62,
+        "hook": 75,
+        "length": 50,
+        "pacing": 55,
+        "retention": 53,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 52
+      },
+      "url": "/clips/f049e7774f78/rank-1.mp4",
+      "downloadName": "rank-1-f049e7774f78.mp4"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 62,
+      "title": "a",
+      "url": null,
+      "duration": 3,
+      "dimensions": {
+        "total": 62,
+        "hook": 75,
+        "length": 50,
+        "pacing": 55,
+        "retention": 53,
+        "vertical": 92,
+        "energy": 58,
+        "punch": 52
+      }
+    }
+  ],
+  "compilation": {
+    "url": "/clips/f049e7774f78/ranking-compilation.mp4",
+    "downloadName": "ranking-video-f049e7774f78.mp4",
+    "title": "Full ranking video (countdown)"
+  },
+  "errors": [],
+  "error": null,
+  "sources": [
+    {
+      "label": "a",
+      "url": null
+    }
+  ],
+  "completedAt": "2026-08-23T11:15:50.752Z"
+}

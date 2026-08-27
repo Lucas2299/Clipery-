@@ -1,3 +1,209 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:64eda82623f7d1d11aeaa0649bda2b82e22fffa198d0c8c04567d8c40e97445f
-size 4331
+{
+  "id": "2406f468b70f",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "ranking",
+  "modeLabel": "Ranking analysis",
+  "createdAt": "2026-08-23T10:54:02.086Z",
+  "sourceName": "demo-podcast.mp4 (ranking)",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 78,
+      "title": "CTA / payoff rank",
+      "start": 80,
+      "end": 95,
+      "duration": 15,
+      "dimensions": {
+        "total": 78,
+        "hook": 84,
+        "length": 96,
+        "pacing": 50,
+        "retention": 73,
+        "cta": 90,
+        "energy": 58,
+        "punch": 40
+      },
+      "url": "/clips/2406f468b70f/clip-1.mp4",
+      "downloadName": "ranking-rank1-2406f468b70f.mp4"
+    },
+    {
+      "rank": 2,
+      "score": 75,
+      "title": "Ranked insight",
+      "start": 60,
+      "end": 88,
+      "duration": 28,
+      "dimensions": {
+        "total": 75,
+        "hook": 72,
+        "length": 96,
+        "pacing": 50,
+        "retention": 76,
+        "cta": 70,
+        "energy": 58,
+        "punch": 40
+      },
+      "url": "/clips/2406f468b70f/clip-2.mp4",
+      "downloadName": "ranking-rank2-2406f468b70f.mp4"
+    },
+    {
+      "rank": 3,
+      "score": 73,
+      "title": "Opening ranked beat",
+      "start": 0,
+      "end": 28,
+      "duration": 28,
+      "dimensions": {
+        "total": 73,
+        "hook": 88,
+        "length": 96,
+        "pacing": 58,
+        "retention": 79,
+        "cta": 45,
+        "energy": 58,
+        "punch": 57
+      },
+      "url": "/clips/2406f468b70f/clip-3.mp4",
+      "downloadName": "ranking-rank3-2406f468b70f.mp4"
+    },
+    {
+      "rank": 4,
+      "score": 71,
+      "title": "Ranked insight",
+      "start": 20,
+      "end": 48,
+      "duration": 28,
+      "dimensions": {
+        "total": 71,
+        "hook": 76,
+        "length": 96,
+        "pacing": 50,
+        "retention": 76,
+        "cta": 45,
+        "energy": 58,
+        "punch": 40
+      },
+      "url": "/clips/2406f468b70f/clip-4.mp4",
+      "downloadName": "ranking-rank4-2406f468b70f.mp4"
+    },
+    {
+      "rank": 5,
+      "score": 68,
+      "title": "Ranked insight",
+      "start": 40,
+      "end": 68,
+      "duration": 28,
+      "dimensions": {
+        "total": 68,
+        "hook": 72,
+        "length": 96,
+        "pacing": 50,
+        "retention": 76,
+        "cta": 45,
+        "energy": 58,
+        "punch": 40
+      },
+      "url": "/clips/2406f468b70f/clip-5.mp4",
+      "downloadName": "ranking-rank5-2406f468b70f.mp4"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 78,
+      "title": "CTA / payoff rank",
+      "start": 80,
+      "end": 95,
+      "duration": 15,
+      "dimensions": {
+        "total": 78,
+        "hook": 84,
+        "length": 96,
+        "pacing": 50,
+        "retention": 73,
+        "cta": 90,
+        "energy": 58,
+        "punch": 40
+      }
+    },
+    {
+      "rank": 2,
+      "score": 75,
+      "title": "Ranked insight",
+      "start": 60,
+      "end": 88,
+      "duration": 28,
+      "dimensions": {
+        "total": 75,
+        "hook": 72,
+        "length": 96,
+        "pacing": 50,
+        "retention": 76,
+        "cta": 70,
+        "energy": 58,
+        "punch": 40
+      }
+    },
+    {
+      "rank": 3,
+      "score": 73,
+      "title": "Opening ranked beat",
+      "start": 0,
+      "end": 28,
+      "duration": 28,
+      "dimensions": {
+        "total": 73,
+        "hook": 88,
+        "length": 96,
+        "pacing": 58,
+        "retention": 79,
+        "cta": 45,
+        "energy": 58,
+        "punch": 57
+      }
+    },
+    {
+      "rank": 4,
+      "score": 71,
+      "title": "Ranked insight",
+      "start": 20,
+      "end": 48,
+      "duration": 28,
+      "dimensions": {
+        "total": 71,
+        "hook": 76,
+        "length": 96,
+        "pacing": 50,
+        "retention": 76,
+        "cta": 45,
+        "energy": 58,
+        "punch": 40
+      }
+    },
+    {
+      "rank": 5,
+      "score": 68,
+      "title": "Ranked insight",
+      "start": 40,
+      "end": 68,
+      "duration": 28,
+      "dimensions": {
+        "total": 68,
+        "hook": 72,
+        "length": 96,
+        "pacing": 50,
+        "retention": 76,
+        "cta": 45,
+        "energy": 58,
+        "punch": 40
+      }
+    }
+  ],
+  "error": null,
+  "duration": 95,
+  "candidateCount": 5,
+  "sceneCount": 0,
+  "completedAt": "2026-08-23T10:54:23.828Z"
+}

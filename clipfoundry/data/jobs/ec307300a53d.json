@@ -1,3 +1,95 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8cc95417f17bb34d285eda51d1c3a41e08ae5e1e046968550b3364783c9362e4
-size 1972
+{
+  "id": "ec307300a53d",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-08-23T12:02:04.326Z",
+  "sourceName": "ec307300a53d-src.mp4",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 77,
+      "title": "Viral angle",
+      "start": 0,
+      "end": 18.947483,
+      "duration": 18.95,
+      "dimensions": {
+        "total": 77,
+        "hook": 76,
+        "length": 96,
+        "pacing": 62,
+        "retention": 83,
+        "cta": 45,
+        "energy": 53,
+        "punch": 72
+      },
+      "url": "/clips/ec307300a53d/clip-1.mp4",
+      "downloadName": "viral-rank1-ec307300a53d.mp4"
+    },
+    {
+      "rank": 2,
+      "score": 71,
+      "title": "Viral angle",
+      "start": 10,
+      "end": 18.947483,
+      "duration": 8.95,
+      "dimensions": {
+        "total": 71,
+        "hook": 72,
+        "length": 78,
+        "pacing": 60,
+        "retention": 70,
+        "cta": 70,
+        "energy": 51,
+        "punch": 72
+      },
+      "url": "/clips/ec307300a53d/clip-2.mp4",
+      "downloadName": "viral-rank2-ec307300a53d.mp4"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 77,
+      "title": "Viral angle",
+      "start": 0,
+      "end": 18.947483,
+      "duration": 18.95,
+      "dimensions": {
+        "total": 77,
+        "hook": 76,
+        "length": 96,
+        "pacing": 62,
+        "retention": 83,
+        "cta": 45,
+        "energy": 53,
+        "punch": 72
+      }
+    },
+    {
+      "rank": 2,
+      "score": 71,
+      "title": "Viral angle",
+      "start": 10,
+      "end": 18.947483,
+      "duration": 8.95,
+      "dimensions": {
+        "total": 71,
+        "hook": 72,
+        "length": 78,
+        "pacing": 60,
+        "retention": 70,
+        "cta": 70,
+        "energy": 51,
+        "punch": 72
+      }
+    }
+  ],
+  "error": null,
+  "duration": 18.95,
+  "candidateCount": 2,
+  "sceneCount": 0,
+  "completedAt": "2026-08-23T12:02:09.475Z"
+}

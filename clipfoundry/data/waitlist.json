@@ -1,3 +1,20 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2689098e978980d64af4dac8e6e69b522e9aeb52e59ba18ad48645a5dff34848
-size 429
+{
+  "signups": [
+    {
+      "email": "test@clipfoundry.com",
+      "name": "Test User",
+      "role": "creator",
+      "source": "landing",
+      "interest": "both",
+      "createdAt": "2026-08-23T10:34:06.333Z"
+    },
+    {
+      "email": "founder@clipfoundry.test",
+      "name": "Founder",
+      "role": "creator",
+      "source": "landing",
+      "interest": "both",
+      "createdAt": "2026-08-23T10:54:59.507Z"
+    }
+  ]
+}
