@@ -327,16 +327,11 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
   const targetW = 608;
   const targetH = 1080;
   const accent = mode.id === "viral" ? "0xFF4D6D" : "0x8B7CFF";
-  const title = escapeDrawtext(label);
-  const sub = escapeDrawtext(sublabel);
 
   const vf = [
     `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
     `crop=${targetW}:${targetH}`,
-    `drawbox=x=0:y=0:w=iw:h=130:color=black@0.5:t=fill`,
     `drawbox=x=0:y=0:w=8:h=ih:color=${accent}:t=fill`,
-    `drawtext=text='${title}':fontsize=30:fontcolor=white:x=24:y=36:font=Sans`,
-    `drawtext=text='${sub}':fontsize=20:fontcolor=white@0.8:x=24:y=78:font=Sans`,
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
   ].join(",");
@@ -409,6 +404,52 @@ function listJobs(limit = 50) {
     .filter(Boolean)
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   return files.slice(0, limit);
+}
+
+/**
+ * Find silence gaps with ffmpeg silencedetect: [{start,end}] (end may be Infinity).
+ * Used so clips start/stop at pauses instead of chopping somebody mid-sentence.
+ */
+async function detectSilences(sourcePath) {
+  let stderr = "";
+  try {
+    const res = await execFileAsync(
+      "ffmpeg",
+      ["-hide_banner", "-i", sourcePath, "-af", "silencedetect=n=-30dB:d=0.35", "-f", "null", "-"],
+      { encoding: "utf8", maxBuffer: 1 << 22 }
+    );
+    stderr = String(res.stderr || "");
+  } catch (e) {
+    stderr = String((e && e.stderr) || "");
+  }
+  const sils = [];
+  const starts = [...stderr.matchAll(/silence_start: ([\d.]+)/g)];
+  const ends = [...stderr.matchAll(/silence_end: ([\d.]+)/g)];
+  for (let i = 0; i < starts.length; i++) {
+    sils.push({ start: parseFloat(starts[i][1]), end: ends[i] ? parseFloat(ends[i][1]) : Infinity });
+  }
+  return sils;
+}
+
+/** Move [start,end] to nearby silence edges: begin right after a pause, stop at a pause. */
+function snapCutsToSilence(sils, start, end, totalDur) {
+  let ns = start;
+  let cand = null;
+  for (const s of sils) {
+    if (s.end > start && s.end <= start + 1.6 && s.start <= start + 1.6) cand = s.end;
+  }
+  if (cand !== null && end - cand >= 6) ns = cand;
+
+  let ne = end;
+  cand = null;
+  for (const s of sils) {
+    if (s.start >= end - 2.2 && s.start <= end) cand = s.start;
+  }
+  if (cand !== null && cand - ns >= 6) ne = cand;
+
+  ne = Math.min(ne, totalDur);
+  if (ne - ns < 6) return { start, end }; // too risky — keep original cut
+  return { start: +ns.toFixed(2), end: +ne.toFixed(2) };
 }
 
 async function processVideo(sourcePath, options = {}) {
@@ -507,6 +548,24 @@ async function processVideo(sourcePath, options = {}) {
 
     const topN = Math.min(mode.maxClips, scored.length);
     const top = scored.slice(0, topN);
+
+    // Speech-aware cutting: nudge cut points to natural pauses so nobody
+    // gets chopped mid-sentence. Falls back silently to original cuts.
+    try {
+      const silences = await detectSilences(sourcePath);
+      if (silences.length) {
+        const seen = new Set();
+        for (const c of top) {
+          const snapped = snapCutsToSilence(silences, c.start, c.end, meta.duration);
+          const key = `${snapped.start}-${snapped.end}`;
+          if ((snapped.start !== c.start || snapped.end !== c.end) && seen.has(key)) continue;
+          seen.add(key);
+          c.start = snapped.start;
+          c.end = snapped.end;
+          c.speechSnapped = true;
+        }
+      }
+    } catch (_) {}
 
     job.stage = "rendering";
     job.progress = 52;

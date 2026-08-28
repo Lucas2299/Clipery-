@@ -20,6 +20,6 @@ pip3 install --break-system-packages yt-dlp pocketsphinx 2>/dev/null \
 echo "== 4/4 Done =="
 echo ""
 echo "Now run your site:"
-echo "  cd clipfoundry"
+echo "  cd clipery"
 echo "  npm start        # or: PORT=80 npm start"
 echo "Then open http://localhost:3000 (or your server address)"

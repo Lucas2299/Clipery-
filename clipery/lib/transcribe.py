@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
-"""PocketSphinx speech-to-SRT transcriber for Clipery subtitles.
+"""PocketSphinx speech transcriber for Clipery karaoke subtitles.
 
-Usage: transcribe.py <input media> <output.srt> [start_offset_sec]
+Usage: transcribe.py <input media> <output> [start_offset_sec]
 
 - Converts input to 16k mono wav itself (via ffmpeg) when needed.
 - Decodes in 20s blocks for reliability, keeping global timestamps.
-- Emits phrase-level SRT (speech segments between silences), then re-chunks
-  long phrases into short TikTok-style caption blocks (<=4s, <=42 chars).
+- Output .json  -> word-level timings: {"words":[{"w":"hello","s":0.1,"e":0.4}, ...]}
+  (used to build TikTok-style karaoke captions: word by word, left to right)
+- Output .srt   -> legacy phrase-level SRT (kept for compatibility)
 
 Requires: pip install pocketsphinx
 """
+import json
 import os
+import re
 import subprocess
 import sys
 import wave
@@ -42,11 +45,28 @@ def srt_ts(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
+def clean_word(piece: str):
+    """Drop engine control tokens (<s>, </s>, <sil>, [sil], [NOISE], +filler+)
+    and pronunciation suffixes like hello(2). Returns None for junk."""
+    piece = re.sub(r"\(\d+\)$", "", piece).strip()
+    if not piece:
+        return None
+    if piece.startswith(("<", "[", "+")):
+        return None
+    if not any(ch.isalnum() for ch in piece):
+        return None
+    return piece
+
+
 def transcribe(wav_path: str, offset: float = 0.0):
+    """Returns (entries, words):
+    entries = phrase-level [[start, end, text], ...] (for legacy SRT)
+    words   = [{"w": word, "s": start, "e": end}, ...] word-level timings"""
     from pocketsphinx import Decoder
 
     decoder = Decoder()
     entries = []
+    words = []
 
     with wave.open(wav_path, "rb") as w:
         fr = w.getframerate()
@@ -55,7 +75,6 @@ def transcribe(wav_path: str, offset: float = 0.0):
         chunk_sec = 20
         chunk_frames = fr * chunk_sec
         base = 0.0
-        special = {"<s>", "</s>", "<sil>", "[sil]", "<unk>", "[SPEECH]", "[NOISE]"}
         while True:
             data = w.readframes(chunk_frames)
             if not data:
@@ -63,16 +82,34 @@ def transcribe(wav_path: str, offset: float = 0.0):
             decoder.start_utt()
             decoder.process_raw(data, False, False)
             decoder.end_utt()
+            seg_text = []
+            seg_start = None
+            seg_end = None
             for seg in decoder.seg():
-                start = base + seg.start_frame / 100.0
-                end = base + seg.end_frame / 100.0
-                # drop engine control tokens (sentence markers, silence, unknown)
-                words = [w for w in seg.word.strip().split() if w not in special]
-                text = " ".join(words).strip()
-                if text:
-                    entries.append([start + offset, end + offset, text])
+                for piece in seg.word.strip().split():
+                    word = clean_word(piece)
+                    if word is None:
+                        continue
+                    ws = base + seg.start_frame / 100.0 + offset
+                    we = base + seg.end_frame / 100.0 + offset
+                    words.append({"w": word, "s": round(ws, 3), "e": round(we, 3)})
+                    if seg_start is None:
+                        seg_start = ws
+                    seg_end = we
+                    seg_text.append(word)
+            if seg_text:
+                entries.append([seg_start, seg_end, " ".join(seg_text)])
             base += len(data) / float(sw * nc * fr)
-    return entries
+
+    # timing sanity: monotonic, minimum duration
+    prev = 0.0
+    for wd in words:
+        if wd["s"] < prev - 0.05:
+            wd["s"] = round(prev, 3)
+        if wd["e"] <= wd["s"]:
+            wd["e"] = round(wd["s"] + 0.12, 3)
+        prev = wd["e"]
+    return entries, words
 
 
 def chunk_captions(entries, max_dur=4.0, max_chars=42):
@@ -80,15 +117,15 @@ def chunk_captions(entries, max_dur=4.0, max_chars=42):
     for start, end, text in entries:
         if not text:
             continue
-        words = text.split()
-        if not words:
+        wrds = text.split()
+        if not wrds:
             continue
         dur = max(end - start, 0.4)
         chunks = []
         cur = []
-        for word in words:
+        for word in wrds:
             cur.append(word)
-            if dur > max_dur and len(cur) >= max(1, int(len(words) * max_dur / dur)):
+            if dur > max_dur and len(cur) >= max(1, int(len(wrds) * max_dur / dur)):
                 chunks.append(cur)
                 cur = []
             elif len(" ".join(cur)) > max_chars:
@@ -109,16 +146,22 @@ def main() -> None:
     offset = float(sys.argv[3]) if len(sys.argv) > 3 else 0.0
     tmp = dst + ".16k.wav"
     to_wav(src, tmp)
-    entries = transcribe(tmp, offset)
-    captions = chunk_captions(entries)
-    with open(dst, "w", encoding="utf-8") as f:
-        for i, (cs, ce, text) in enumerate(captions, 1):
-            f.write(f"{i}\n{srt_ts(cs)} --> {srt_ts(ce)}\n{text}\n\n")
+    entries, words = transcribe(tmp, offset)
     try:
         os.unlink(tmp)
     except OSError:
         pass
-    print(f"srt-entries={len(captions)}")
+
+    if dst.lower().endswith(".json"):
+        with open(dst, "w", encoding="utf-8") as f:
+            json.dump({"version": 1, "words": words}, f)
+        print(f"words={len(words)}")
+    else:
+        captions = chunk_captions(entries)
+        with open(dst, "w", encoding="utf-8") as f:
+            for i, (cs, ce, text) in enumerate(captions, 1):
+                f.write(f"{i}\n{srt_ts(cs)} --> {srt_ts(ce)}\n{text}\n\n")
+        print(f"srt-entries={len(captions)}")
 
 
 if __name__ == "__main__":
