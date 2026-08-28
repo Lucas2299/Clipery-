@@ -1,441 +1,186 @@
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index d989893..2874859 100644
 --- a/clipery/lib/subtitles.js
 +++ b/clipery/lib/subtitles.js
-@@ -1,7 +1,14 @@
- "use strict";
- /**
-- * Subtitles pipeline: transcribe (PocketSphinx via lib/transcribe.py) → SRT →
-- * burn TikTok-style captions into any finished video with ffmpeg.
-+ * Subtitles pipeline: transcribe word-level timings (PocketSphinx via
-+ * lib/transcribe.py) → build TikTok-style KARAOKE captions (.ass) → burn
-+ * into any finished video with ffmpeg.
-+ *
-+ * Caption behaviour (what viewers see):
-+ * - words light up ONE BY ONE, left to right, karaoke-style
-+ * - a calm 2-row block: row 1 pinned in place, row 2 can only appear BELOW it
-+ *   (never jumps up/down like centered single captions do)
-+ * - dim upcoming words, full-colour word that is being spoken
-  *
-  * Every public function never throws: if the speech engine is missing, the
-  * audio has no speech, or burning fails, the original video is kept untouched
-@@ -14,23 +21,31 @@
- const PY = process.env.PYTHON || "python3";
- const TRANSCRIBE_PY = path.join(__dirname, "transcribe.py");
- 
--// TikTok-style defaults: white bold text, black outline, bottom-center, above the watermark strip.
--// ASS colors are &HAABBGGRR (blue-green-red order!). BorderStyle 1 = outline, 3 = backdrop box.
-+// ASS colors are &HAABBGGRR (alpha + blue-green-red order!).
- const SUB_COLORS = {
-   white: "&H00FFFFFF",
-   yellow: "&H004CE7FF",
-   pink: "&H006D4DFF", // Clipery #FF4D6D
-   orange: "&H004C8AFF", // Clipery #FF8A4C
- };
--const SUB_SIZES = { small: 11, medium: 13, large: 16 };
--// position → always bottom-center alignment (renders true-center horizontally on our
--// libass); vertical placement tuned via MarginV (ASS script units, 384 = full height):
--// bottom ≈ above the watermark strip · middle ≈ screen center · top ≈ below the title strip.
-+// dim "not-yet-spoken" karaoke colour (semi-transparent white)
-+const KARAOKE_DIM = "&H73FFFFFF";
-+// Font sizes in script units (PlayRes 384x684 matches our 608x1080 portrait
-+// canvas exactly, so 1 unit ≈ 1.6 real pixels).
-+const SUB_SIZES = { small: 26, medium: 30, large: 36 };
-+// Max characters per caption row per size → guarantees max 2 rows, no overflow.
-+const ROW_CHARS = { small: 22, medium: 19, large: 16 };
-+const ROW_WORDS = 5;
-+// Position: Alignment 8 = anchored at the TOP of the block, MarginV measured
-+// from the top edge → row 1 NEVER moves; row 2 grows downward underneath.
-+// bottom ≈ above watermark strip · middle ≈ screen center · top ≈ below title area.
- const SUB_POSITIONS = {
--  bottom: { alignment: 2, margin: 28 },
--  middle: { alignment: 2, margin: 130 },
--  top: { alignment: 2, margin: 235 },
-+  bottom: 540,
-+  middle: 303,
-+  top: 126,
- };
-+// New block when speaker pauses longer than this (seconds).
-+const GAP_SPLIT = 0.9;
- 
- /** Validate free-form style input against whitelists. Always returns a complete style. */
- function normalizeSubStyle(input = {}) {
-@@ -43,20 +58,6 @@
-   };
- }
- 
--function buildCaptionStyle(sub = {}) {
--  const s = normalizeSubStyle(sub);
--  const p = SUB_POSITIONS[s.pos];
--  const deco =
--    s.style === "box"
--      ? "BorderStyle=3,Outline=8,Shadow=0,BackColour=&H78000000"
--      : "BorderStyle=1,Outline=2,Shadow=0,BackColour=&H00000000";
--  return (
--    `Fontname=DejaVu Sans,Fontsize=${SUB_SIZES[s.size]},` +
--    `PrimaryColour=${SUB_COLORS[s.color]},OutlineColour=&H00000000,` +
--    `${deco},Alignment=${p.alignment},MarginV=${p.margin}`
--  );
--}
--
- let engineCache = null;
- function subtitlesAvailable() {
-   if (engineCache !== null) return engineCache;
-@@ -94,24 +95,140 @@
-   return path.resolve(p).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/:/g, "\\:");
- }
- 
--/** Transcribe media → SRT. Returns number of caption blocks (0 = no speech / failed). */
--async function transcribeToSrt(mediaPath, srtPath) {
-+/** Transcribe media → word-level JSON {words:[{w,s,e}]}. Returns word count (0 = no speech/failed). */
-+async function transcribeToWords(mediaPath, jsonPath) {
-   if (!subtitlesAvailable()) return 0;
-   try {
--    const out = await run(PY, [TRANSCRIBE_PY, mediaPath, srtPath, "0"], { timeout: 30 * 60 * 1000 });
--    const m = /srt-entries=(\d+)/.exec(out);
-+    const out = await run(PY, [TRANSCRIBE_PY, mediaPath, jsonPath, "0"], { timeout: 30 * 60 * 1000 });
-+    const m = /words=(\d+)/.exec(out);
-     const n = m ? parseInt(m[1], 10) : 0;
--    if (n > 0 && fs.existsSync(srtPath) && fs.statSync(srtPath).size > 12) return n;
-+    if (n > 0 && fs.existsSync(jsonPath)) {
-+      const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-+      if (Array.isArray(data.words) && data.words.length) return data.words.length;
-+    }
-   } catch (e) {
-     console.warn("[subtitles] transcribe failed:", e.message);
-   }
-   return 0;
- }
- 
--/** Burn SRT into video, atomically replacing it. Returns true on success. */
--async function burnSubtitles(videoPath, srtPath, subStyle = {}) {
-+const round2 = (v) => Math.round(v * 100) / 100;
-+
-+/**
-+ * Group words into caption blocks of at most 2 rows.
-+ * Row 1 fills first (L→R); overflow goes to row 2 BELOW it; a full row 2
-+ * (or a long pause) closes the block. No orphan one-word blocks.
-+ */
-+function buildKaraokeBlocks(words, rowChars) {
-+  const blocks = [];
-+  let rows = [[], []];
-+  let start = 0;
-+  let lastEnd = 0;
-+
-+  const flush = () => {
-+    if (!rows[0].length && !rows[1].length) return;
-+    blocks.push({ start: round2(start), end: round2(lastEnd), rows: [rows[0].slice(), rows[1].slice()] });
-+    rows = [[], []];
-+  };
-+
-+  for (const w of words) {
-+    const rowLen = (idx) => rows[idx].reduce((a, x) => a + x.w.length + 1, 0);
-+    const fitsRow = (idx, word) => rowLen(idx) + word.length <= rowChars && rows[idx].length < ROW_WORDS;
-+    const empty = !rows[0].length && !rows[1].length;
-+
-+    if (!empty && w.s - lastEnd > GAP_SPLIT) flush();
-+    if (!rows[0].length && !rows[1].length) start = w.s;
-+
-+    if (fitsRow(0, w.w) && !rows[1].length) {
-+      rows[0].push(w);
-+    } else if (fitsRow(1, w.w)) {
-+      rows[1].push(w);
-+    } else {
-+      flush();
-+      start = w.s;
-+      rows[0].push(w);
-+    }
-+    lastEnd = Math.max(lastEnd, w.e);
-+  }
-+  flush();
-+  return blocks;
-+}
-+
-+function assTime(t) {
-+  if (t < 0) t = 0;
-+  const cs = Math.round(t * 100);
-+  const h = Math.floor(cs / 360000);
-+  const m = Math.floor((cs % 360000) / 6000);
-+  const s = Math.floor((cs % 6000) / 100);
-+  const c = cs % 100;
-+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}.${String(c).padStart(2, "0")}`;
-+}
-+
-+// keep ASS override braces/backslashes out of recognised words
-+const cleanWord = (w) => String(w).replace(/[{}\\]/g, "").trim();
-+
-+/**
-+ * Build a complete .ass subtitle file with karaoke word highlighting.
-+ * \k tags: each word switches from dim (SecondaryColour) to full colour
-+ * exactly when it is spoken → words fill in left to right, karaoke-style.
-+ */
-+function buildKaraokeAss(blocks, sub = {}) {
-+  const s = normalizeSubStyle(sub);
-+  const size = SUB_SIZES[s.size];
-+  const marginV = SUB_POSITIONS[s.pos];
-+  const primary = SUB_COLORS[s.color];
-+  // Fields: OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,
-+  // ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
-+  const deco =
-+    s.style === "box"
-+      ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
-+      : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline
-+
-+  const header = [
-+    "[Script Info]",
-+    "ScriptType: v4.00+",
-+    "PlayResX: 384",
-+    "PlayResY: 684",
-+    "WrapStyle: 2",
-+    "ScaledBorderAndShadow: yes",
-+    "",
-+    "[V4+ Styles]",
-+    "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-+    `Style: Cap,DejaVu Sans,${size},${primary},${KARAOKE_DIM},${deco},8,12,12,${marginV},1`,
-+    "",
-+    "[Events]",
-+    "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
-+  ];
-+
-+  const events = [];
-+  for (let i = 0; i < blocks.length; i++) {
-+    const b = blocks[i];
-+    const evStart = Math.max(0, b.start - 0.05);
-+    let evEnd = b.end + 0.3;
-+    if (i + 1 < blocks.length) evEnd = Math.min(evEnd, blocks[i + 1].start - 0.02);
-+    if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
-+
-+    // \kX before a word = word switches colour X centiseconds after the
-+    // previous word's switch → each \k = (my word start − previous word start).
-+    const allWords = [...b.rows[0], ...b.rows[1]];
-+    if (!allWords.length) continue;
-+    const parts = allWords.map((w, idx) => {
-+      const prev = allWords[idx - 1];
-+      let cs = prev ? Math.round((w.s - prev.s) * 100) : Math.round((w.s - evStart) * 100);
-+      if (cs < 5) cs = 5;
-+      return `{\\k${cs}}${cleanWord(w.w)}`;
-+    });
-+    const line1 = parts.slice(0, b.rows[0].length).join(" ");
-+    const line2 = b.rows[1].length ? "\\N" + parts.slice(b.rows[0].length).join(" ") : "";
-+    events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${line1}${line2}`);
-+  }
-+  return header.concat(events).join("\n") + "\n";
-+}
-+
-+/** Burn an .ass subtitle file into video, atomically replacing it. Returns true on success. */
-+async function burnAss(videoPath, assPath) {
-   const tmpOut = videoPath + ".subbed.mp4";
--  const vf = `subtitles='${escFilterPath(srtPath)}':force_style='${buildCaptionStyle(subStyle)}'`;
-+  const vf = `subtitles='${escFilterPath(assPath)}'`;
-   try {
-     await run(
-       "ffmpeg",
-@@ -137,19 +254,47 @@
- }
+@@ -123,43 +123,55 @@ async function transcribeToWords(mediaPath, jsonPath) {
+ const round2 = (v) => Math.round(v * 100) / 100;
  
  /**
-- * Full pass: transcribe + burn captions into a rendered clip in place.
-- * Keeps the .srt next to the video (downloadable captions file). Never throws.
-+ * Full pass: transcribe → karaoke .ass → burn captions into a rendered clip
-+ * in place. Keeps the .ass next to the video (downloadable captions file).
-+ * Never throws.
+- * Group words into caption blocks of at most 2 rows.
+- * Row 1 fills first (L→R); overflow goes to row 2 BELOW it; a full row 2
+- * (or a long pause) closes the block. No orphan one-word blocks.
++ * Rolling 2-row karaoke window (the real TikTok pattern):
++ * words fill row 1 left→right, overflow continues on row 2 below;
++ * when row 2 is full it SLIDES UP to become row 1 and fresh words take
++ * row 2. The caption area is always the same height → zero bouncing.
++ * A long pause (> GAP_SPLIT) resets the window for the next sentence.
   */
- async function tryAddSubtitles(videoPath, subStyle = {}) {
-   if (!subtitlesAvailable()) return { applied: false, reason: "engine-missing" };
--  const srt = videoPath.replace(/\.mp4$/i, "") + ".subtitles.srt";
--  const n = await transcribeToSrt(videoPath, srt);
-+  const noExt = videoPath.replace(/\.mp4$/i, "");
-+  const jsonPath = noExt + ".words.json";
-+  const assPath = noExt + ".subtitles.ass";
+-function buildKaraokeBlocks(words, rowChars) {
+-  const blocks = [];
+-  let rows = [[], []];
+-  let start = 0;
++function buildRollingPages(words, rowChars) {
++  const pages = [];
++  let r1 = [];
++  let r2 = [];
+   let lastEnd = 0;
++  let intro = true; // true while a fresh window's rows are still being spoken (karaoke live)
++  const rowLen = (arr) => arr.reduce((a, x) => a + x.w.length + 1, 0);
++  const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < ROW_WORDS;
+ 
+-  const flush = () => {
+-    if (!rows[0].length && !rows[1].length) return;
+-    blocks.push({ start: round2(start), end: round2(lastEnd), rows: [rows[0].slice(), rows[1].slice()] });
+-    rows = [[], []];
++  const closePage = (fresh) => {
++    if (!r1.length && !r2.length) return;
++    pages.push({ r1, r2, intro });
++    if (fresh) {
++      r1 = [];
++      r2 = [];
++      intro = true;
++    } else {
++      r1 = r2; // the filled row 2 scrolls up to become row 1
++      r2 = [];
++      intro = false;
++    }
+   };
+ 
+   for (const w of words) {
+-    const rowLen = (idx) => rows[idx].reduce((a, x) => a + x.w.length + 1, 0);
+-    const fitsRow = (idx, word) => rowLen(idx) + word.length <= rowChars && rows[idx].length < ROW_WORDS;
+-    const empty = !rows[0].length && !rows[1].length;
+-
+-    if (!empty && w.s - lastEnd > GAP_SPLIT) flush();
+-    if (!rows[0].length && !rows[1].length) start = w.s;
++    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(true); // pause → fresh window
+ 
+-    if (fitsRow(0, w.w) && !rows[1].length) {
+-      rows[0].push(w);
+-    } else if (fitsRow(1, w.w)) {
+-      rows[1].push(w);
++    if (!r1.length && !r2.length) {
++      r1.push(w);
++    } else if (!r2.length) {
++      if (fits(r1, w.w)) r1.push(w); // still filling row 1
++      else r2.push(w); // row 1 full → row 2 starts
+     } else {
+-      flush();
+-      start = w.s;
+-      rows[0].push(w);
++      if (fits(r2, w.w)) {
++        r2.push(w);
++      } else {
++        closePage(false); // row 2 full → slide content up
++        r2.push(w);
++      }
+     }
+     lastEnd = Math.max(lastEnd, w.e);
+   }
+-  flush();
+-  return blocks;
++  closePage(true);
++  return pages;
+ }
+ 
+ function assTime(t) {
+@@ -180,7 +192,7 @@ const cleanWord = (w) => String(w).replace(/[{}\\]/g, "").trim();
+  * \k tags: each word switches from dim (SecondaryColour) to full colour
+  * exactly when it is spoken → words fill in left to right, karaoke-style.
+  */
+-function buildKaraokeAss(blocks, sub = {}) {
++function buildKaraokeAss(pages, sub = {}) {
+   const s = normalizeSubStyle(sub);
+   const size = SUB_SIZES[s.size];
+   const marginV = SUB_POSITIONS[s.pos];
+@@ -212,26 +224,34 @@ function buildKaraokeAss(blocks, sub = {}) {
+   ];
+ 
+   const events = [];
+-  for (let i = 0; i < blocks.length; i++) {
+-    const b = blocks[i];
+-    const evStart = Math.max(0, b.start - 0.05);
+-    let evEnd = b.end + 0.3;
+-    if (i + 1 < blocks.length) evEnd = Math.min(evEnd, blocks[i + 1].start - 0.02);
++  const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
++  for (let i = 0; i < pages.length; i++) {
++    const p = pages[i];
++    const hasTwoRows = p.r2.length > 0;
++    const staticRow = p.intro ? [] : p.r1; // intro pages karaoke everything live
++    const liveRow = p.intro ? [...p.r1, ...p.r2] : p.r2;
++    const row1Len = p.r1.length;
 +
-+  const n = await transcribeToWords(videoPath, jsonPath);
-   if (!n) {
--    try { fs.unlinkSync(srt); } catch {}
-+    try { fs.unlinkSync(jsonPath); } catch {}
-+    return { applied: false, reason: "no-speech-detected" };
-+  }
-+  let blocks = [];
-+  try {
-+    const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-+    const style = normalizeSubStyle(subStyle);
-+    blocks = buildKaraokeBlocks(data.words || [], ROW_CHARS[style.size]);
-+  } catch {}
-+  if (!blocks.length) {
-+    try { fs.unlinkSync(jsonPath); } catch {}
++    const evStart = Math.max(0, starts[i]);
++    const lastWord = liveRow[liveRow.length - 1];
++    let evEnd = lastWord.e + 0.35;
++    if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
+     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
+ 
+-    // \kX before a word = word switches colour X centiseconds after the
+-    // previous word's switch → each \k = (my word start − previous word start).
+-    const allWords = [...b.rows[0], ...b.rows[1]];
+-    if (!allWords.length) continue;
+-    const parts = allWords.map((w, idx) => {
+-      const prev = allWords[idx - 1];
+-      let cs = prev ? Math.round((w.s - prev.s) * 100) : Math.round((w.s - evStart) * 100);
++    const parts = [];
++    for (const w of staticRow) parts.push(`{\\k5}${cleanWord(w.w)}`); // already spoken → lit at once
++    let prevStart = null;
++    for (const w of liveRow) {
++      let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
+       if (cs < 5) cs = 5;
+-      return `{\\k${cs}}${cleanWord(w.w)}`;
+-    });
+-    const line1 = parts.slice(0, b.rows[0].length).join(" ");
+-    const line2 = b.rows[1].length ? "\\N" + parts.slice(b.rows[0].length).join(" ") : "";
+-    events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${line1}${line2}`);
++      parts.push(`{\\k${cs}}${cleanWord(w.w)}`);
++      prevStart = w.s;
++    }
++    if (!parts.length) continue;
++    const text = hasTwoRows
++      ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
++      : parts.join(" ");
++    events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${text}`);
+   }
+   return header.concat(events).join("\n") + "\n";
+ }
+@@ -280,17 +300,17 @@ async function tryAddSubtitles(videoPath, subStyle = {}) {
+     try { fs.unlinkSync(jsonPath); } catch {}
      return { applied: false, reason: "no-speech-detected" };
    }
--  const applied = await burnSubtitles(videoPath, srt, subStyle);
--  return applied ? { applied: true, captions: n } : { applied: false, reason: "burn-failed" };
-+  fs.writeFileSync(assPath, buildKaraokeAss(blocks, subStyle), "utf8");
-+  try { fs.unlinkSync(jsonPath); } catch {}
-+
-+  const applied = await burnAss(videoPath, assPath);
-+  if (!applied) {
-+    try { fs.unlinkSync(assPath); } catch {}
-+    return { applied: false, reason: "burn-failed" };
-+  }
-+  return { applied: true, captions: blocks.length };
+-  let blocks = [];
++  let pages = [];
+   try {
+     const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+     const style = normalizeSubStyle(subStyle);
+-    blocks = buildKaraokeBlocks(data.words || [], ROW_CHARS[style.size]);
++    pages = buildRollingPages(data.words || [], ROW_CHARS[style.size]);
+   } catch {}
+-  if (!blocks.length) {
++  if (!pages.length) {
+     try { fs.unlinkSync(jsonPath); } catch {}
+     return { applied: false, reason: "no-speech-detected" };
+   }
+-  fs.writeFileSync(assPath, buildKaraokeAss(blocks, subStyle), "utf8");
++  fs.writeFileSync(assPath, buildKaraokeAss(pages, subStyle), "utf8");
+   try { fs.unlinkSync(jsonPath); } catch {}
+ 
+   const applied = await burnAss(videoPath, assPath);
+@@ -298,14 +318,14 @@ async function tryAddSubtitles(videoPath, subStyle = {}) {
+     try { fs.unlinkSync(assPath); } catch {}
+     return { applied: false, reason: "burn-failed" };
+   }
+-  return { applied: true, captions: blocks.length };
++  return { applied: true, captions: pages.length };
  }
  
--module.exports = { subtitlesAvailable, tryAddSubtitles, transcribeToSrt, burnSubtitles, normalizeSubStyle, buildCaptionStyle };
-+module.exports = {
-+  subtitlesAvailable,
-+  tryAddSubtitles,
-+  transcribeToWords,
-+  buildKaraokeBlocks,
-+  buildKaraokeAss,
-+  normalizeSubStyle,
-+};
---- a/clipery/lib/transcribe.py
-+++ b/clipery/lib/transcribe.py
-@@ -1,16 +1,19 @@
- #!/usr/bin/env python3
--"""PocketSphinx speech-to-SRT transcriber for Clipery subtitles.
-+"""PocketSphinx speech transcriber for Clipery karaoke subtitles.
- 
--Usage: transcribe.py <input media> <output.srt> [start_offset_sec]
-+Usage: transcribe.py <input media> <output> [start_offset_sec]
- 
- - Converts input to 16k mono wav itself (via ffmpeg) when needed.
- - Decodes in 20s blocks for reliability, keeping global timestamps.
--- Emits phrase-level SRT (speech segments between silences), then re-chunks
--  long phrases into short TikTok-style caption blocks (<=4s, <=42 chars).
-+- Output .json  -> word-level timings: {"words":[{"w":"hello","s":0.1,"e":0.4}, ...]}
-+  (used to build TikTok-style karaoke captions: word by word, left to right)
-+- Output .srt   -> legacy phrase-level SRT (kept for compatibility)
- 
- Requires: pip install pocketsphinx
- """
-+import json
- import os
-+import re
- import subprocess
- import sys
- import wave
-@@ -42,11 +45,28 @@
-     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
- 
- 
-+def clean_word(piece: str):
-+    """Drop engine control tokens (<s>, </s>, <sil>, [sil], [NOISE], +filler+)
-+    and pronunciation suffixes like hello(2). Returns None for junk."""
-+    piece = re.sub(r"\(\d+\)$", "", piece).strip()
-+    if not piece:
-+        return None
-+    if piece.startswith(("<", "[", "+")):
-+        return None
-+    if not any(ch.isalnum() for ch in piece):
-+        return None
-+    return piece
-+
-+
- def transcribe(wav_path: str, offset: float = 0.0):
-+    """Returns (entries, words):
-+    entries = phrase-level [[start, end, text], ...] (for legacy SRT)
-+    words   = [{"w": word, "s": start, "e": end}, ...] word-level timings"""
-     from pocketsphinx import Decoder
- 
-     decoder = Decoder()
-     entries = []
-+    words = []
- 
-     with wave.open(wav_path, "rb") as w:
-         fr = w.getframerate()
-@@ -55,7 +75,6 @@
-         chunk_sec = 20
-         chunk_frames = fr * chunk_sec
-         base = 0.0
--        special = {"<s>", "</s>", "<sil>", "[sil]", "<unk>", "[SPEECH]", "[NOISE]"}
-         while True:
-             data = w.readframes(chunk_frames)
-             if not data:
-@@ -63,16 +82,34 @@
-             decoder.start_utt()
-             decoder.process_raw(data, False, False)
-             decoder.end_utt()
-+            seg_text = []
-+            seg_start = None
-+            seg_end = None
-             for seg in decoder.seg():
--                start = base + seg.start_frame / 100.0
--                end = base + seg.end_frame / 100.0
--                # drop engine control tokens (sentence markers, silence, unknown)
--                words = [w for w in seg.word.strip().split() if w not in special]
--                text = " ".join(words).strip()
--                if text:
--                    entries.append([start + offset, end + offset, text])
-+                for piece in seg.word.strip().split():
-+                    word = clean_word(piece)
-+                    if word is None:
-+                        continue
-+                    ws = base + seg.start_frame / 100.0 + offset
-+                    we = base + seg.end_frame / 100.0 + offset
-+                    words.append({"w": word, "s": round(ws, 3), "e": round(we, 3)})
-+                    if seg_start is None:
-+                        seg_start = ws
-+                    seg_end = we
-+                    seg_text.append(word)
-+            if seg_text:
-+                entries.append([seg_start, seg_end, " ".join(seg_text)])
-             base += len(data) / float(sw * nc * fr)
--    return entries
-+
-+    # timing sanity: monotonic, minimum duration
-+    prev = 0.0
-+    for wd in words:
-+        if wd["s"] < prev - 0.05:
-+            wd["s"] = round(prev, 3)
-+        if wd["e"] <= wd["s"]:
-+            wd["e"] = round(wd["s"] + 0.12, 3)
-+        prev = wd["e"]
-+    return entries, words
- 
- 
- def chunk_captions(entries, max_dur=4.0, max_chars=42):
-@@ -80,15 +117,15 @@
-     for start, end, text in entries:
-         if not text:
-             continue
--        words = text.split()
--        if not words:
-+        wrds = text.split()
-+        if not wrds:
-             continue
-         dur = max(end - start, 0.4)
-         chunks = []
-         cur = []
--        for word in words:
-+        for word in wrds:
-             cur.append(word)
--            if dur > max_dur and len(cur) >= max(1, int(len(words) * max_dur / dur)):
-+            if dur > max_dur and len(cur) >= max(1, int(len(wrds) * max_dur / dur)):
-                 chunks.append(cur)
-                 cur = []
-             elif len(" ".join(cur)) > max_chars:
-@@ -109,16 +146,22 @@
-     offset = float(sys.argv[3]) if len(sys.argv) > 3 else 0.0
-     tmp = dst + ".16k.wav"
-     to_wav(src, tmp)
--    entries = transcribe(tmp, offset)
--    captions = chunk_captions(entries)
--    with open(dst, "w", encoding="utf-8") as f:
--        for i, (cs, ce, text) in enumerate(captions, 1):
--            f.write(f"{i}\n{srt_ts(cs)} --> {srt_ts(ce)}\n{text}\n\n")
-+    entries, words = transcribe(tmp, offset)
-     try:
-         os.unlink(tmp)
-     except OSError:
-         pass
--    print(f"srt-entries={len(captions)}")
-+
-+    if dst.lower().endswith(".json"):
-+        with open(dst, "w", encoding="utf-8") as f:
-+            json.dump({"version": 1, "words": words}, f)
-+        print(f"words={len(words)}")
-+    else:
-+        captions = chunk_captions(entries)
-+        with open(dst, "w", encoding="utf-8") as f:
-+            for i, (cs, ce, text) in enumerate(captions, 1):
-+                f.write(f"{i}\n{srt_ts(cs)} --> {srt_ts(ce)}\n{text}\n\n")
-+        print(f"srt-entries={len(captions)}")
- 
- 
- if __name__ == "__main__":
+ module.exports = {
+   subtitlesAvailable,
+   tryAddSubtitles,
+   transcribeToWords,
+-  buildKaraokeBlocks,
++  buildRollingPages,
+   buildKaraokeAss,
+   normalizeSubStyle,
+ };

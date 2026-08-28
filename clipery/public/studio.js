@@ -26,6 +26,48 @@
   wireSubToggle("long-subs", "long-substyle");
   wireSubToggle("rank-subs", "rank-substyle");
 
+  /* --- live subtitle style preview --- */
+  var SUB_PREV = {
+    colors: {
+      white: "#ffffff", yellow: "#FFE74C", pink: "#FF4D6D", orange: "#FF8A4C",
+      red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF"
+    },
+    sizes: { small: 9, medium: 11, large: 13, xl: 15 },
+    pos: { bottom: "68%", middle: "38%", top: "8%" }
+  };
+
+  function updateSubPreview(prefix) {
+    var box = $(prefix + "-sub-preview");
+    if (!box) return;
+    var frame = box.querySelector(".sub-preview-frame");
+    var cap = box.querySelector(".sub-preview-cap");
+    if (!frame || !cap) return;
+    var s = collectSubStyle(prefix);
+    var col = SUB_PREV.colors[s.color] || "#ffffff";
+    cap.style.fontSize = (SUB_PREV.sizes[s.size] || 11) + "px";
+    cap.style.top = SUB_PREV.pos[s.pos] || "68%";
+    frame.classList.toggle("box", s.style === "box");
+    frame.classList.toggle("pop", s.style === "pop");
+    var lit = cap.querySelectorAll(".lit");
+    for (var i = 0; i < lit.length; i++) {
+      lit[i].style.color = col;
+      lit[i].style.textShadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
+    }
+  }
+
+  function wireSubPreview(prefix) {
+    var keys = ["color", "size", "pos", "style"];
+    for (var i = 0; i < keys.length; i++) {
+      var el = $(prefix + "-sub-" + keys[i]);
+      if (el) {
+        el.addEventListener("change", function () { updateSubPreview(prefix); });
+      }
+    }
+    updateSubPreview(prefix);
+  }
+  wireSubPreview("long");
+  wireSubPreview("rank");
+
   function setMsg(node, text, isErr) {
     if (!node) return;
     node.textContent = text || "";

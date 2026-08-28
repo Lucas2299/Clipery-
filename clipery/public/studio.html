@@ -47,6 +47,14 @@
       .sub-style-grid label{display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9a96a8;font-weight:600}
       .sub-style-grid select{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem}
       .sub-style-grid.subs-off{display:none}
+      .sub-preview{flex-basis:100%;display:flex;align-items:center;gap:0.65rem;margin:0.1rem 0 0.35rem}
+      .sub-preview-frame{position:relative;width:88px;height:156px;flex:0 0 auto;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:linear-gradient(160deg,#241a2e 0%,#12294d 55%,#131020 100%);overflow:hidden}
+      .sub-preview-cap{position:absolute;left:0;right:0;text-align:center;font-weight:800;line-height:1.3;padding:0 3px}
+      .sub-preview-cap .dim{opacity:0.45;color:#fff}
+      .sub-preview-frame.pop .sub-preview-cap .dim{opacity:0}
+      .sub-preview-frame.box .sub-preview-cap span{background:rgba(0,0,0,0.6);padding:0 3px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+      .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
+      .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
     </style>
   </head>
   <body class="studio-app">
@@ -108,6 +116,11 @@
                 <option value="yellow">Yellow</option>
                 <option value="pink">Clipery pink</option>
                 <option value="orange">Orange</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="cyan">Cyan</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
               </select>
             </label>
             <label>Size
@@ -115,6 +128,7 @@
                 <option value="small">Small</option>
                 <option value="medium" selected>Medium</option>
                 <option value="large">Large</option>
+                <option value="xl">XL</option>
               </select>
             </label>
             <label>Position
@@ -128,8 +142,16 @@
               <select id="long-sub-style">
                 <option value="outline" selected>Outline</option>
                 <option value="box">Highlight box</option>
+                <option value="pop">Pop-in words</option>
               </select>
             </label>
+            <div class="sub-preview" id="long-sub-preview" aria-hidden="true">
+              <div class="sub-preview-frame">
+                <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                <span class="sub-preview-wm">Clipery viral</span>
+              </div>
+              <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>
+            </div>
           </div>
           <button type="button" class="btn btn-primary btn-lg btn-block" id="long-go">Generate clips</button>
           <p class="form-msg" id="long-msg"></p>
@@ -235,6 +257,11 @@
                 <option value="yellow">Yellow</option>
                 <option value="pink">Clipery pink</option>
                 <option value="orange">Orange</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="cyan">Cyan</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
               </select>
             </label>
             <label>Size
@@ -242,6 +269,7 @@
                 <option value="small">Small</option>
                 <option value="medium" selected>Medium</option>
                 <option value="large">Large</option>
+                <option value="xl">XL</option>
               </select>
             </label>
             <label>Position
@@ -255,8 +283,16 @@
               <select id="rank-sub-style">
                 <option value="outline" selected>Outline</option>
                 <option value="box">Highlight box</option>
+                <option value="pop">Pop-in words</option>
               </select>
             </label>
+            <div class="sub-preview" id="rank-sub-preview" aria-hidden="true">
+              <div class="sub-preview-frame">
+                <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                <span class="sub-preview-wm">Clipery viral</span>
+              </div>
+              <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>
+            </div>
           </div>
           <button type="button" class="btn btn-primary btn-lg btn-block" id="rank-go" style="margin-top:1.1rem">Generate ranking video</button>
           <p class="form-msg" id="rank-msg"></p>

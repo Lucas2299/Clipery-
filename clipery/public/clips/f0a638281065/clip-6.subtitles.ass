@@ -1,0 +1,18 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,26,&H00FFFFFF,&H73FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0,8,12,12,303,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:02.56,Cap,,0,0,0,,{\k5}this {\k32}video {\k36}when {\k35}you\N{\k19}shoot {\k62}for {\k22}the {\k9}things
+Dialogue: 0,0:00:02.53,0:00:05.58,Cap,,0,0,0,,{\k5}most {\k29}of {\k19}the {\k13}charge {\k31}for\N{\k27}at {\k43}the {\k10}first {\k67}thing {\k41}is
+Dialogue: 0,0:00:05.55,0:00:08.81,Cap,,0,0,0,,{\k5}show {\k45}you {\k46}what {\k61}this\N{\k27}cycle {\k49}so {\k22}sad {\k29}that {\k9}such
+Dialogue: 0,0:00:08.78,0:00:11.60,Cap,,0,0,0,,{\k5}actually {\k60}is {\k55}that {\k17}the\N{\k9}second {\k55}is {\k10}only {\k33}be {\k13}for
+Dialogue: 0,0:00:11.57,0:00:13.76,Cap,,0,0,0,,{\k5}practical {\k70}steps\N{\k78}knowledge

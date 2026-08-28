@@ -1,0 +1,21 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,26,&H00FFFFFF,&H73FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0,8,12,12,303,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:01.44,Cap,,0,0,0,,{\k5}you're {\k19}someone {\k34}who\N{\k14}wants {\k39}your {\k26}own
+Dialogue: 0,0:00:01.41,0:00:03.42,Cap,,0,0,0,,{\k5}business {\k57}you {\k15}wanna\N{\k16}start {\k32}created
+Dialogue: 0,0:00:03.39,0:00:05.91,Cap,,0,0,0,,{\k5}instagram {\k47}videos {\k42}you\N{\k14}tube {\k22}videos {\k59}have {\k41}been
+Dialogue: 0,0:00:05.88,0:00:08.03,Cap,,0,0,0,,{\k5}the {\k8}trigger {\k51}is {\k13}that\N{\k17}like {\k25}you've {\k16}tried {\k68}to
+Dialogue: 0,0:00:08.00,0:00:11.45,Cap,,0,0,0,,{\k5}film {\k34}her {\k17}soft {\k85}on {\k19}your\N{\k16}iphone {\k95}but {\k25}you {\k18}feel
+Dialogue: 0,0:00:11.42,0:00:14.49,Cap,,0,0,0,,{\k5}like {\k31}you {\k13}can't {\k63}be\N{\k18}yourself {\k94}or {\k28}you {\k22}get {\k21}in
+Dialogue: 0,0:00:14.46,0:00:16.87,Cap,,0,0,0,,{\k5}your {\k19}own {\k13}head {\k40}when {\k19}you\N{\k11}go {\k24}turn {\k39}on {\k34}or {\k22}you're
+Dialogue: 0,0:00:16.84,0:00:19.13,Cap,,0,0,0,,{\k5}worried {\k46}about {\k27}being\N{\k28}misunderstood
