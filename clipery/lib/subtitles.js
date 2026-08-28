@@ -37,11 +37,14 @@ const SUB_COLORS = {
 // for the "pop" style upcoming words stay fully hidden until spoken.
 const KARAOKE_DIM = "&H73FFFFFF";
 const KARAOKE_HIDDEN = "&HFFFFFFFF";
+// Rainbow karaoke: the spoken word cycles through this palette, one colour
+// per word — party-style captions.
+const RAINBOW = ["&H004CE7FF", "&H006D4DFF", "&H00F5D43C", "&H0058D130", "&H004C8AFF", "&H00FF6BA8"];
 // Font sizes in script units (PlayRes 384x684 matches our 608x1080 portrait
 // canvas exactly, so 1 unit ≈ 1.6 real pixels).
-const SUB_SIZES = { small: 26, medium: 30, large: 36, xl: 42 };
+const SUB_SIZES = { small: 26, medium: 30 };
 // Max characters per caption row per size → guarantees max 2 rows, no overflow.
-const ROW_CHARS = { small: 22, medium: 19, large: 16, xl: 13 };
+const ROW_CHARS = { small: 22, medium: 19 };
 const ROW_WORDS = 5;
 // Position: Alignment 8 = anchored at the TOP of the block, MarginV measured
 // from the top edge → row 1 NEVER moves; row 2 grows downward underneath.
@@ -58,7 +61,7 @@ const GAP_SPLIT = 0.9;
 function normalizeSubStyle(input = {}) {
   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
   const st = String(input.style).toLowerCase();
-  const okStyles = ["box", "pop", "highlight"];
+  const okStyles = ["box", "pop", "highlight", "classic", "rainbow"];
   return {
     color: pick(input.color, SUB_COLORS, "white"),
     size: pick(input.size, SUB_SIZES, "medium"),
@@ -296,8 +299,15 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
         ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: no outline, hidden ghosts
         : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
   // highlight = crisp WHITE text, only the spoken words turn into your colour
+  // classic = plain static text (spoken + upcoming look identical → no karaoke animation)
   const secondary =
-    s.style === "pop" ? KARAOKE_HIDDEN : s.style === "highlight" ? "&H00FFFFFF" : KARAOKE_DIM;
+    s.style === "pop"
+      ? KARAOKE_HIDDEN
+      : s.style === "highlight"
+        ? "&H00FFFFFF"
+        : s.style === "classic"
+          ? primary
+          : KARAOKE_DIM;
 
   const header = [
     "[Script Info]",
@@ -341,13 +351,18 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
 
+    const isRainbow = s.style === "rainbow";
+    let wordIdx = i * 10; // colour cycle keeps marching across pages
+    const wordTag = (cs) =>
+      isRainbow ? `{\\1c${RAINBOW[wordIdx++ % RAINBOW.length]}\\k${cs}}` : `{\\k${cs}}`;
+
     const parts = [];
-    for (const w of staticRow) parts.push(`{\\k5}${cleanWord(w.w)}`); // already spoken → lit at once
+    for (const w of staticRow) parts.push(`${wordTag(5)}${cleanWord(w.w)}`); // already spoken → lit at once
     let prevStart = null;
     for (const w of liveRow) {
       let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
       if (cs < 5) cs = 5;
-      parts.push(`{\\k${cs}}${cleanWord(w.w)}`);
+      parts.push(`${wordTag(cs)}${cleanWord(w.w)}`);
       prevStart = w.s;
     }
     if (!parts.length) continue;

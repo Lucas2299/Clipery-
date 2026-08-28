@@ -44,6 +44,11 @@
       .sub-toggle input { accent-color:#ff4d6d; width:16px; height:16px; cursor:pointer; }
       .sub-toggle .sub-hint { color:#9a96a8; font-size:0.78rem; }
       .sub-style-grid{display:flex;flex-wrap:wrap;gap:0.5rem 0.75rem;margin:-0.35rem 0 0.9rem}
+      .sub-templates{flex-basis:100%;display:flex;flex-wrap:wrap;gap:0.32rem;margin:0 0 0.2rem}
+      .tpl-chip{border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.35);color:#e8e6f0;border-radius:999px;padding:0.28rem 0.62rem;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+      .tpl-chip:hover{border-color:#a86bff;transform:translateY(-1px)}
+      .tpl-chip.active{background:linear-gradient(135deg,#a86bff,#ff4d6d);border-color:transparent;color:#fff}
+
       .sub-style-grid label{display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9a96a8;font-weight:600}
       .sub-style-grid select{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem}
       .sub-style-grid.subs-off{display:none}
@@ -111,6 +116,16 @@
             <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
           </label>
           <div class="sub-style-grid" id="long-substyle">
+            <div class="sub-templates" id="long-templates">
+              <button type="button" class="tpl-chip" data-tpl="tiktok">🔥 TikTok</button>
+              <button type="button" class="tpl-chip" data-tpl="beast">💥 Beast</button>
+              <button type="button" class="tpl-chip" data-tpl="candy">🍭 Candy</button>
+              <button type="button" class="tpl-chip" data-tpl="rainbow">🌈 Rainbow</button>
+              <button type="button" class="tpl-chip" data-tpl="news">📰 News</button>
+              <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
+              <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
+              <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
+            </div>
             <label>Color
               <select id="long-sub-color">
                 <option value="white" selected>White</option>
@@ -128,8 +143,6 @@
               <select id="long-sub-size">
                 <option value="small">Small</option>
                 <option value="medium" selected>Medium</option>
-                <option value="large">Large</option>
-                <option value="xl">XL</option>
               </select>
             </label>
             <label>Position
@@ -145,12 +158,14 @@
                 <option value="highlight">White + colored word</option>
                 <option value="box">Highlight box</option>
                 <option value="pop">Pop-in words</option>
+                <option value="classic">Plain (no karaoke)</option>
+                <option value="rainbow">Rainbow words</option>
               </select>
             </label>
             <div class="sub-preview" id="long-sub-preview" aria-hidden="true">
               <div class="sub-preview-frame">
                 <span class="sub-preview-hook" hidden>YOUR HOOK</span>
-                <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                <div class="sub-preview-cap"><span class="lit">Words</span> <span class="lit">light</span> <span class="lit">up</span><br /><span class="lit">one</span> <span class="lit">by</span> <span class="lit">one</span> <span class="dim">like</span> <span class="dim">this</span></div>
                 <span class="sub-preview-wm">Clipery viral</span>
               </div>
               <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>
@@ -266,6 +281,16 @@
             <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
           </label>
           <div class="sub-style-grid" id="rank-substyle">
+            <div class="sub-templates" id="rank-templates">
+              <button type="button" class="tpl-chip" data-tpl="tiktok">🔥 TikTok</button>
+              <button type="button" class="tpl-chip" data-tpl="beast">💥 Beast</button>
+              <button type="button" class="tpl-chip" data-tpl="candy">🍭 Candy</button>
+              <button type="button" class="tpl-chip" data-tpl="rainbow">🌈 Rainbow</button>
+              <button type="button" class="tpl-chip" data-tpl="news">📰 News</button>
+              <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
+              <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
+              <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
+            </div>
             <label>Color
               <select id="rank-sub-color">
                 <option value="white" selected>White</option>
@@ -283,8 +308,6 @@
               <select id="rank-sub-size">
                 <option value="small">Small</option>
                 <option value="medium" selected>Medium</option>
-                <option value="large">Large</option>
-                <option value="xl">XL</option>
               </select>
             </label>
             <label>Position
@@ -300,12 +323,14 @@
                 <option value="highlight">White + colored word</option>
                 <option value="box">Highlight box</option>
                 <option value="pop">Pop-in words</option>
+                <option value="classic">Plain (no karaoke)</option>
+                <option value="rainbow">Rainbow words</option>
               </select>
             </label>
             <div class="sub-preview" id="rank-sub-preview" aria-hidden="true">
               <div class="sub-preview-frame">
                 <span class="sub-preview-hook" hidden>YOUR HOOK</span>
-                <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                <div class="sub-preview-cap"><span class="lit">Words</span> <span class="lit">light</span> <span class="lit">up</span><br /><span class="lit">one</span> <span class="lit">by</span> <span class="lit">one</span> <span class="dim">like</span> <span class="dim">this</span></div>
                 <span class="sub-preview-wm">Clipery viral</span>
               </div>
               <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>

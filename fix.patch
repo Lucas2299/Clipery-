@@ -1,624 +1,265 @@
-diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
-index cb8607a..23a222c 100644
---- a/clipery/lib/clipEngine.js
-+++ b/clipery/lib/clipEngine.js
-@@ -3,7 +3,7 @@ const fs = require("fs");
- const path = require("path");
- const { promisify } = require("util");
- const crypto = require("crypto");
--const { tryAddSubtitles } = require("./subtitles");
-+const { tryEnhanceClip } = require("./subtitles");
- 
- const execFileAsync = promisify(execFile);
- 
-@@ -468,6 +468,8 @@ async function processVideo(sourcePath, options = {}) {
-     createdAt: new Date().toISOString(),
-     sourceName: options.sourceName || path.basename(sourcePath),
-     subtitles: !!options.subtitles,
-+    hook: !!options.hook,
-+    hookMode: options.hookMode || "intro",
-     clips: [],
-     rankings: [],
-     error: null,
-@@ -580,10 +582,20 @@ async function processVideo(sourcePath, options = {}) {
-       const label = `#${i + 1} VIRAL ${vScore}`;
-       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
-       await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode);
--      if (options.subtitles) {
--        const sr = await tryAddSubtitles(outFile, options.subStyle);
--        if (sr.applied) job.subtitlesApplied = true;
--        else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
-+      if (options.subtitles || options.hook) {
-+        const er = await tryEnhanceClip(outFile, {
-+          clipDur: +(c.end - c.start).toFixed(2),
-+          subStyle: options.subtitles ? options.subStyle : null,
-+          hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
-+        });
-+        if (er.subtitlesApplied) job.subtitlesApplied = true;
-+        if (er.hookApplied) {
-+          job.hookApplied = true;
-+          if (er.hookText && !job.hookText) job.hookText = er.hookText;
-+        }
-+        if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
-+          job.subtitlesNote = `captions skipped (${er.reason})`;
-+        }
-       }
-       clips.push({
-         rank: i + 1,
-diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
-index 5b8c515..8c144a1 100644
---- a/clipery/lib/linkVideoEngine.js
-+++ b/clipery/lib/linkVideoEngine.js
-@@ -3,7 +3,7 @@ const fs = require("fs");
- const path = require("path");
- const { promisify } = require("util");
- const crypto = require("crypto");
--const { tryAddSubtitles } = require("./subtitles");
-+const { tryEnhanceClip } = require("./subtitles");
- 
- const execFileAsync = promisify(execFile);
- 
-@@ -640,10 +640,19 @@ async function processMultiRank(sources, options = {}) {
-     const compPath = path.join(outDir, compName);
-     await concatVideos(listFile, compPath);
- 
--    if (options.subtitles) {
--      const sr = await tryAddSubtitles(compPath, options.subStyle);
--      if (sr.applied) job.subtitlesApplied = true;
--      else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
-+    if (options.subtitles || options.hook) {
-+      const er = await tryEnhanceClip(compPath, {
-+        subStyle: options.subtitles ? options.subStyle : null,
-+        hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
-+      });
-+      if (er.subtitlesApplied) job.subtitlesApplied = true;
-+      if (er.hookApplied) {
-+        job.hookApplied = true;
-+        if (er.hookText) job.hookText = er.hookText;
-+      }
-+      if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
-+        job.subtitlesNote = `captions skipped (${er.reason})`;
-+      }
-     }
- 
-     job.compilation = {
 diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index 2874859..a3fd89c 100644
+index a3fd89c..9db1299 100644
 --- a/clipery/lib/subtitles.js
 +++ b/clipery/lib/subtitles.js
-@@ -58,11 +58,12 @@ const GAP_SPLIT = 0.9;
+@@ -37,11 +37,14 @@ const SUB_COLORS = {
+ // for the "pop" style upcoming words stay fully hidden until spoken.
+ const KARAOKE_DIM = "&H73FFFFFF";
+ const KARAOKE_HIDDEN = "&HFFFFFFFF";
++// Rainbow karaoke: the spoken word cycles through this palette, one colour
++// per word — party-style captions.
++const RAINBOW = ["&H004CE7FF", "&H006D4DFF", "&H00F5D43C", "&H0058D130", "&H004C8AFF", "&H00FF6BA8"];
+ // Font sizes in script units (PlayRes 384x684 matches our 608x1080 portrait
+ // canvas exactly, so 1 unit ≈ 1.6 real pixels).
+-const SUB_SIZES = { small: 26, medium: 30, large: 36, xl: 42 };
++const SUB_SIZES = { small: 26, medium: 30 };
+ // Max characters per caption row per size → guarantees max 2 rows, no overflow.
+-const ROW_CHARS = { small: 22, medium: 19, large: 16, xl: 13 };
++const ROW_CHARS = { small: 22, medium: 19 };
+ const ROW_WORDS = 5;
+ // Position: Alignment 8 = anchored at the TOP of the block, MarginV measured
+ // from the top edge → row 1 NEVER moves; row 2 grows downward underneath.
+@@ -58,7 +61,7 @@ const GAP_SPLIT = 0.9;
  function normalizeSubStyle(input = {}) {
    const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
    const st = String(input.style).toLowerCase();
-+  const okStyles = ["box", "pop", "highlight"];
+-  const okStyles = ["box", "pop", "highlight"];
++  const okStyles = ["box", "pop", "highlight", "classic", "rainbow"];
    return {
      color: pick(input.color, SUB_COLORS, "white"),
      size: pick(input.size, SUB_SIZES, "medium"),
-     pos: pick(input.pos, SUB_POSITIONS, "bottom"),
--    style: st === "box" || st === "pop" ? st : "outline",
-+    style: okStyles.includes(st) ? st : "outline",
-   };
- }
- 
-@@ -187,12 +188,101 @@ function assTime(t) {
- // keep ASS override braces/backslashes out of recognised words
- const cleanWord = (w) => String(w).replace(/[{}\\]/g, "").trim();
- 
-+/* ---------------- AI hook title ---------------- */
-+
-+const HOOK_POWER = new Set(
-+  (
-+    "how why what who when where which secret stop never always everyone nobody this trick mistake wrong " +
-+    "best worst now watch really actually dont don't can't won't shouldn't should could would new free " +
-+    "money time thing things people every nobody biggest first last"
-+  ).split(" ")
-+);
-+const HOOK_NUMBERS = /\b(one|two|three|four|five|six|seven|eight|nine|ten|top|\d+)\b/i;
-+const HOOK_TAIL_STOP = new Set(["and", "but", "so", "then", "the", "a", "an", "to", "of", "with", "for", "or", "my", "your", "will", "can", "is", "are"]);
-+
-+function trimHookTail(arr) {
-+  while (arr.length > 2 && HOOK_TAIL_STOP.has(arr[arr.length - 1].w.toLowerCase())) arr.pop();
-+  return arr;
-+}
-+
-+/**
-+ * Pick the punchiest phrase from the first seconds of a clip as its HOOK.
-+ * Heuristic: split early speech into phrases at pauses, score for power words,
-+ * numbers and a punchy length, earliest strong phrase wins. Uppercase result.
-+ */
-+function pickHookText(words) {
-+  const early = words.filter((w) => w.s < 8);
-+  if (!early.length) return null;
-+
-+  const phrases = [[]];
-+  for (const w of early) {
-+    const cur = phrases[phrases.length - 1];
-+    if (cur.length && w.s - cur[cur.length - 1].e > 0.5) phrases.push([]);
-+    phrases[phrases.length - 1].push(w);
-+  }
-+
-+  let best = null;
-+  let bestScore = -1;
-+  for (const ph of phrases) {
-+    if (!ph.length || ph.length < 2) continue;
-+    const waitWords = trimHookTail(ph.slice(0, 7)); // hooks are short
-+    const text = waitWords.map((w) => w.w).join(" ");
-+    if (text.length > 40) continue;
-+    let score = ph[0].s * -0.15; // earlier is better
-+    for (const w of waitWords) {
-+      const lw = w.w.toLowerCase();
-+      if (HOOK_POWER.has(lw)) score += 2;
-+      if (HOOK_NUMBERS.test(lw)) score += 1.5;
-+    }
-+    if (waitWords.length >= 3 && waitWords.length <= 7) score += 1; // punchy length
-+    if (score > bestScore) {
-+      bestScore = score;
-+      best = waitWords.map((w) => w.w).join(" ");
-+    }
-+  }
-+  if (!best) best = early.slice(0, 6).map((w) => w.w).join(" "); // cold-open fallback
-+  const clean = best.replace(/[{}\\]/g, "").trim();
-+  return clean ? clean.toUpperCase() : null;
-+}
-+
-+/** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
-+function hookRows(text) {
-+  if (text.length <= 18) return [text];
-+  const ws = text.split(" ");
-+  let r1 = "";
-+  for (const w of ws) {
-+    const t = r1 ? r1 + " " + w : w;
-+    if (t.length > 18 && r1) break;
-+    r1 = t;
-+  }
-+  const r2 = text.slice(r1.length).trim();
-+  return r2 ? [r1, r2] : [r1];
-+}
-+
-+/** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
-+function buildHook(words, clipDur, mode) {
-+  const text = pickHookText(words);
-+  if (!text) return null;
-+  const dur = Math.max(clipDur || 0, 0.6);
-+  const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
-+  return { text, rows: hookRows(text), start: 0.1, end };
-+}
-+
-+async function probeDuration(p) {
-+  try {
-+    const out = await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "json", p]);
-+    return parseFloat(JSON.parse(out).format?.duration) || 0;
-+  } catch {
-+    return 0;
-+  }
-+}
-+
- /**
-  * Build a complete .ass subtitle file with karaoke word highlighting.
-  * \k tags: each word switches from dim (SecondaryColour) to full colour
-  * exactly when it is spoken → words fill in left to right, karaoke-style.
-  */
--function buildKaraokeAss(pages, sub = {}) {
-+function buildKaraokeAss(pages, sub = {}, hook = null) {
-   const s = normalizeSubStyle(sub);
-   const size = SUB_SIZES[s.size];
-   const marginV = SUB_POSITIONS[s.pos];
-@@ -204,8 +294,10 @@ function buildKaraokeAss(pages, sub = {}) {
-       ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
-       : s.style === "pop"
+@@ -296,8 +299,15 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
          ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: no outline, hidden ghosts
--        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline
--  const secondary = s.style === "pop" ? KARAOKE_HIDDEN : KARAOKE_DIM;
-+        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
-+  // highlight = crisp WHITE text, only the spoken words turn into your colour
-+  const secondary =
-+    s.style === "pop" ? KARAOKE_HIDDEN : s.style === "highlight" ? "&H00FFFFFF" : KARAOKE_DIM;
+         : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
+   // highlight = crisp WHITE text, only the spoken words turn into your colour
++  // classic = plain static text (spoken + upcoming look identical → no karaoke animation)
+   const secondary =
+-    s.style === "pop" ? KARAOKE_HIDDEN : s.style === "highlight" ? "&H00FFFFFF" : KARAOKE_DIM;
++    s.style === "pop"
++      ? KARAOKE_HIDDEN
++      : s.style === "highlight"
++        ? "&H00FFFFFF"
++        : s.style === "classic"
++          ? primary
++          : KARAOKE_DIM;
  
    const header = [
      "[Script Info]",
-@@ -218,12 +310,23 @@ function buildKaraokeAss(pages, sub = {}) {
-     "[V4+ Styles]",
-     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
-+    // Hook title: big bold white with a strong outline, top of frame
-+    "Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1",
-     "",
-     "[Events]",
-     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
-   ];
+@@ -341,13 +351,18 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
+     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
  
-   const events = [];
-+  if (hook && hook.rows && hook.rows.length) {
-+    const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
-+    if (hookText) {
-+      const col = SUB_COLORS[s.color];
-+      events.push(
-+        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${col}}${hookText}`
-+      );
-+    }
-+  }
-   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
-   for (let i = 0; i < pages.length; i++) {
-     const p = pages[i];
-@@ -285,47 +388,75 @@ async function burnAss(videoPath, assPath) {
- }
- 
- /**
-- * Full pass: transcribe → karaoke .ass → burn captions into a rendered clip
-- * in place. Keeps the .ass next to the video (downloadable captions file).
-- * Never throws.
-+ * Full pass in ONE transcription: karaoke captions and/or an AI hook title.
-+ * opts: { clipDur?, subStyle|null, hook: {enabled, mode:"intro"|"full"}|null }
-+ * Keeps the .ass next to the video (downloadable captions file). Never throws.
-  */
--async function tryAddSubtitles(videoPath, subStyle = {}) {
-+async function tryEnhanceClip(videoPath, opts = {}) {
-+  const wantSubs = !!opts.subStyle;
-+  const wantHook = !!(opts.hook && opts.hook.enabled !== false);
-+  if (!wantSubs && !wantHook) return { applied: false, reason: "nothing-requested" };
-   if (!subtitlesAvailable()) return { applied: false, reason: "engine-missing" };
++    const isRainbow = s.style === "rainbow";
++    let wordIdx = i * 10; // colour cycle keeps marching across pages
++    const wordTag = (cs) =>
++      isRainbow ? `{\\1c${RAINBOW[wordIdx++ % RAINBOW.length]}\\k${cs}}` : `{\\k${cs}}`;
 +
-   const noExt = videoPath.replace(/\.mp4$/i, "");
-   const jsonPath = noExt + ".words.json";
-   const assPath = noExt + ".subtitles.ass";
- 
-   const n = await transcribeToWords(videoPath, jsonPath);
--  if (!n) {
--    try { fs.unlinkSync(jsonPath); } catch {}
--    return { applied: false, reason: "no-speech-detected" };
-+  let words = [];
-+  if (n) {
-+    try {
-+      words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
-+    } catch {}
-   }
-+  try { fs.unlinkSync(jsonPath); } catch {}
-+
-   let pages = [];
--  try {
--    const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
--    const style = normalizeSubStyle(subStyle);
--    pages = buildRollingPages(data.words || [], ROW_CHARS[style.size]);
--  } catch {}
--  if (!pages.length) {
--    try { fs.unlinkSync(jsonPath); } catch {}
-+  if (wantSubs && words.length) {
-+    const style = normalizeSubStyle(opts.subStyle);
-+    pages = buildRollingPages(words, ROW_CHARS[style.size]);
-+  }
-+
-+  let hook = null;
-+  if (wantHook && words.length) {
-+    const dur = opts.clipDur || (await probeDuration(videoPath));
-+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro");
-+  }
-+
-+  if (!pages.length && !hook) {
-     return { applied: false, reason: "no-speech-detected" };
-   }
--  fs.writeFileSync(assPath, buildKaraokeAss(pages, subStyle), "utf8");
--  try { fs.unlinkSync(jsonPath); } catch {}
- 
-+  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook), "utf8");
-   const applied = await burnAss(videoPath, assPath);
-   if (!applied) {
-     try { fs.unlinkSync(assPath); } catch {}
-     return { applied: false, reason: "burn-failed" };
-   }
--  return { applied: true, captions: pages.length };
-+  return {
-+    applied: true,
-+    captions: pages.length,
-+    subtitlesApplied: pages.length > 0,
-+    hookApplied: !!hook,
-+    hookText: hook ? hook.text : null,
-+  };
-+}
-+
-+/** Backwards-compatible wrapper: subtitles only. */
-+async function tryAddSubtitles(videoPath, subStyle = {}) {
-+  const r = await tryEnhanceClip(videoPath, { subStyle });
-+  if (!r.applied) return { applied: false, reason: r.reason };
-+  return { applied: true, captions: r.captions };
- }
- 
- module.exports = {
-   subtitlesAvailable,
-   tryAddSubtitles,
-+  tryEnhanceClip,
-   transcribeToWords,
-   buildRollingPages,
-   buildKaraokeAss,
-+  buildHook,
-+  pickHookText,
-   normalizeSubStyle,
- };
+     const parts = [];
+-    for (const w of staticRow) parts.push(`{\\k5}${cleanWord(w.w)}`); // already spoken → lit at once
++    for (const w of staticRow) parts.push(`${wordTag(5)}${cleanWord(w.w)}`); // already spoken → lit at once
+     let prevStart = null;
+     for (const w of liveRow) {
+       let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
+       if (cs < 5) cs = 5;
+-      parts.push(`{\\k${cs}}${cleanWord(w.w)}`);
++      parts.push(`${wordTag(cs)}${cleanWord(w.w)}`);
+       prevStart = w.s;
+     }
+     if (!parts.length) continue;
 diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 6fcad59..053f81b 100644
+index 053f81b..25ed6d5 100644
 --- a/clipery/public/studio.html
 +++ b/clipery/public/studio.html
-@@ -54,6 +54,7 @@
-       .sub-preview-frame.pop .sub-preview-cap .dim{opacity:0}
-       .sub-preview-frame.box .sub-preview-cap span{background:rgba(0,0,0,0.6);padding:0 3px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
-       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
-+      .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
-       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
-     </style>
-   </head>
-@@ -140,19 +141,33 @@
+@@ -44,6 +44,11 @@
+       .sub-toggle input { accent-color:#ff4d6d; width:16px; height:16px; cursor:pointer; }
+       .sub-toggle .sub-hint { color:#9a96a8; font-size:0.78rem; }
+       .sub-style-grid{display:flex;flex-wrap:wrap;gap:0.5rem 0.75rem;margin:-0.35rem 0 0.9rem}
++      .sub-templates{flex-basis:100%;display:flex;flex-wrap:wrap;gap:0.32rem;margin:0 0 0.2rem}
++      .tpl-chip{border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.35);color:#e8e6f0;border-radius:999px;padding:0.28rem 0.62rem;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
++      .tpl-chip:hover{border-color:#a86bff;transform:translateY(-1px)}
++      .tpl-chip.active{background:linear-gradient(135deg,#a86bff,#ff4d6d);border-color:transparent;color:#fff}
++
+       .sub-style-grid label{display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9a96a8;font-weight:600}
+       .sub-style-grid select{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem}
+       .sub-style-grid.subs-off{display:none}
+@@ -111,6 +116,16 @@
+             <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
+           </label>
+           <div class="sub-style-grid" id="long-substyle">
++            <div class="sub-templates" id="long-templates">
++              <button type="button" class="tpl-chip" data-tpl="tiktok">🔥 TikTok</button>
++              <button type="button" class="tpl-chip" data-tpl="beast">💥 Beast</button>
++              <button type="button" class="tpl-chip" data-tpl="candy">🍭 Candy</button>
++              <button type="button" class="tpl-chip" data-tpl="rainbow">🌈 Rainbow</button>
++              <button type="button" class="tpl-chip" data-tpl="news">📰 News</button>
++              <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
++              <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
++              <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
++            </div>
+             <label>Color
+               <select id="long-sub-color">
+                 <option value="white" selected>White</option>
+@@ -128,8 +143,6 @@
+               <select id="long-sub-size">
+                 <option value="small">Small</option>
+                 <option value="medium" selected>Medium</option>
+-                <option value="large">Large</option>
+-                <option value="xl">XL</option>
+               </select>
              </label>
-             <label>Style
-               <select id="long-sub-style">
--                <option value="outline" selected>Outline</option>
-+                <option value="outline" selected>Karaoke (dim → color)</option>
-+                <option value="highlight">White + colored word</option>
+             <label>Position
+@@ -145,12 +158,14 @@
+                 <option value="highlight">White + colored word</option>
                  <option value="box">Highlight box</option>
                  <option value="pop">Pop-in words</option>
++                <option value="classic">Plain (no karaoke)</option>
++                <option value="rainbow">Rainbow words</option>
                </select>
              </label>
              <div class="sub-preview" id="long-sub-preview" aria-hidden="true">
                <div class="sub-preview-frame">
-+                <span class="sub-preview-hook" hidden>YOUR HOOK</span>
-                 <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                 <span class="sub-preview-hook" hidden>YOUR HOOK</span>
+-                <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
++                <div class="sub-preview-cap"><span class="lit">Words</span> <span class="lit">light</span> <span class="lit">up</span><br /><span class="lit">one</span> <span class="lit">by</span> <span class="lit">one</span> <span class="dim">like</span> <span class="dim">this</span></div>
                  <span class="sub-preview-wm">Clipery viral</span>
                </div>
                <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>
-             </div>
-           </div>
-+          <label class="sub-toggle" for="long-hook">
-+            <input type="checkbox" id="long-hook" checked />
-+            <span>Hook title <span class="sub-hint">AI picks the punchy line, big text on top</span></span>
-+          </label>
-+          <div class="sub-style-grid" id="long-hookgrid">
-+            <label>Hook shows
-+              <select id="long-hook-mode">
-+                <option value="intro" selected>First seconds</option>
-+                <option value="full">Whole clip</option>
-+              </select>
-+            </label>
-+          </div>
-           <button type="button" class="btn btn-primary btn-lg btn-block" id="long-go">Generate clips</button>
-           <p class="form-msg" id="long-msg"></p>
- 
-@@ -281,19 +296,33 @@
+@@ -266,6 +281,16 @@
+             <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
+           </label>
+           <div class="sub-style-grid" id="rank-substyle">
++            <div class="sub-templates" id="rank-templates">
++              <button type="button" class="tpl-chip" data-tpl="tiktok">🔥 TikTok</button>
++              <button type="button" class="tpl-chip" data-tpl="beast">💥 Beast</button>
++              <button type="button" class="tpl-chip" data-tpl="candy">🍭 Candy</button>
++              <button type="button" class="tpl-chip" data-tpl="rainbow">🌈 Rainbow</button>
++              <button type="button" class="tpl-chip" data-tpl="news">📰 News</button>
++              <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
++              <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
++              <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
++            </div>
+             <label>Color
+               <select id="rank-sub-color">
+                 <option value="white" selected>White</option>
+@@ -283,8 +308,6 @@
+               <select id="rank-sub-size">
+                 <option value="small">Small</option>
+                 <option value="medium" selected>Medium</option>
+-                <option value="large">Large</option>
+-                <option value="xl">XL</option>
+               </select>
              </label>
-             <label>Style
-               <select id="rank-sub-style">
--                <option value="outline" selected>Outline</option>
-+                <option value="outline" selected>Karaoke (dim → color)</option>
-+                <option value="highlight">White + colored word</option>
+             <label>Position
+@@ -300,12 +323,14 @@
+                 <option value="highlight">White + colored word</option>
                  <option value="box">Highlight box</option>
                  <option value="pop">Pop-in words</option>
++                <option value="classic">Plain (no karaoke)</option>
++                <option value="rainbow">Rainbow words</option>
                </select>
              </label>
              <div class="sub-preview" id="rank-sub-preview" aria-hidden="true">
                <div class="sub-preview-frame">
-+                <span class="sub-preview-hook" hidden>YOUR HOOK</span>
-                 <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                 <span class="sub-preview-hook" hidden>YOUR HOOK</span>
+-                <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
++                <div class="sub-preview-cap"><span class="lit">Words</span> <span class="lit">light</span> <span class="lit">up</span><br /><span class="lit">one</span> <span class="lit">by</span> <span class="lit">one</span> <span class="dim">like</span> <span class="dim">this</span></div>
                  <span class="sub-preview-wm">Clipery viral</span>
                </div>
                <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>
-             </div>
-           </div>
-+          <label class="sub-toggle" for="rank-hook">
-+            <input type="checkbox" id="rank-hook" checked />
-+            <span>Hook title <span class="sub-hint">AI picks the punchy line, big text on top</span></span>
-+          </label>
-+          <div class="sub-style-grid" id="rank-hookgrid">
-+            <label>Hook shows
-+              <select id="rank-hook-mode">
-+                <option value="intro" selected>First seconds</option>
-+                <option value="full">Whole clip</option>
-+              </select>
-+            </label>
-+          </div>
-           <button type="button" class="btn btn-primary btn-lg btn-block" id="rank-go" style="margin-top:1.1rem">Generate ranking video</button>
-           <p class="form-msg" id="rank-msg"></p>
- 
 diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index a84e6da..0bbd2e2 100644
+index 0bbd2e2..cb9049a 100644
 --- a/clipery/public/studio.js
 +++ b/clipery/public/studio.js
-@@ -26,6 +26,30 @@
-   wireSubToggle("long-subs", "long-substyle");
-   wireSubToggle("rank-subs", "rank-substyle");
+@@ -56,8 +56,9 @@
+       white: "#ffffff", yellow: "#FFE74C", pink: "#FF4D6D", orange: "#FF8A4C",
+       red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF"
+     },
+-    sizes: { small: 9, medium: 11, large: 13, xl: 15 },
+-    pos: { bottom: "68%", middle: "38%", top: "8%" }
++    sizes: { small: 9, medium: 11 },
++    pos: { bottom: "68%", middle: "38%", top: "8%" },
++    rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"]
+   };
  
-+  function collectHook(prefix) {
-+    var t = $(prefix + "-hook");
-+    var m = $(prefix + "-hook-mode");
-+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro" };
-+  }
-+
-+  function wireHookToggle(prefix) {
-+    var t = $(prefix + "-hook");
-+    var g = $(prefix + "-hookgrid");
-+    var pv = $(prefix + "-sub-preview");
-+    if (!t) return;
-+    function sync() {
-+      if (g) g.classList.toggle("subs-off", !t.checked);
-+      if (pv) {
-+        var chip = pv.querySelector(".sub-preview-hook");
-+        if (chip) chip.hidden = !t.checked;
+   function updateSubPreview(prefix) {
+@@ -72,10 +73,61 @@
+     cap.style.top = SUB_PREV.pos[s.pos] || "68%";
+     frame.classList.toggle("box", s.style === "box");
+     frame.classList.toggle("pop", s.style === "pop");
+-    var lit = cap.querySelectorAll(".lit");
+-    for (var i = 0; i < lit.length; i++) {
+-      lit[i].style.color = col;
+-      lit[i].style.textShadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
++    var shadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
++    var spans = cap.querySelectorAll(".lit, .dim");
++    for (var i = 0; i < spans.length; i++) {
++      var w = spans[i];
++      var isDim = w.className === "dim";
++      if (isDim) {
++        // upcoming words: karaoke dim, hidden for pop, full-look for classic/highlight
++        if (s.style === "pop") { w.style.color = "#fff"; w.style.opacity = "0"; }
++        else if (s.style === "classic") { w.style.color = col; w.style.opacity = "1"; }
++        else if (s.style === "highlight") { w.style.color = "#fff"; w.style.opacity = "1"; }
++        else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
++        w.style.textShadow = shadow;
++      } else {
++        w.style.opacity = "1";
++        w.style.color = s.style === "rainbow" ? SUB_PREV.rainbow[i % SUB_PREV.rainbow.length] : col;
++        w.style.textShadow = shadow;
 +      }
 +    }
-+    t.addEventListener("change", sync);
-+    sync();
 +  }
-+  wireHookToggle("long");
-+  wireHookToggle("rank");
 +
-   /* --- live subtitle style preview --- */
-   var SUB_PREV = {
-     colors: {
-@@ -295,6 +319,7 @@
-         var subsEl = document.getElementById("long-subs");
-         var wantSubs = subsEl ? subsEl.checked : true;
-         var longStyle = collectSubStyle("long");
-+        var longHook = collectHook("long");
-         if (fileObj) {
-           var fd = new FormData();
-           fd.append("video", fileObj, fileObj.name || "video.mp4");
-@@ -304,6 +329,8 @@
-           fd.append("subSize", longStyle.size);
-           fd.append("subPos", longStyle.pos);
-           fd.append("subStyle", longStyle.style);
-+          fd.append("hook", longHook.enabled ? "1" : "0");
-+          fd.append("hookMode", longHook.mode);
-           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
-         } else {
-           res = await fetch("/api/clip/from-url", {
-@@ -317,6 +344,8 @@
-               subSize: longStyle.size,
-               subPos: longStyle.pos,
-               subStyle: longStyle.style,
-+              hook: longHook.enabled,
-+              hookMode: longHook.mode,
-             }),
-           });
-         }
-@@ -522,6 +551,7 @@
-         var rankSubsEl = document.getElementById("rank-subs");
-         var wantRankSubs = rankSubsEl ? rankSubsEl.checked : true;
-         var rankStyle = collectSubStyle("rank");
-+        var rankHook = collectHook("rank");
-         if (fileList.length) {
-           var fd = new FormData();
-           fileList.forEach(function (item, idx) {
-@@ -534,6 +564,8 @@
-           fd.append("subSize", rankStyle.size);
-           fd.append("subPos", rankStyle.pos);
-           fd.append("subStyle", rankStyle.style);
-+          fd.append("hook", rankHook.enabled ? "1" : "0");
-+          fd.append("hookMode", rankHook.mode);
-           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
-         } else {
-           res = await fetch("/api/rank/video/links", {
-@@ -548,6 +580,8 @@
-               subSize: rankStyle.size,
-               subPos: rankStyle.pos,
-               subStyle: rankStyle.style,
-+              hook: rankHook.enabled,
-+              hookMode: rankHook.mode,
-             }),
-           });
-         }
-diff --git a/clipery/server.js b/clipery/server.js
-index b372443..03d2e4d 100644
---- a/clipery/server.js
-+++ b/clipery/server.js
-@@ -335,6 +335,14 @@ function readSubStyle(get) {
-   });
- }
- 
-+// hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
-+function readHook(get) {
-+  return {
-+    enabled: wantSubtitles(get("hook")),
-+    mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
++  var TEMPLATES = {
++    tiktok:  { color: "white",  size: "medium", pos: "bottom", style: "outline" },
++    beast:   { color: "yellow", size: "medium", pos: "middle", style: "outline" },
++    candy:   { color: "pink",   size: "medium", pos: "middle", style: "pop" },
++    rainbow: { color: "pink",   size: "medium", pos: "bottom", style: "rainbow" },
++    news:    { color: "white",  size: "small",  pos: "top",    style: "box" },
++    goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box" },
++    glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight" },
++    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" }
 +  };
-+}
 +
- const server = http.createServer(async (req, res) => {
-   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
-   const pathname = url.pathname;
-@@ -538,12 +546,19 @@ const server = http.createServer(async (req, res) => {
-         const p = parts.find((x) => x.name === n);
-         return p ? p.body.toString("utf8") : "";
-       });
-+      const hookOpts = readHook((n) => {
-+        const p = parts.find((x) => x.name === n);
-+        return p ? p.body.toString("utf8") : "";
++  function clearTplChips(prefix) {
++    var row = $(prefix + "-templates");
++    if (!row) return;
++    var chips = row.querySelectorAll(".tpl-chip");
++    for (var j = 0; j < chips.length; j++) chips[j].classList.remove("active");
++  }
++
++  function wireTemplates(prefix) {
++    var row = $(prefix + "-templates");
++    if (!row) return;
++    var chips = row.querySelectorAll(".tpl-chip");
++    for (var i = 0; i < chips.length; i++) {
++      chips[i].addEventListener("click", function (ev) {
++        var t = TEMPLATES[ev.currentTarget.getAttribute("data-tpl")];
++        if (!t) return;
++        var keys = ["color", "size", "pos", "style"];
++        for (var k = 0; k < keys.length; k++) {
++          var sel = $(prefix + "-sub-" + keys[k]);
++          if (sel) sel.value = t[keys[k]];
++        }
++        clearTplChips(prefix);
++        ev.currentTarget.classList.add("active");
++        updateSubPreview(prefix);
 +      });
+     }
+   }
  
-       const jobId = crypto.randomBytes(6).toString("hex");
-       const dest = path.join(UPLOADS, `${jobId}${ext}`);
-       fs.writeFileSync(dest, filePart.body);
--      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle });
--      const q = enqueue(dest, { jobId, sourceName: orig, mode, subtitles, subStyle });
-+      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode });
-+      const q = enqueue(dest, {
-+        jobId, sourceName: orig, mode, subtitles, subStyle,
-+        hook: hookOpts.enabled, hookMode: hookOpts.mode,
-+      });
-       return send(res, 202, {
-         ok: true,
-         jobId,
-@@ -570,17 +585,23 @@ const server = http.createServer(async (req, res) => {
+@@ -84,9 +136,13 @@
+     for (var i = 0; i < keys.length; i++) {
+       var el = $(prefix + "-sub-" + keys[i]);
+       if (el) {
+-        el.addEventListener("change", function () { updateSubPreview(prefix); });
++        el.addEventListener("change", function () {
++          clearTplChips(prefix);
++          updateSubPreview(prefix);
++        });
        }
-       const subtitles = wantSubtitles(body.subtitles);
-       const subStyle = readSubStyle((n) => body[n]);
-+      const hookOpts = readHook((n) => body[n]);
-       const jobId = crypto.randomBytes(6).toString("hex");
-       seedJob(jobId, {
-         mode,
-         sourceName: videoUrl.slice(0, 80),
-         subtitles,
-         subStyle,
-+        hook: hookOpts.enabled,
-+        hookMode: hookOpts.mode,
-       });
-       const q = enqueueItem({
-         type: "from-url",
-         url: videoUrl,
--        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle },
-+        meta: {
-+          jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
-+          hook: hookOpts.enabled, hookMode: hookOpts.mode,
-+        },
-       });
-       return send(res, 202, {
-         ok: true,
-@@ -701,6 +722,7 @@ const server = http.createServer(async (req, res) => {
-       }
-       const subtitles = wantSubtitles(body.subtitles);
-       const subStyle = readSubStyle((n) => body[n]);
-+      const hookOpts = readHook((n) => body[n]);
-       const jobId = crypto.randomBytes(6).toString("hex");
-       seedJob(jobId, {
-         mode: "link-rank-video",
-@@ -708,6 +730,8 @@ const server = http.createServer(async (req, res) => {
-         sourceName: body.name || `${links.length} links → ranking video`,
-         subtitles,
-         subStyle,
-+        hook: hookOpts.enabled,
-+        hookMode: hookOpts.mode,
-       });
-       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
-       const q = enqueueItem({
-@@ -719,6 +743,8 @@ const server = http.createServer(async (req, res) => {
-           boardTitle,
-           subtitles,
-           subStyle,
-+          hook: hookOpts.enabled,
-+          hookMode: hookOpts.mode,
-         },
-       });
-       return send(res, 202, {
-@@ -791,17 +817,26 @@ const server = http.createServer(async (req, res) => {
-         const p = parts.find((x) => x.name === n);
-         return p ? p.body.toString("utf8") : "";
-       });
-+      const hookOptsUp = readHook((n) => {
-+        const p = parts.find((x) => x.name === n);
-+        return p ? p.body.toString("utf8") : "";
-+      });
-       seedJob(jobId, {
-         mode: "link-rank-video",
-         modeLabel: "Link ranking video",
-         sourceName: boardTitle,
-         subtitles,
-         subStyle,
-+        hook: hookOptsUp.enabled,
-+        hookMode: hookOptsUp.mode,
-       });
-       const q = enqueueItem({
-         type: "multi-rank",
-         sources,
--        meta: { jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle },
-+        meta: {
-+          jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
-+          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode,
-+        },
-       });
-       return send(res, 202, {
-         ok: true,
+     }
++    wireTemplates(prefix);
+     updateSubPreview(prefix);
+   }
+   wireSubPreview("long");

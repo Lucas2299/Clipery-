@@ -56,8 +56,9 @@
       white: "#ffffff", yellow: "#FFE74C", pink: "#FF4D6D", orange: "#FF8A4C",
       red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF"
     },
-    sizes: { small: 9, medium: 11, large: 13, xl: 15 },
-    pos: { bottom: "68%", middle: "38%", top: "8%" }
+    sizes: { small: 9, medium: 11 },
+    pos: { bottom: "68%", middle: "38%", top: "8%" },
+    rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"]
   };
 
   function updateSubPreview(prefix) {
@@ -72,10 +73,61 @@
     cap.style.top = SUB_PREV.pos[s.pos] || "68%";
     frame.classList.toggle("box", s.style === "box");
     frame.classList.toggle("pop", s.style === "pop");
-    var lit = cap.querySelectorAll(".lit");
-    for (var i = 0; i < lit.length; i++) {
-      lit[i].style.color = col;
-      lit[i].style.textShadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
+    var shadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
+    var spans = cap.querySelectorAll(".lit, .dim");
+    for (var i = 0; i < spans.length; i++) {
+      var w = spans[i];
+      var isDim = w.className === "dim";
+      if (isDim) {
+        // upcoming words: karaoke dim, hidden for pop, full-look for classic/highlight
+        if (s.style === "pop") { w.style.color = "#fff"; w.style.opacity = "0"; }
+        else if (s.style === "classic") { w.style.color = col; w.style.opacity = "1"; }
+        else if (s.style === "highlight") { w.style.color = "#fff"; w.style.opacity = "1"; }
+        else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
+        w.style.textShadow = shadow;
+      } else {
+        w.style.opacity = "1";
+        w.style.color = s.style === "rainbow" ? SUB_PREV.rainbow[i % SUB_PREV.rainbow.length] : col;
+        w.style.textShadow = shadow;
+      }
+    }
+  }
+
+  var TEMPLATES = {
+    tiktok:  { color: "white",  size: "medium", pos: "bottom", style: "outline" },
+    beast:   { color: "yellow", size: "medium", pos: "middle", style: "outline" },
+    candy:   { color: "pink",   size: "medium", pos: "middle", style: "pop" },
+    rainbow: { color: "pink",   size: "medium", pos: "bottom", style: "rainbow" },
+    news:    { color: "white",  size: "small",  pos: "top",    style: "box" },
+    goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box" },
+    glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight" },
+    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" }
+  };
+
+  function clearTplChips(prefix) {
+    var row = $(prefix + "-templates");
+    if (!row) return;
+    var chips = row.querySelectorAll(".tpl-chip");
+    for (var j = 0; j < chips.length; j++) chips[j].classList.remove("active");
+  }
+
+  function wireTemplates(prefix) {
+    var row = $(prefix + "-templates");
+    if (!row) return;
+    var chips = row.querySelectorAll(".tpl-chip");
+    for (var i = 0; i < chips.length; i++) {
+      chips[i].addEventListener("click", function (ev) {
+        var t = TEMPLATES[ev.currentTarget.getAttribute("data-tpl")];
+        if (!t) return;
+        var keys = ["color", "size", "pos", "style"];
+        for (var k = 0; k < keys.length; k++) {
+          var sel = $(prefix + "-sub-" + keys[k]);
+          if (sel) sel.value = t[keys[k]];
+        }
+        clearTplChips(prefix);
+        ev.currentTarget.classList.add("active");
+        updateSubPreview(prefix);
+      });
     }
   }
 
@@ -84,9 +136,13 @@
     for (var i = 0; i < keys.length; i++) {
       var el = $(prefix + "-sub-" + keys[i]);
       if (el) {
-        el.addEventListener("change", function () { updateSubPreview(prefix); });
+        el.addEventListener("change", function () {
+          clearTplChips(prefix);
+          updateSubPreview(prefix);
+        });
       }
     }
+    wireTemplates(prefix);
     updateSubPreview(prefix);
   }
   wireSubPreview("long");
