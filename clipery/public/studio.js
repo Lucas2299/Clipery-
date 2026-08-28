@@ -26,6 +26,30 @@
   wireSubToggle("long-subs", "long-substyle");
   wireSubToggle("rank-subs", "rank-substyle");
 
+  function collectHook(prefix) {
+    var t = $(prefix + "-hook");
+    var m = $(prefix + "-hook-mode");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro" };
+  }
+
+  function wireHookToggle(prefix) {
+    var t = $(prefix + "-hook");
+    var g = $(prefix + "-hookgrid");
+    var pv = $(prefix + "-sub-preview");
+    if (!t) return;
+    function sync() {
+      if (g) g.classList.toggle("subs-off", !t.checked);
+      if (pv) {
+        var chip = pv.querySelector(".sub-preview-hook");
+        if (chip) chip.hidden = !t.checked;
+      }
+    }
+    t.addEventListener("change", sync);
+    sync();
+  }
+  wireHookToggle("long");
+  wireHookToggle("rank");
+
   /* --- live subtitle style preview --- */
   var SUB_PREV = {
     colors: {
@@ -295,6 +319,7 @@
         var subsEl = document.getElementById("long-subs");
         var wantSubs = subsEl ? subsEl.checked : true;
         var longStyle = collectSubStyle("long");
+        var longHook = collectHook("long");
         if (fileObj) {
           var fd = new FormData();
           fd.append("video", fileObj, fileObj.name || "video.mp4");
@@ -304,6 +329,8 @@
           fd.append("subSize", longStyle.size);
           fd.append("subPos", longStyle.pos);
           fd.append("subStyle", longStyle.style);
+          fd.append("hook", longHook.enabled ? "1" : "0");
+          fd.append("hookMode", longHook.mode);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -317,6 +344,8 @@
               subSize: longStyle.size,
               subPos: longStyle.pos,
               subStyle: longStyle.style,
+              hook: longHook.enabled,
+              hookMode: longHook.mode,
             }),
           });
         }
@@ -522,6 +551,7 @@
         var rankSubsEl = document.getElementById("rank-subs");
         var wantRankSubs = rankSubsEl ? rankSubsEl.checked : true;
         var rankStyle = collectSubStyle("rank");
+        var rankHook = collectHook("rank");
         if (fileList.length) {
           var fd = new FormData();
           fileList.forEach(function (item, idx) {
@@ -534,6 +564,8 @@
           fd.append("subSize", rankStyle.size);
           fd.append("subPos", rankStyle.pos);
           fd.append("subStyle", rankStyle.style);
+          fd.append("hook", rankHook.enabled ? "1" : "0");
+          fd.append("hookMode", rankHook.mode);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -548,6 +580,8 @@
               subSize: rankStyle.size,
               subPos: rankStyle.pos,
               subStyle: rankStyle.style,
+              hook: rankHook.enabled,
+              hookMode: rankHook.mode,
             }),
           });
         }

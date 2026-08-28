@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const crypto = require("crypto");
-const { tryAddSubtitles } = require("./subtitles");
+const { tryEnhanceClip } = require("./subtitles");
 
 const execFileAsync = promisify(execFile);
 
@@ -640,10 +640,19 @@ async function processMultiRank(sources, options = {}) {
     const compPath = path.join(outDir, compName);
     await concatVideos(listFile, compPath);
 
-    if (options.subtitles) {
-      const sr = await tryAddSubtitles(compPath, options.subStyle);
-      if (sr.applied) job.subtitlesApplied = true;
-      else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
+    if (options.subtitles || options.hook) {
+      const er = await tryEnhanceClip(compPath, {
+        subStyle: options.subtitles ? options.subStyle : null,
+        hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+      });
+      if (er.subtitlesApplied) job.subtitlesApplied = true;
+      if (er.hookApplied) {
+        job.hookApplied = true;
+        if (er.hookText) job.hookText = er.hookText;
+      }
+      if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
+        job.subtitlesNote = `captions skipped (${er.reason})`;
+      }
     }
 
     job.compilation = {

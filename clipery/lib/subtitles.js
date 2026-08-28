@@ -58,11 +58,12 @@ const GAP_SPLIT = 0.9;
 function normalizeSubStyle(input = {}) {
   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
   const st = String(input.style).toLowerCase();
+  const okStyles = ["box", "pop", "highlight"];
   return {
     color: pick(input.color, SUB_COLORS, "white"),
     size: pick(input.size, SUB_SIZES, "medium"),
     pos: pick(input.pos, SUB_POSITIONS, "bottom"),
-    style: st === "box" || st === "pop" ? st : "outline",
+    style: okStyles.includes(st) ? st : "outline",
   };
 }
 
@@ -187,12 +188,101 @@ function assTime(t) {
 // keep ASS override braces/backslashes out of recognised words
 const cleanWord = (w) => String(w).replace(/[{}\\]/g, "").trim();
 
+/* ---------------- AI hook title ---------------- */
+
+const HOOK_POWER = new Set(
+  (
+    "how why what who when where which secret stop never always everyone nobody this trick mistake wrong " +
+    "best worst now watch really actually dont don't can't won't shouldn't should could would new free " +
+    "money time thing things people every nobody biggest first last"
+  ).split(" ")
+);
+const HOOK_NUMBERS = /\b(one|two|three|four|five|six|seven|eight|nine|ten|top|\d+)\b/i;
+const HOOK_TAIL_STOP = new Set(["and", "but", "so", "then", "the", "a", "an", "to", "of", "with", "for", "or", "my", "your", "will", "can", "is", "are"]);
+
+function trimHookTail(arr) {
+  while (arr.length > 2 && HOOK_TAIL_STOP.has(arr[arr.length - 1].w.toLowerCase())) arr.pop();
+  return arr;
+}
+
+/**
+ * Pick the punchiest phrase from the first seconds of a clip as its HOOK.
+ * Heuristic: split early speech into phrases at pauses, score for power words,
+ * numbers and a punchy length, earliest strong phrase wins. Uppercase result.
+ */
+function pickHookText(words) {
+  const early = words.filter((w) => w.s < 8);
+  if (!early.length) return null;
+
+  const phrases = [[]];
+  for (const w of early) {
+    const cur = phrases[phrases.length - 1];
+    if (cur.length && w.s - cur[cur.length - 1].e > 0.5) phrases.push([]);
+    phrases[phrases.length - 1].push(w);
+  }
+
+  let best = null;
+  let bestScore = -1;
+  for (const ph of phrases) {
+    if (!ph.length || ph.length < 2) continue;
+    const waitWords = trimHookTail(ph.slice(0, 7)); // hooks are short
+    const text = waitWords.map((w) => w.w).join(" ");
+    if (text.length > 40) continue;
+    let score = ph[0].s * -0.15; // earlier is better
+    for (const w of waitWords) {
+      const lw = w.w.toLowerCase();
+      if (HOOK_POWER.has(lw)) score += 2;
+      if (HOOK_NUMBERS.test(lw)) score += 1.5;
+    }
+    if (waitWords.length >= 3 && waitWords.length <= 7) score += 1; // punchy length
+    if (score > bestScore) {
+      bestScore = score;
+      best = waitWords.map((w) => w.w).join(" ");
+    }
+  }
+  if (!best) best = early.slice(0, 6).map((w) => w.w).join(" "); // cold-open fallback
+  const clean = best.replace(/[{}\\]/g, "").trim();
+  return clean ? clean.toUpperCase() : null;
+}
+
+/** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
+function hookRows(text) {
+  if (text.length <= 18) return [text];
+  const ws = text.split(" ");
+  let r1 = "";
+  for (const w of ws) {
+    const t = r1 ? r1 + " " + w : w;
+    if (t.length > 18 && r1) break;
+    r1 = t;
+  }
+  const r2 = text.slice(r1.length).trim();
+  return r2 ? [r1, r2] : [r1];
+}
+
+/** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
+function buildHook(words, clipDur, mode) {
+  const text = pickHookText(words);
+  if (!text) return null;
+  const dur = Math.max(clipDur || 0, 0.6);
+  const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
+  return { text, rows: hookRows(text), start: 0.1, end };
+}
+
+async function probeDuration(p) {
+  try {
+    const out = await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "json", p]);
+    return parseFloat(JSON.parse(out).format?.duration) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 /**
  * Build a complete .ass subtitle file with karaoke word highlighting.
  * \k tags: each word switches from dim (SecondaryColour) to full colour
  * exactly when it is spoken → words fill in left to right, karaoke-style.
  */
-function buildKaraokeAss(pages, sub = {}) {
+function buildKaraokeAss(pages, sub = {}, hook = null) {
   const s = normalizeSubStyle(sub);
   const size = SUB_SIZES[s.size];
   const marginV = SUB_POSITIONS[s.pos];
@@ -204,8 +294,10 @@ function buildKaraokeAss(pages, sub = {}) {
       ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
       : s.style === "pop"
         ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: no outline, hidden ghosts
-        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline
-  const secondary = s.style === "pop" ? KARAOKE_HIDDEN : KARAOKE_DIM;
+        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
+  // highlight = crisp WHITE text, only the spoken words turn into your colour
+  const secondary =
+    s.style === "pop" ? KARAOKE_HIDDEN : s.style === "highlight" ? "&H00FFFFFF" : KARAOKE_DIM;
 
   const header = [
     "[Script Info]",
@@ -218,12 +310,23 @@ function buildKaraokeAss(pages, sub = {}) {
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
+    // Hook title: big bold white with a strong outline, top of frame
+    "Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1",
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
   ];
 
   const events = [];
+  if (hook && hook.rows && hook.rows.length) {
+    const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
+    if (hookText) {
+      const col = SUB_COLORS[s.color];
+      events.push(
+        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${col}}${hookText}`
+      );
+    }
+  }
   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
   for (let i = 0; i < pages.length; i++) {
     const p = pages[i];
@@ -285,47 +388,75 @@ async function burnAss(videoPath, assPath) {
 }
 
 /**
- * Full pass: transcribe → karaoke .ass → burn captions into a rendered clip
- * in place. Keeps the .ass next to the video (downloadable captions file).
- * Never throws.
+ * Full pass in ONE transcription: karaoke captions and/or an AI hook title.
+ * opts: { clipDur?, subStyle|null, hook: {enabled, mode:"intro"|"full"}|null }
+ * Keeps the .ass next to the video (downloadable captions file). Never throws.
  */
-async function tryAddSubtitles(videoPath, subStyle = {}) {
+async function tryEnhanceClip(videoPath, opts = {}) {
+  const wantSubs = !!opts.subStyle;
+  const wantHook = !!(opts.hook && opts.hook.enabled !== false);
+  if (!wantSubs && !wantHook) return { applied: false, reason: "nothing-requested" };
   if (!subtitlesAvailable()) return { applied: false, reason: "engine-missing" };
+
   const noExt = videoPath.replace(/\.mp4$/i, "");
   const jsonPath = noExt + ".words.json";
   const assPath = noExt + ".subtitles.ass";
 
   const n = await transcribeToWords(videoPath, jsonPath);
-  if (!n) {
-    try { fs.unlinkSync(jsonPath); } catch {}
-    return { applied: false, reason: "no-speech-detected" };
+  let words = [];
+  if (n) {
+    try {
+      words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
+    } catch {}
   }
-  let pages = [];
-  try {
-    const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-    const style = normalizeSubStyle(subStyle);
-    pages = buildRollingPages(data.words || [], ROW_CHARS[style.size]);
-  } catch {}
-  if (!pages.length) {
-    try { fs.unlinkSync(jsonPath); } catch {}
-    return { applied: false, reason: "no-speech-detected" };
-  }
-  fs.writeFileSync(assPath, buildKaraokeAss(pages, subStyle), "utf8");
   try { fs.unlinkSync(jsonPath); } catch {}
 
+  let pages = [];
+  if (wantSubs && words.length) {
+    const style = normalizeSubStyle(opts.subStyle);
+    pages = buildRollingPages(words, ROW_CHARS[style.size]);
+  }
+
+  let hook = null;
+  if (wantHook && words.length) {
+    const dur = opts.clipDur || (await probeDuration(videoPath));
+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro");
+  }
+
+  if (!pages.length && !hook) {
+    return { applied: false, reason: "no-speech-detected" };
+  }
+
+  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook), "utf8");
   const applied = await burnAss(videoPath, assPath);
   if (!applied) {
     try { fs.unlinkSync(assPath); } catch {}
     return { applied: false, reason: "burn-failed" };
   }
-  return { applied: true, captions: pages.length };
+  return {
+    applied: true,
+    captions: pages.length,
+    subtitlesApplied: pages.length > 0,
+    hookApplied: !!hook,
+    hookText: hook ? hook.text : null,
+  };
+}
+
+/** Backwards-compatible wrapper: subtitles only. */
+async function tryAddSubtitles(videoPath, subStyle = {}) {
+  const r = await tryEnhanceClip(videoPath, { subStyle });
+  if (!r.applied) return { applied: false, reason: r.reason };
+  return { applied: true, captions: r.captions };
 }
 
 module.exports = {
   subtitlesAvailable,
   tryAddSubtitles,
+  tryEnhanceClip,
   transcribeToWords,
   buildRollingPages,
   buildKaraokeAss,
+  buildHook,
+  pickHookText,
   normalizeSubStyle,
 };

@@ -1,186 +1,624 @@
-diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index d989893..2874859 100644
---- a/clipery/lib/subtitles.js
-+++ b/clipery/lib/subtitles.js
-@@ -123,43 +123,55 @@ async function transcribeToWords(mediaPath, jsonPath) {
- const round2 = (v) => Math.round(v * 100) / 100;
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index cb8607a..23a222c 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -3,7 +3,7 @@ const fs = require("fs");
+ const path = require("path");
+ const { promisify } = require("util");
+ const crypto = require("crypto");
+-const { tryAddSubtitles } = require("./subtitles");
++const { tryEnhanceClip } = require("./subtitles");
  
- /**
-- * Group words into caption blocks of at most 2 rows.
-- * Row 1 fills first (L→R); overflow goes to row 2 BELOW it; a full row 2
-- * (or a long pause) closes the block. No orphan one-word blocks.
-+ * Rolling 2-row karaoke window (the real TikTok pattern):
-+ * words fill row 1 left→right, overflow continues on row 2 below;
-+ * when row 2 is full it SLIDES UP to become row 1 and fresh words take
-+ * row 2. The caption area is always the same height → zero bouncing.
-+ * A long pause (> GAP_SPLIT) resets the window for the next sentence.
-  */
--function buildKaraokeBlocks(words, rowChars) {
--  const blocks = [];
--  let rows = [[], []];
--  let start = 0;
-+function buildRollingPages(words, rowChars) {
-+  const pages = [];
-+  let r1 = [];
-+  let r2 = [];
-   let lastEnd = 0;
-+  let intro = true; // true while a fresh window's rows are still being spoken (karaoke live)
-+  const rowLen = (arr) => arr.reduce((a, x) => a + x.w.length + 1, 0);
-+  const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < ROW_WORDS;
+ const execFileAsync = promisify(execFile);
  
--  const flush = () => {
--    if (!rows[0].length && !rows[1].length) return;
--    blocks.push({ start: round2(start), end: round2(lastEnd), rows: [rows[0].slice(), rows[1].slice()] });
--    rows = [[], []];
-+  const closePage = (fresh) => {
-+    if (!r1.length && !r2.length) return;
-+    pages.push({ r1, r2, intro });
-+    if (fresh) {
-+      r1 = [];
-+      r2 = [];
-+      intro = true;
-+    } else {
-+      r1 = r2; // the filled row 2 scrolls up to become row 1
-+      r2 = [];
-+      intro = false;
-+    }
-   };
+@@ -468,6 +468,8 @@ async function processVideo(sourcePath, options = {}) {
+     createdAt: new Date().toISOString(),
+     sourceName: options.sourceName || path.basename(sourcePath),
+     subtitles: !!options.subtitles,
++    hook: !!options.hook,
++    hookMode: options.hookMode || "intro",
+     clips: [],
+     rankings: [],
+     error: null,
+@@ -580,10 +582,20 @@ async function processVideo(sourcePath, options = {}) {
+       const label = `#${i + 1} VIRAL ${vScore}`;
+       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
+       await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode);
+-      if (options.subtitles) {
+-        const sr = await tryAddSubtitles(outFile, options.subStyle);
+-        if (sr.applied) job.subtitlesApplied = true;
+-        else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
++      if (options.subtitles || options.hook) {
++        const er = await tryEnhanceClip(outFile, {
++          clipDur: +(c.end - c.start).toFixed(2),
++          subStyle: options.subtitles ? options.subStyle : null,
++          hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
++        });
++        if (er.subtitlesApplied) job.subtitlesApplied = true;
++        if (er.hookApplied) {
++          job.hookApplied = true;
++          if (er.hookText && !job.hookText) job.hookText = er.hookText;
++        }
++        if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
++          job.subtitlesNote = `captions skipped (${er.reason})`;
++        }
+       }
+       clips.push({
+         rank: i + 1,
+diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
+index 5b8c515..8c144a1 100644
+--- a/clipery/lib/linkVideoEngine.js
++++ b/clipery/lib/linkVideoEngine.js
+@@ -3,7 +3,7 @@ const fs = require("fs");
+ const path = require("path");
+ const { promisify } = require("util");
+ const crypto = require("crypto");
+-const { tryAddSubtitles } = require("./subtitles");
++const { tryEnhanceClip } = require("./subtitles");
  
-   for (const w of words) {
--    const rowLen = (idx) => rows[idx].reduce((a, x) => a + x.w.length + 1, 0);
--    const fitsRow = (idx, word) => rowLen(idx) + word.length <= rowChars && rows[idx].length < ROW_WORDS;
--    const empty = !rows[0].length && !rows[1].length;
--
--    if (!empty && w.s - lastEnd > GAP_SPLIT) flush();
--    if (!rows[0].length && !rows[1].length) start = w.s;
-+    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(true); // pause → fresh window
+ const execFileAsync = promisify(execFile);
  
--    if (fitsRow(0, w.w) && !rows[1].length) {
--      rows[0].push(w);
--    } else if (fitsRow(1, w.w)) {
--      rows[1].push(w);
-+    if (!r1.length && !r2.length) {
-+      r1.push(w);
-+    } else if (!r2.length) {
-+      if (fits(r1, w.w)) r1.push(w); // still filling row 1
-+      else r2.push(w); // row 1 full → row 2 starts
-     } else {
--      flush();
--      start = w.s;
--      rows[0].push(w);
-+      if (fits(r2, w.w)) {
-+        r2.push(w);
-+      } else {
-+        closePage(false); // row 2 full → slide content up
-+        r2.push(w);
+@@ -640,10 +640,19 @@ async function processMultiRank(sources, options = {}) {
+     const compPath = path.join(outDir, compName);
+     await concatVideos(listFile, compPath);
+ 
+-    if (options.subtitles) {
+-      const sr = await tryAddSubtitles(compPath, options.subStyle);
+-      if (sr.applied) job.subtitlesApplied = true;
+-      else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
++    if (options.subtitles || options.hook) {
++      const er = await tryEnhanceClip(compPath, {
++        subStyle: options.subtitles ? options.subStyle : null,
++        hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
++      });
++      if (er.subtitlesApplied) job.subtitlesApplied = true;
++      if (er.hookApplied) {
++        job.hookApplied = true;
++        if (er.hookText) job.hookText = er.hookText;
++      }
++      if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
++        job.subtitlesNote = `captions skipped (${er.reason})`;
 +      }
      }
-     lastEnd = Math.max(lastEnd, w.e);
-   }
--  flush();
--  return blocks;
-+  closePage(true);
-+  return pages;
+ 
+     job.compilation = {
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index 2874859..a3fd89c 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -58,11 +58,12 @@ const GAP_SPLIT = 0.9;
+ function normalizeSubStyle(input = {}) {
+   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
+   const st = String(input.style).toLowerCase();
++  const okStyles = ["box", "pop", "highlight"];
+   return {
+     color: pick(input.color, SUB_COLORS, "white"),
+     size: pick(input.size, SUB_SIZES, "medium"),
+     pos: pick(input.pos, SUB_POSITIONS, "bottom"),
+-    style: st === "box" || st === "pop" ? st : "outline",
++    style: okStyles.includes(st) ? st : "outline",
+   };
  }
  
- function assTime(t) {
-@@ -180,7 +192,7 @@ const cleanWord = (w) => String(w).replace(/[{}\\]/g, "").trim();
+@@ -187,12 +188,101 @@ function assTime(t) {
+ // keep ASS override braces/backslashes out of recognised words
+ const cleanWord = (w) => String(w).replace(/[{}\\]/g, "").trim();
+ 
++/* ---------------- AI hook title ---------------- */
++
++const HOOK_POWER = new Set(
++  (
++    "how why what who when where which secret stop never always everyone nobody this trick mistake wrong " +
++    "best worst now watch really actually dont don't can't won't shouldn't should could would new free " +
++    "money time thing things people every nobody biggest first last"
++  ).split(" ")
++);
++const HOOK_NUMBERS = /\b(one|two|three|four|five|six|seven|eight|nine|ten|top|\d+)\b/i;
++const HOOK_TAIL_STOP = new Set(["and", "but", "so", "then", "the", "a", "an", "to", "of", "with", "for", "or", "my", "your", "will", "can", "is", "are"]);
++
++function trimHookTail(arr) {
++  while (arr.length > 2 && HOOK_TAIL_STOP.has(arr[arr.length - 1].w.toLowerCase())) arr.pop();
++  return arr;
++}
++
++/**
++ * Pick the punchiest phrase from the first seconds of a clip as its HOOK.
++ * Heuristic: split early speech into phrases at pauses, score for power words,
++ * numbers and a punchy length, earliest strong phrase wins. Uppercase result.
++ */
++function pickHookText(words) {
++  const early = words.filter((w) => w.s < 8);
++  if (!early.length) return null;
++
++  const phrases = [[]];
++  for (const w of early) {
++    const cur = phrases[phrases.length - 1];
++    if (cur.length && w.s - cur[cur.length - 1].e > 0.5) phrases.push([]);
++    phrases[phrases.length - 1].push(w);
++  }
++
++  let best = null;
++  let bestScore = -1;
++  for (const ph of phrases) {
++    if (!ph.length || ph.length < 2) continue;
++    const waitWords = trimHookTail(ph.slice(0, 7)); // hooks are short
++    const text = waitWords.map((w) => w.w).join(" ");
++    if (text.length > 40) continue;
++    let score = ph[0].s * -0.15; // earlier is better
++    for (const w of waitWords) {
++      const lw = w.w.toLowerCase();
++      if (HOOK_POWER.has(lw)) score += 2;
++      if (HOOK_NUMBERS.test(lw)) score += 1.5;
++    }
++    if (waitWords.length >= 3 && waitWords.length <= 7) score += 1; // punchy length
++    if (score > bestScore) {
++      bestScore = score;
++      best = waitWords.map((w) => w.w).join(" ");
++    }
++  }
++  if (!best) best = early.slice(0, 6).map((w) => w.w).join(" "); // cold-open fallback
++  const clean = best.replace(/[{}\\]/g, "").trim();
++  return clean ? clean.toUpperCase() : null;
++}
++
++/** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
++function hookRows(text) {
++  if (text.length <= 18) return [text];
++  const ws = text.split(" ");
++  let r1 = "";
++  for (const w of ws) {
++    const t = r1 ? r1 + " " + w : w;
++    if (t.length > 18 && r1) break;
++    r1 = t;
++  }
++  const r2 = text.slice(r1.length).trim();
++  return r2 ? [r1, r2] : [r1];
++}
++
++/** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
++function buildHook(words, clipDur, mode) {
++  const text = pickHookText(words);
++  if (!text) return null;
++  const dur = Math.max(clipDur || 0, 0.6);
++  const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
++  return { text, rows: hookRows(text), start: 0.1, end };
++}
++
++async function probeDuration(p) {
++  try {
++    const out = await run("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "json", p]);
++    return parseFloat(JSON.parse(out).format?.duration) || 0;
++  } catch {
++    return 0;
++  }
++}
++
+ /**
+  * Build a complete .ass subtitle file with karaoke word highlighting.
   * \k tags: each word switches from dim (SecondaryColour) to full colour
   * exactly when it is spoken → words fill in left to right, karaoke-style.
   */
--function buildKaraokeAss(blocks, sub = {}) {
-+function buildKaraokeAss(pages, sub = {}) {
+-function buildKaraokeAss(pages, sub = {}) {
++function buildKaraokeAss(pages, sub = {}, hook = null) {
    const s = normalizeSubStyle(sub);
    const size = SUB_SIZES[s.size];
    const marginV = SUB_POSITIONS[s.pos];
-@@ -212,26 +224,34 @@ function buildKaraokeAss(blocks, sub = {}) {
+@@ -204,8 +294,10 @@ function buildKaraokeAss(pages, sub = {}) {
+       ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
+       : s.style === "pop"
+         ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: no outline, hidden ghosts
+-        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline
+-  const secondary = s.style === "pop" ? KARAOKE_HIDDEN : KARAOKE_DIM;
++        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
++  // highlight = crisp WHITE text, only the spoken words turn into your colour
++  const secondary =
++    s.style === "pop" ? KARAOKE_HIDDEN : s.style === "highlight" ? "&H00FFFFFF" : KARAOKE_DIM;
+ 
+   const header = [
+     "[Script Info]",
+@@ -218,12 +310,23 @@ function buildKaraokeAss(pages, sub = {}) {
+     "[V4+ Styles]",
+     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
++    // Hook title: big bold white with a strong outline, top of frame
++    "Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1",
+     "",
+     "[Events]",
+     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
    ];
  
    const events = [];
--  for (let i = 0; i < blocks.length; i++) {
--    const b = blocks[i];
--    const evStart = Math.max(0, b.start - 0.05);
--    let evEnd = b.end + 0.3;
--    if (i + 1 < blocks.length) evEnd = Math.min(evEnd, blocks[i + 1].start - 0.02);
-+  const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
-+  for (let i = 0; i < pages.length; i++) {
-+    const p = pages[i];
-+    const hasTwoRows = p.r2.length > 0;
-+    const staticRow = p.intro ? [] : p.r1; // intro pages karaoke everything live
-+    const liveRow = p.intro ? [...p.r1, ...p.r2] : p.r2;
-+    const row1Len = p.r1.length;
-+
-+    const evStart = Math.max(0, starts[i]);
-+    const lastWord = liveRow[liveRow.length - 1];
-+    let evEnd = lastWord.e + 0.35;
-+    if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
-     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
- 
--    // \kX before a word = word switches colour X centiseconds after the
--    // previous word's switch → each \k = (my word start − previous word start).
--    const allWords = [...b.rows[0], ...b.rows[1]];
--    if (!allWords.length) continue;
--    const parts = allWords.map((w, idx) => {
--      const prev = allWords[idx - 1];
--      let cs = prev ? Math.round((w.s - prev.s) * 100) : Math.round((w.s - evStart) * 100);
-+    const parts = [];
-+    for (const w of staticRow) parts.push(`{\\k5}${cleanWord(w.w)}`); // already spoken → lit at once
-+    let prevStart = null;
-+    for (const w of liveRow) {
-+      let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
-       if (cs < 5) cs = 5;
--      return `{\\k${cs}}${cleanWord(w.w)}`;
--    });
--    const line1 = parts.slice(0, b.rows[0].length).join(" ");
--    const line2 = b.rows[1].length ? "\\N" + parts.slice(b.rows[0].length).join(" ") : "";
--    events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${line1}${line2}`);
-+      parts.push(`{\\k${cs}}${cleanWord(w.w)}`);
-+      prevStart = w.s;
++  if (hook && hook.rows && hook.rows.length) {
++    const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
++    if (hookText) {
++      const col = SUB_COLORS[s.color];
++      events.push(
++        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${col}}${hookText}`
++      );
 +    }
-+    if (!parts.length) continue;
-+    const text = hasTwoRows
-+      ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
-+      : parts.join(" ");
-+    events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${text}`);
-   }
-   return header.concat(events).join("\n") + "\n";
++  }
+   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
+   for (let i = 0; i < pages.length; i++) {
+     const p = pages[i];
+@@ -285,47 +388,75 @@ async function burnAss(videoPath, assPath) {
  }
-@@ -280,17 +300,17 @@ async function tryAddSubtitles(videoPath, subStyle = {}) {
-     try { fs.unlinkSync(jsonPath); } catch {}
-     return { applied: false, reason: "no-speech-detected" };
-   }
--  let blocks = [];
-+  let pages = [];
-   try {
-     const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
-     const style = normalizeSubStyle(subStyle);
--    blocks = buildKaraokeBlocks(data.words || [], ROW_CHARS[style.size]);
-+    pages = buildRollingPages(data.words || [], ROW_CHARS[style.size]);
-   } catch {}
--  if (!blocks.length) {
-+  if (!pages.length) {
-     try { fs.unlinkSync(jsonPath); } catch {}
-     return { applied: false, reason: "no-speech-detected" };
-   }
--  fs.writeFileSync(assPath, buildKaraokeAss(blocks, subStyle), "utf8");
-+  fs.writeFileSync(assPath, buildKaraokeAss(pages, subStyle), "utf8");
-   try { fs.unlinkSync(jsonPath); } catch {}
  
+ /**
+- * Full pass: transcribe → karaoke .ass → burn captions into a rendered clip
+- * in place. Keeps the .ass next to the video (downloadable captions file).
+- * Never throws.
++ * Full pass in ONE transcription: karaoke captions and/or an AI hook title.
++ * opts: { clipDur?, subStyle|null, hook: {enabled, mode:"intro"|"full"}|null }
++ * Keeps the .ass next to the video (downloadable captions file). Never throws.
+  */
+-async function tryAddSubtitles(videoPath, subStyle = {}) {
++async function tryEnhanceClip(videoPath, opts = {}) {
++  const wantSubs = !!opts.subStyle;
++  const wantHook = !!(opts.hook && opts.hook.enabled !== false);
++  if (!wantSubs && !wantHook) return { applied: false, reason: "nothing-requested" };
+   if (!subtitlesAvailable()) return { applied: false, reason: "engine-missing" };
++
+   const noExt = videoPath.replace(/\.mp4$/i, "");
+   const jsonPath = noExt + ".words.json";
+   const assPath = noExt + ".subtitles.ass";
+ 
+   const n = await transcribeToWords(videoPath, jsonPath);
+-  if (!n) {
+-    try { fs.unlinkSync(jsonPath); } catch {}
+-    return { applied: false, reason: "no-speech-detected" };
++  let words = [];
++  if (n) {
++    try {
++      words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
++    } catch {}
+   }
++  try { fs.unlinkSync(jsonPath); } catch {}
++
+   let pages = [];
+-  try {
+-    const data = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
+-    const style = normalizeSubStyle(subStyle);
+-    pages = buildRollingPages(data.words || [], ROW_CHARS[style.size]);
+-  } catch {}
+-  if (!pages.length) {
+-    try { fs.unlinkSync(jsonPath); } catch {}
++  if (wantSubs && words.length) {
++    const style = normalizeSubStyle(opts.subStyle);
++    pages = buildRollingPages(words, ROW_CHARS[style.size]);
++  }
++
++  let hook = null;
++  if (wantHook && words.length) {
++    const dur = opts.clipDur || (await probeDuration(videoPath));
++    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro");
++  }
++
++  if (!pages.length && !hook) {
+     return { applied: false, reason: "no-speech-detected" };
+   }
+-  fs.writeFileSync(assPath, buildKaraokeAss(pages, subStyle), "utf8");
+-  try { fs.unlinkSync(jsonPath); } catch {}
+ 
++  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook), "utf8");
    const applied = await burnAss(videoPath, assPath);
-@@ -298,14 +318,14 @@ async function tryAddSubtitles(videoPath, subStyle = {}) {
+   if (!applied) {
      try { fs.unlinkSync(assPath); } catch {}
      return { applied: false, reason: "burn-failed" };
    }
--  return { applied: true, captions: blocks.length };
-+  return { applied: true, captions: pages.length };
+-  return { applied: true, captions: pages.length };
++  return {
++    applied: true,
++    captions: pages.length,
++    subtitlesApplied: pages.length > 0,
++    hookApplied: !!hook,
++    hookText: hook ? hook.text : null,
++  };
++}
++
++/** Backwards-compatible wrapper: subtitles only. */
++async function tryAddSubtitles(videoPath, subStyle = {}) {
++  const r = await tryEnhanceClip(videoPath, { subStyle });
++  if (!r.applied) return { applied: false, reason: r.reason };
++  return { applied: true, captions: r.captions };
  }
  
  module.exports = {
    subtitlesAvailable,
    tryAddSubtitles,
++  tryEnhanceClip,
    transcribeToWords,
--  buildKaraokeBlocks,
-+  buildRollingPages,
+   buildRollingPages,
    buildKaraokeAss,
++  buildHook,
++  pickHookText,
    normalizeSubStyle,
  };
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 6fcad59..053f81b 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -54,6 +54,7 @@
+       .sub-preview-frame.pop .sub-preview-cap .dim{opacity:0}
+       .sub-preview-frame.box .sub-preview-cap span{background:rgba(0,0,0,0.6);padding:0 3px;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
++      .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
+       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
+     </style>
+   </head>
+@@ -140,19 +141,33 @@
+             </label>
+             <label>Style
+               <select id="long-sub-style">
+-                <option value="outline" selected>Outline</option>
++                <option value="outline" selected>Karaoke (dim → color)</option>
++                <option value="highlight">White + colored word</option>
+                 <option value="box">Highlight box</option>
+                 <option value="pop">Pop-in words</option>
+               </select>
+             </label>
+             <div class="sub-preview" id="long-sub-preview" aria-hidden="true">
+               <div class="sub-preview-frame">
++                <span class="sub-preview-hook" hidden>YOUR HOOK</span>
+                 <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                 <span class="sub-preview-wm">Clipery viral</span>
+               </div>
+               <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>
+             </div>
+           </div>
++          <label class="sub-toggle" for="long-hook">
++            <input type="checkbox" id="long-hook" checked />
++            <span>Hook title <span class="sub-hint">AI picks the punchy line, big text on top</span></span>
++          </label>
++          <div class="sub-style-grid" id="long-hookgrid">
++            <label>Hook shows
++              <select id="long-hook-mode">
++                <option value="intro" selected>First seconds</option>
++                <option value="full">Whole clip</option>
++              </select>
++            </label>
++          </div>
+           <button type="button" class="btn btn-primary btn-lg btn-block" id="long-go">Generate clips</button>
+           <p class="form-msg" id="long-msg"></p>
+ 
+@@ -281,19 +296,33 @@
+             </label>
+             <label>Style
+               <select id="rank-sub-style">
+-                <option value="outline" selected>Outline</option>
++                <option value="outline" selected>Karaoke (dim → color)</option>
++                <option value="highlight">White + colored word</option>
+                 <option value="box">Highlight box</option>
+                 <option value="pop">Pop-in words</option>
+               </select>
+             </label>
+             <div class="sub-preview" id="rank-sub-preview" aria-hidden="true">
+               <div class="sub-preview-frame">
++                <span class="sub-preview-hook" hidden>YOUR HOOK</span>
+                 <div class="sub-preview-cap"><span class="lit">Words light up</span><br /><span class="lit">one by one</span> <span class="dim">like this</span></div>
+                 <span class="sub-preview-wm">Clipery viral</span>
+               </div>
+               <span class="sub-preview-tag">Preview — words light up left to right, max 2 rows, never jumps</span>
+             </div>
+           </div>
++          <label class="sub-toggle" for="rank-hook">
++            <input type="checkbox" id="rank-hook" checked />
++            <span>Hook title <span class="sub-hint">AI picks the punchy line, big text on top</span></span>
++          </label>
++          <div class="sub-style-grid" id="rank-hookgrid">
++            <label>Hook shows
++              <select id="rank-hook-mode">
++                <option value="intro" selected>First seconds</option>
++                <option value="full">Whole clip</option>
++              </select>
++            </label>
++          </div>
+           <button type="button" class="btn btn-primary btn-lg btn-block" id="rank-go" style="margin-top:1.1rem">Generate ranking video</button>
+           <p class="form-msg" id="rank-msg"></p>
+ 
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index a84e6da..0bbd2e2 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -26,6 +26,30 @@
+   wireSubToggle("long-subs", "long-substyle");
+   wireSubToggle("rank-subs", "rank-substyle");
+ 
++  function collectHook(prefix) {
++    var t = $(prefix + "-hook");
++    var m = $(prefix + "-hook-mode");
++    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro" };
++  }
++
++  function wireHookToggle(prefix) {
++    var t = $(prefix + "-hook");
++    var g = $(prefix + "-hookgrid");
++    var pv = $(prefix + "-sub-preview");
++    if (!t) return;
++    function sync() {
++      if (g) g.classList.toggle("subs-off", !t.checked);
++      if (pv) {
++        var chip = pv.querySelector(".sub-preview-hook");
++        if (chip) chip.hidden = !t.checked;
++      }
++    }
++    t.addEventListener("change", sync);
++    sync();
++  }
++  wireHookToggle("long");
++  wireHookToggle("rank");
++
+   /* --- live subtitle style preview --- */
+   var SUB_PREV = {
+     colors: {
+@@ -295,6 +319,7 @@
+         var subsEl = document.getElementById("long-subs");
+         var wantSubs = subsEl ? subsEl.checked : true;
+         var longStyle = collectSubStyle("long");
++        var longHook = collectHook("long");
+         if (fileObj) {
+           var fd = new FormData();
+           fd.append("video", fileObj, fileObj.name || "video.mp4");
+@@ -304,6 +329,8 @@
+           fd.append("subSize", longStyle.size);
+           fd.append("subPos", longStyle.pos);
+           fd.append("subStyle", longStyle.style);
++          fd.append("hook", longHook.enabled ? "1" : "0");
++          fd.append("hookMode", longHook.mode);
+           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/clip/from-url", {
+@@ -317,6 +344,8 @@
+               subSize: longStyle.size,
+               subPos: longStyle.pos,
+               subStyle: longStyle.style,
++              hook: longHook.enabled,
++              hookMode: longHook.mode,
+             }),
+           });
+         }
+@@ -522,6 +551,7 @@
+         var rankSubsEl = document.getElementById("rank-subs");
+         var wantRankSubs = rankSubsEl ? rankSubsEl.checked : true;
+         var rankStyle = collectSubStyle("rank");
++        var rankHook = collectHook("rank");
+         if (fileList.length) {
+           var fd = new FormData();
+           fileList.forEach(function (item, idx) {
+@@ -534,6 +564,8 @@
+           fd.append("subSize", rankStyle.size);
+           fd.append("subPos", rankStyle.pos);
+           fd.append("subStyle", rankStyle.style);
++          fd.append("hook", rankHook.enabled ? "1" : "0");
++          fd.append("hookMode", rankHook.mode);
+           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/rank/video/links", {
+@@ -548,6 +580,8 @@
+               subSize: rankStyle.size,
+               subPos: rankStyle.pos,
+               subStyle: rankStyle.style,
++              hook: rankHook.enabled,
++              hookMode: rankHook.mode,
+             }),
+           });
+         }
+diff --git a/clipery/server.js b/clipery/server.js
+index b372443..03d2e4d 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -335,6 +335,14 @@ function readSubStyle(get) {
+   });
+ }
+ 
++// hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
++function readHook(get) {
++  return {
++    enabled: wantSubtitles(get("hook")),
++    mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
++  };
++}
++
+ const server = http.createServer(async (req, res) => {
+   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+   const pathname = url.pathname;
+@@ -538,12 +546,19 @@ const server = http.createServer(async (req, res) => {
+         const p = parts.find((x) => x.name === n);
+         return p ? p.body.toString("utf8") : "";
+       });
++      const hookOpts = readHook((n) => {
++        const p = parts.find((x) => x.name === n);
++        return p ? p.body.toString("utf8") : "";
++      });
+ 
+       const jobId = crypto.randomBytes(6).toString("hex");
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.writeFileSync(dest, filePart.body);
+-      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle });
+-      const q = enqueue(dest, { jobId, sourceName: orig, mode, subtitles, subStyle });
++      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode });
++      const q = enqueue(dest, {
++        jobId, sourceName: orig, mode, subtitles, subStyle,
++        hook: hookOpts.enabled, hookMode: hookOpts.mode,
++      });
+       return send(res, 202, {
+         ok: true,
+         jobId,
+@@ -570,17 +585,23 @@ const server = http.createServer(async (req, res) => {
+       }
+       const subtitles = wantSubtitles(body.subtitles);
+       const subStyle = readSubStyle((n) => body[n]);
++      const hookOpts = readHook((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+       seedJob(jobId, {
+         mode,
+         sourceName: videoUrl.slice(0, 80),
+         subtitles,
+         subStyle,
++        hook: hookOpts.enabled,
++        hookMode: hookOpts.mode,
+       });
+       const q = enqueueItem({
+         type: "from-url",
+         url: videoUrl,
+-        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle },
++        meta: {
++          jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
++          hook: hookOpts.enabled, hookMode: hookOpts.mode,
++        },
+       });
+       return send(res, 202, {
+         ok: true,
+@@ -701,6 +722,7 @@ const server = http.createServer(async (req, res) => {
+       }
+       const subtitles = wantSubtitles(body.subtitles);
+       const subStyle = readSubStyle((n) => body[n]);
++      const hookOpts = readHook((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+       seedJob(jobId, {
+         mode: "link-rank-video",
+@@ -708,6 +730,8 @@ const server = http.createServer(async (req, res) => {
+         sourceName: body.name || `${links.length} links → ranking video`,
+         subtitles,
+         subStyle,
++        hook: hookOpts.enabled,
++        hookMode: hookOpts.mode,
+       });
+       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
+       const q = enqueueItem({
+@@ -719,6 +743,8 @@ const server = http.createServer(async (req, res) => {
+           boardTitle,
+           subtitles,
+           subStyle,
++          hook: hookOpts.enabled,
++          hookMode: hookOpts.mode,
+         },
+       });
+       return send(res, 202, {
+@@ -791,17 +817,26 @@ const server = http.createServer(async (req, res) => {
+         const p = parts.find((x) => x.name === n);
+         return p ? p.body.toString("utf8") : "";
+       });
++      const hookOptsUp = readHook((n) => {
++        const p = parts.find((x) => x.name === n);
++        return p ? p.body.toString("utf8") : "";
++      });
+       seedJob(jobId, {
+         mode: "link-rank-video",
+         modeLabel: "Link ranking video",
+         sourceName: boardTitle,
+         subtitles,
+         subStyle,
++        hook: hookOptsUp.enabled,
++        hookMode: hookOptsUp.mode,
+       });
+       const q = enqueueItem({
+         type: "multi-rank",
+         sources,
+-        meta: { jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle },
++        meta: {
++          jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
++          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode,
++        },
+       });
+       return send(res, 202, {
+         ok: true,

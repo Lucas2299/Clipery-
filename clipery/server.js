@@ -335,6 +335,14 @@ function readSubStyle(get) {
   });
 }
 
+// hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
+function readHook(get) {
+  return {
+    enabled: wantSubtitles(get("hook")),
+    mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
   const pathname = url.pathname;
@@ -538,12 +546,19 @@ const server = http.createServer(async (req, res) => {
         const p = parts.find((x) => x.name === n);
         return p ? p.body.toString("utf8") : "";
       });
+      const hookOpts = readHook((n) => {
+        const p = parts.find((x) => x.name === n);
+        return p ? p.body.toString("utf8") : "";
+      });
 
       const jobId = crypto.randomBytes(6).toString("hex");
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
-      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle });
-      const q = enqueue(dest, { jobId, sourceName: orig, mode, subtitles, subStyle });
+      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode });
+      const q = enqueue(dest, {
+        jobId, sourceName: orig, mode, subtitles, subStyle,
+        hook: hookOpts.enabled, hookMode: hookOpts.mode,
+      });
       return send(res, 202, {
         ok: true,
         jobId,
@@ -570,17 +585,23 @@ const server = http.createServer(async (req, res) => {
       }
       const subtitles = wantSubtitles(body.subtitles);
       const subStyle = readSubStyle((n) => body[n]);
+      const hookOpts = readHook((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode,
         sourceName: videoUrl.slice(0, 80),
         subtitles,
         subStyle,
+        hook: hookOpts.enabled,
+        hookMode: hookOpts.mode,
       });
       const q = enqueueItem({
         type: "from-url",
         url: videoUrl,
-        meta: { jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle },
+        meta: {
+          jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
+          hook: hookOpts.enabled, hookMode: hookOpts.mode,
+        },
       });
       return send(res, 202, {
         ok: true,
@@ -701,6 +722,7 @@ const server = http.createServer(async (req, res) => {
       }
       const subtitles = wantSubtitles(body.subtitles);
       const subStyle = readSubStyle((n) => body[n]);
+      const hookOpts = readHook((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode: "link-rank-video",
@@ -708,6 +730,8 @@ const server = http.createServer(async (req, res) => {
         sourceName: body.name || `${links.length} links → ranking video`,
         subtitles,
         subStyle,
+        hook: hookOpts.enabled,
+        hookMode: hookOpts.mode,
       });
       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
       const q = enqueueItem({
@@ -719,6 +743,8 @@ const server = http.createServer(async (req, res) => {
           boardTitle,
           subtitles,
           subStyle,
+          hook: hookOpts.enabled,
+          hookMode: hookOpts.mode,
         },
       });
       return send(res, 202, {
@@ -791,17 +817,26 @@ const server = http.createServer(async (req, res) => {
         const p = parts.find((x) => x.name === n);
         return p ? p.body.toString("utf8") : "";
       });
+      const hookOptsUp = readHook((n) => {
+        const p = parts.find((x) => x.name === n);
+        return p ? p.body.toString("utf8") : "";
+      });
       seedJob(jobId, {
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: boardTitle,
         subtitles,
         subStyle,
+        hook: hookOptsUp.enabled,
+        hookMode: hookOptsUp.mode,
       });
       const q = enqueueItem({
         type: "multi-rank",
         sources,
-        meta: { jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle },
+        meta: {
+          jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode,
+        },
       });
       return send(res, 202, {
         ok: true,

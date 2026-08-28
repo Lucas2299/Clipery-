@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const crypto = require("crypto");
-const { tryAddSubtitles } = require("./subtitles");
+const { tryEnhanceClip } = require("./subtitles");
 
 const execFileAsync = promisify(execFile);
 
@@ -468,6 +468,8 @@ async function processVideo(sourcePath, options = {}) {
     createdAt: new Date().toISOString(),
     sourceName: options.sourceName || path.basename(sourcePath),
     subtitles: !!options.subtitles,
+    hook: !!options.hook,
+    hookMode: options.hookMode || "intro",
     clips: [],
     rankings: [],
     error: null,
@@ -580,10 +582,20 @@ async function processVideo(sourcePath, options = {}) {
       const label = `#${i + 1} VIRAL ${vScore}`;
       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
       await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode);
-      if (options.subtitles) {
-        const sr = await tryAddSubtitles(outFile, options.subStyle);
-        if (sr.applied) job.subtitlesApplied = true;
-        else if (sr.reason) job.subtitlesNote = `subtitles skipped (${sr.reason})`;
+      if (options.subtitles || options.hook) {
+        const er = await tryEnhanceClip(outFile, {
+          clipDur: +(c.end - c.start).toFixed(2),
+          subStyle: options.subtitles ? options.subStyle : null,
+          hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+        });
+        if (er.subtitlesApplied) job.subtitlesApplied = true;
+        if (er.hookApplied) {
+          job.hookApplied = true;
+          if (er.hookText && !job.hookText) job.hookText = er.hookText;
+        }
+        if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
+          job.subtitlesNote = `captions skipped (${er.reason})`;
+        }
       }
       clips.push({
         rank: i + 1,
