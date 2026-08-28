@@ -1,7 +1,7 @@
 {
   "signups": [
     {
-      "email": "test@clipfoundry.com",
+      "email": "test@clipery.test",
       "name": "Test User",
       "role": "creator",
       "source": "landing",
@@ -9,7 +9,7 @@
       "createdAt": "2026-08-23T10:34:06.333Z"
     },
     {
-      "email": "founder@clipfoundry.test",
+      "email": "founder@clipery.test",
       "name": "Founder",
       "role": "creator",
       "source": "landing",

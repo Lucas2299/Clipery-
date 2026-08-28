@@ -10,7 +10,7 @@ Full working AI clip studio:
 ## Run
 
 ```bash
-cd clipfoundry
+cd clipery
 
 # Optional: auto-subtitles (TikTok-style captions, on/off per job in Studio)
 # needs Python + the PocketSphinx speech engine on the server:
