@@ -34,6 +34,13 @@ if (!fs.existsSync(WAITLIST_FILE)) {
   fs.writeFileSync(WAITLIST_FILE, JSON.stringify({ signups: [] }, null, 2));
 }
 
+// Only heavy MEDIA files may live in the browser cache. Code files (.js/.css/.html/.json...)
+// must always be fresh — otherwise an updated site runs on stale scripts and UI buttons die.
+const CACHEABLE_EXT = new Set([
+  ".mp4", ".webm", ".mov", ".jpg", ".jpeg", ".png", ".webp", ".gif",
+  ".svg", ".ico", ".woff", ".woff2", ".ass",
+]);
+
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -186,7 +193,7 @@ function serveFile(req, res, fullPath) {
       "Content-Type": type,
       "Content-Length": st.size,
       "Accept-Ranges": "bytes",
-      "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=3600",
+      "Cache-Control": CACHEABLE_EXT.has(ext) ? "public, max-age=3600" : "no-cache",
     });
     fs.createReadStream(fullPath).pipe(res);
   });
