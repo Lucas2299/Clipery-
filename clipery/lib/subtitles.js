@@ -91,11 +91,14 @@ function normalizeSubStyle(input = {}) {
   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
   const st = String(input.style).toLowerCase();
   const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"];
+  const wds = Math.round(Number(input.words));
   return {
     color: pick(input.color, SUB_COLORS, "white"),
     size: pick(input.size, SUB_SIZES, "medium"),
     pos: pick(input.pos, SUB_POSITIONS, "bottom"),
     style: okStyles.includes(st) ? st : "outline",
+    // words per row (1-8). 0 = engine default. Templates set their own density.
+    words: Number.isFinite(wds) && wds >= 1 && wds <= 8 ? wds : 0,
   };
 }
 
@@ -163,13 +166,14 @@ const round2 = (v) => Math.round(v * 100) / 100;
  * so flips never move the top line → zero bouncing, just clean page changes.
  * A long pause (> GAP_SPLIT) also starts a fresh page for the next sentence.
  */
-function buildRollingPages(words, rowChars) {
+function buildRollingPages(words, rowChars, maxWords) {
+  const pageSize = maxWords || ROW_WORDS;
   const pages = [];
   let r1 = [];
   let r2 = [];
   let lastEnd = 0;
   const rowLen = (arr) => arr.reduce((a, x) => a + x.w.length + 1, 0);
-  const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < ROW_WORDS;
+  const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < pageSize;
 
   const closePage = () => {
     if (!r1.length && !r2.length) return;
@@ -455,7 +459,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
   if (wantSubs && words.length) {
     const style = normalizeSubStyle(opts.subStyle);
     const rowChars = ROW_CHARS[style.size] - (CAPS_STYLES.has(style.style) ? 2 : 0);
-    pages = buildRollingPages(words, rowChars);
+    pages = buildRollingPages(words, rowChars, style.words);
   }
 
   let hook = null;

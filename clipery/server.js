@@ -339,6 +339,7 @@ function readSubStyle(get) {
     size: get("subSize"),
     pos: get("subPos"),
     style: get("subStyle"),
+    words: get("subWords"),
   });
 }
 

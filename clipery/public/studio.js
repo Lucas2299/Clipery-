@@ -10,7 +10,7 @@
       var e = $(prefix + "-sub-" + key);
       return e ? e.value : "";
     }
-    return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style") };
+    return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style"), words: gv("words") };
   }
 
   function wireSubToggle(toggleId, gridId) {
@@ -128,18 +128,38 @@
   }
 
   var TEMPLATES = {
-    tiktok:  { color: "white",  size: "medium", pos: "bottom", style: "outline" },
-    beast:   { color: "yellow", size: "medium", pos: "middle", style: "outline" },
-    candy:   { color: "pink",   size: "medium", pos: "middle", style: "pop" },
-    rainbow: { color: "pink",   size: "medium", pos: "bottom", style: "rainbow" },
-    news:    { color: "white",  size: "small",  pos: "top",    style: "box" },
-    goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box" },
-    glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight" },
-    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" },
-    hormozi: { color: "yellow", size: "medium", pos: "middle", style: "hormozi" },
-    mrbeast: { color: "yellow", size: "medium", pos: "middle", style: "mrbeast" },
-    reels:   { color: "yellow", size: "medium", pos: "middle", style: "highlight" }
+    tiktok:  { color: "white",  size: "medium", pos: "bottom", style: "outline",   words: 3 },
+    beast:   { color: "yellow", size: "medium", pos: "middle", style: "outline",   words: 3 },
+    candy:   { color: "pink",   size: "medium", pos: "middle", style: "pop",       words: 4 },
+    rainbow: { color: "pink",   size: "medium", pos: "bottom", style: "rainbow",   words: 4 },
+    news:    { color: "white",  size: "small",  pos: "top",    style: "box",       words: 5 },
+    goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box",       words: 4 },
+    glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight", words: 3 },
+    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic",   words: 5 },
+    hormozi: { color: "yellow", size: "medium", pos: "middle", style: "hormozi",   words: 3 },
+    mrbeast: { color: "yellow", size: "medium", pos: "middle", style: "mrbeast",   words: 3 },
+    reels:   { color: "yellow", size: "medium", pos: "middle", style: "highlight", words: 3 }
   };
+
+  /* A picked template owns colour, size and word count — only Position stays
+     free. Styles (cards) leave colour & size open for the user. */
+  function setTplLock(prefix, on) {
+    var keys = ["color", "size"];
+    for (var i = 0; i < keys.length; i++) {
+      var el = $(prefix + "-sub-" + keys[i]);
+      if (!el) continue;
+      el.disabled = !!on;
+      var lab = el.closest ? el.closest("label") : null;
+      if (lab) lab.classList.toggle("locked", !!on);
+    }
+    var hint = $(prefix + "-tpl-lock");
+    if (hint) hint.hidden = !on;
+  }
+
+  function setTplWords(prefix, words) {
+    var el = $(prefix + "-sub-words");
+    if (el) el.value = words || "";
+  }
 
   /* --- visual style/template cards --- */
   function cardsIn(prefix, kind) {
@@ -174,6 +194,8 @@
         var sel = $(prefix + "-sub-style");
         if (sel && st) sel.value = st;
         clearTplChips(prefix);
+        setTplLock(prefix, false); // styles: colour & size stay yours
+        setTplWords(prefix, "");
         syncStyleCards(prefix);
         updateSubPreview(prefix);
       });
@@ -210,6 +232,8 @@
           var sel = $(prefix + "-sub-" + keys[k]);
           if (sel) sel.value = t[keys[k]];
         }
+        setTplWords(prefix, t.words);
+        setTplLock(prefix, true); // template owns colour/size/words — placement stays yours
         clearTplChips(prefix);
         ev.currentTarget.classList.add("sel");
         syncStyleCards(prefix);
@@ -223,8 +247,14 @@
     for (var i = 0; i < keys.length; i++) {
       var el = $(prefix + "-sub-" + keys[i]);
       if (el) {
+        var key = keys[i];
         el.addEventListener("change", function () {
-          clearTplChips(prefix);
+          if (key !== "pos") {
+            // hand-tuning colour/size/style = leaving the template behind
+            clearTplChips(prefix);
+            setTplLock(prefix, false);
+            setTplWords(prefix, "");
+          }
           updateSubPreview(prefix);
         });
       }
@@ -475,6 +505,7 @@
           fd.append("subSize", longStyle.size);
           fd.append("subPos", longStyle.pos);
           fd.append("subStyle", longStyle.style);
+          fd.append("subWords", longStyle.words || "");
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
@@ -490,6 +521,7 @@
               subSize: longStyle.size,
               subPos: longStyle.pos,
               subStyle: longStyle.style,
+              subWords: longStyle.words || "",
               hook: longHook.enabled,
               hookMode: longHook.mode,
             }),
@@ -710,6 +742,7 @@
           fd.append("subSize", rankStyle.size);
           fd.append("subPos", rankStyle.pos);
           fd.append("subStyle", rankStyle.style);
+          fd.append("subWords", rankStyle.words || "");
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
@@ -726,6 +759,7 @@
               subSize: rankStyle.size,
               subPos: rankStyle.pos,
               subStyle: rankStyle.style,
+              subWords: rankStyle.words || "",
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
             }),
