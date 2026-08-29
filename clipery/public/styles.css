@@ -2712,3 +2712,10 @@ body.studio-app {
   width: 5px; height: 5px; border-radius: 50%; background: var(--accent-3);
 }
 .clip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.9rem; }
+
+/* brand logo image in the top bar */
+.logo-img {
+  height: 30px;
+  width: auto;
+  display: block;
+}

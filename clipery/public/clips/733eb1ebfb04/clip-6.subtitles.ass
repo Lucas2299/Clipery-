@@ -1,0 +1,20 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,30,&H004CE7FF,&H73FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0,8,12,12,540,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.13,0:00:02.21,Cap,,0,0,0,,{\k6}i {\k34}decide {\k36}what {\k15}i\N{\k11}will {\k20}be {\k12}working {\k38}on
+Dialogue: 0,0:00:02.23,0:00:03.36,Cap,,0,0,0,,{\k5}will {\k5}be {\k5}working {\k5}on\N{\k8}tomorrow {\k31}morning {\k61}so
+Dialogue: 0,0:00:03.38,0:00:04.24,Cap,,0,0,0,,{\k5}tomorrow {\k5}morning {\k5}so\N{\k8}i {\k21}believe {\k41}that
+Dialogue: 0,0:00:04.26,0:00:05.52,Cap,,0,0,0,,{\k5}i {\k5}believe {\k5}that\N{\k8}document {\k75}or {\k20}that
+Dialogue: 0,0:00:05.54,0:00:06.60,Cap,,0,0,0,,{\k5}document {\k5}or {\k5}that\N{\k8}screen {\k48}full {\k25}been {\k21}on
+Dialogue: 0,0:00:06.62,0:00:07.71,Cap,,0,0,0,,{\k5}screen {\k5}full {\k5}been {\k5}on\N{\k8}my {\k12}laptop

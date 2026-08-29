@@ -72,6 +72,7 @@
       /* NAV */
       .nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(16px);background:rgba(8,8,12,.72);border-bottom:1px solid var(--line)}
       .nav-in{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+      .brand-logo{height:30px;width:auto;display:block}
       .brand{display:inline-flex;align-items:center;gap:.55rem;font-weight:700;letter-spacing:-.03em;font-size:1.05rem}
       .mark{
         width:32px;height:32px;border-radius:9px;
@@ -287,7 +288,7 @@
 
     <header class="nav">
       <div class="w nav-in">
-        <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>Clipery</a>
+        <a class="brand" href="/"><img class="brand-logo" src="/logo.png" alt="Clipery" /></a>
         <nav class="nav-links">
           <a href="#how">How it works</a>
           <a href="#features">Features</a>
@@ -503,7 +504,7 @@
 
     <footer class="foot">
       <div class="w foot-in">
-        <a class="brand" href="/"><span class="mark"></span>Clipery</a>
+        <a class="brand" href="/"><img class="brand-logo" src="/logo.png" alt="Clipery" /></a>
         <div class="foot-links">
           <a href="/studio">Studio</a>
           <a href="/library">Library</a>
