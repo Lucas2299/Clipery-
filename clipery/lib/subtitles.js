@@ -127,54 +127,47 @@ async function transcribeToWords(mediaPath, jsonPath) {
 const round2 = (v) => Math.round(v * 100) / 100;
 
 /**
- * Rolling 2-row karaoke window (the real TikTok pattern):
- * words fill row 1 left→right, overflow continues on row 2 below;
- * when row 2 is full it SLIDES UP to become row 1 and fresh words take
- * row 2. The caption area is always the same height → zero bouncing.
- * A long pause (> GAP_SPLIT) resets the window for the next sentence.
+ * Caption pages: words appear one by one, left to right (karaoke).
+ * A page starts as ONE row and can grow to a MAXIMUM of 2 rows;
+ * once the 2nd row is full, we flip to a fresh page (starting with 1 row again).
+ * Row 1 is pinned to the same Y (ASS Alignment 8 + margin from the top edge),
+ * so flips never move the top line → zero bouncing, just clean page changes.
+ * A long pause (> GAP_SPLIT) also starts a fresh page for the next sentence.
  */
 function buildRollingPages(words, rowChars) {
   const pages = [];
   let r1 = [];
   let r2 = [];
   let lastEnd = 0;
-  let intro = true; // true while a fresh window's rows are still being spoken (karaoke live)
   const rowLen = (arr) => arr.reduce((a, x) => a + x.w.length + 1, 0);
   const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < ROW_WORDS;
 
-  const closePage = (fresh) => {
+  const closePage = () => {
     if (!r1.length && !r2.length) return;
-    pages.push({ r1, r2, intro });
-    if (fresh) {
-      r1 = [];
-      r2 = [];
-      intro = true;
-    } else {
-      r1 = r2; // the filled row 2 scrolls up to become row 1
-      r2 = [];
-      intro = false;
-    }
+    pages.push({ r1, r2, intro: true }); // every page is spoken live
+    r1 = [];
+    r2 = [];
   };
 
   for (const w of words) {
-    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(true); // pause → fresh window
+    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(); // pause → fresh page
 
     if (!r1.length && !r2.length) {
       r1.push(w);
     } else if (!r2.length) {
       if (fits(r1, w.w)) r1.push(w); // still filling row 1
-      else r2.push(w); // row 1 full → row 2 starts
+      else r2.push(w); // row 1 full → row 2 starts below
     } else {
       if (fits(r2, w.w)) {
         r2.push(w);
       } else {
-        closePage(false); // row 2 full → slide content up
-        r2.push(w);
+        closePage(); // 2-row max reached → flip to a fresh page
+        r1.push(w);
       }
     }
     lastEnd = Math.max(lastEnd, w.e);
   }
-  closePage(true);
+  closePage();
   return pages;
 }
 

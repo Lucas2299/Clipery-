@@ -1,91 +1,72 @@
---- a/clipery/server.js
-+++ b/clipery/server.js
-@@ -34,6 +34,13 @@
-   fs.writeFileSync(WAITLIST_FILE, JSON.stringify({ signups: [] }, null, 2));
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -127,54 +127,47 @@
+ const round2 = (v) => Math.round(v * 100) / 100;
+ 
+ /**
+- * Rolling 2-row karaoke window (the real TikTok pattern):
+- * words fill row 1 left→right, overflow continues on row 2 below;
+- * when row 2 is full it SLIDES UP to become row 1 and fresh words take
+- * row 2. The caption area is always the same height → zero bouncing.
+- * A long pause (> GAP_SPLIT) resets the window for the next sentence.
++ * Caption pages: words appear one by one, left to right (karaoke).
++ * A page starts as ONE row and can grow to a MAXIMUM of 2 rows;
++ * once the 2nd row is full, we flip to a fresh page (starting with 1 row again).
++ * Row 1 is pinned to the same Y (ASS Alignment 8 + margin from the top edge),
++ * so flips never move the top line → zero bouncing, just clean page changes.
++ * A long pause (> GAP_SPLIT) also starts a fresh page for the next sentence.
+  */
+ function buildRollingPages(words, rowChars) {
+   const pages = [];
+   let r1 = [];
+   let r2 = [];
+   let lastEnd = 0;
+-  let intro = true; // true while a fresh window's rows are still being spoken (karaoke live)
+   const rowLen = (arr) => arr.reduce((a, x) => a + x.w.length + 1, 0);
+   const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < ROW_WORDS;
+ 
+-  const closePage = (fresh) => {
++  const closePage = () => {
+     if (!r1.length && !r2.length) return;
+-    pages.push({ r1, r2, intro });
+-    if (fresh) {
+-      r1 = [];
+-      r2 = [];
+-      intro = true;
+-    } else {
+-      r1 = r2; // the filled row 2 scrolls up to become row 1
+-      r2 = [];
+-      intro = false;
+-    }
++    pages.push({ r1, r2, intro: true }); // every page is spoken live
++    r1 = [];
++    r2 = [];
+   };
+ 
+   for (const w of words) {
+-    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(true); // pause → fresh window
++    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(); // pause → fresh page
+ 
+     if (!r1.length && !r2.length) {
+       r1.push(w);
+     } else if (!r2.length) {
+       if (fits(r1, w.w)) r1.push(w); // still filling row 1
+-      else r2.push(w); // row 1 full → row 2 starts
++      else r2.push(w); // row 1 full → row 2 starts below
+     } else {
+       if (fits(r2, w.w)) {
+         r2.push(w);
+       } else {
+-        closePage(false); // row 2 full → slide content up
+-        r2.push(w);
++        closePage(); // 2-row max reached → flip to a fresh page
++        r1.push(w);
+       }
+     }
+     lastEnd = Math.max(lastEnd, w.e);
+   }
+-  closePage(true);
++  closePage();
+   return pages;
  }
  
-+// Only heavy MEDIA files may live in the browser cache. Code files (.js/.css/.html/.json...)
-+// must always be fresh — otherwise an updated site runs on stale scripts and UI buttons die.
-+const CACHEABLE_EXT = new Set([
-+  ".mp4", ".webm", ".mov", ".jpg", ".jpeg", ".png", ".webp", ".gif",
-+  ".svg", ".ico", ".woff", ".woff2", ".ass",
-+]);
-+
- const MIME = {
-   ".html": "text/html; charset=utf-8",
-   ".css": "text/css; charset=utf-8",
-@@ -186,7 +193,7 @@
-       "Content-Type": type,
-       "Content-Length": st.size,
-       "Accept-Ranges": "bytes",
--      "Cache-Control": ext === ".html" ? "no-cache" : "public, max-age=3600",
-+      "Cache-Control": CACHEABLE_EXT.has(ext) ? "public, max-age=3600" : "no-cache",
-     });
-     fs.createReadStream(fullPath).pipe(res);
-   });
---- a/clipery/public/studio.html
-+++ b/clipery/public/studio.html
-@@ -419,7 +419,7 @@
-       }
-       document.getElementById("year").textContent = new Date().getFullYear();
-     </script>
--    <script src="/shared.js"></script>
--    <script src="/studio.js"></script>
-+    <script src="/shared.js?v=2"></script>
-+    <script src="/studio.js?v=2"></script>
-   </body>
- </html>
---- a/clipery/public/job.html
-+++ b/clipery/public/job.html
-@@ -68,7 +68,7 @@
-       </div>
-     </footer>
- 
--    <script src="/shared.js"></script>
-+    <script src="/shared.js?v=2"></script>
-     <script src="/job.js"></script>
-   </body>
- </html>
---- a/clipery/public/library.html
-+++ b/clipery/public/library.html
-@@ -60,7 +60,7 @@
-       </div>
-     </footer>
- 
--    <script src="/shared.js"></script>
-+    <script src="/shared.js?v=2"></script>
-     <script src="/library.js"></script>
-   </body>
- </html>
---- a/clipery/public/pricing.html
-+++ b/clipery/public/pricing.html
-@@ -105,6 +105,6 @@
-         <div>© <span id="year"></span></div>
-       </div>
-     </footer>
--    <script src="/shared.js"></script>
-+    <script src="/shared.js?v=2"></script>
-   </body>
- </html>
---- a/clipery/public/rank.html
-+++ b/clipery/public/rank.html
-@@ -133,7 +133,7 @@
-       </div>
-     </footer>
- 
--    <script src="/shared.js"></script>
-+    <script src="/shared.js?v=2"></script>
-     <script src="/rank.js"></script>
-   </body>
- </html>
---- a/clipery/public/waitlist.html
-+++ b/clipery/public/waitlist.html
-@@ -109,7 +109,7 @@
-       </div>
-     </footer>
- 
--    <script src="/shared.js"></script>
-+    <script src="/shared.js?v=2"></script>
-     <script src="/waitlist.js"></script>
-   </body>
- </html>
