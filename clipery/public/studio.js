@@ -57,7 +57,7 @@
       red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF"
     },
     sizes: { small: 9, medium: 11 },
-    pos: { bottom: "68%", middle: "38%", top: "18%" }, // top clears the hook title zone, same as the engine
+    pos: { bottom: "72%", middle: "38%", top: "18%" }, // matches engine safe zones (top clears the hook title)
     rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"],
     beast: ["#FFE74C", "#FFFFFF", "#FF3B3B", "#30D158", "#FF8A4C", "#3CD4F5"]
   };

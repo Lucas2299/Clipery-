@@ -77,14 +77,44 @@ const ROW_CHARS = { small: 22, medium: 19 };
 const ROW_WORDS = 5;
 // Position: Alignment 8 = anchored at the TOP of the block, MarginV measured
 // from the top edge → row 1 NEVER moves; row 2 grows downward underneath.
-// bottom ≈ above watermark strip · middle ≈ screen center · top ≈ below title area.
+// Safety: the spots below sit inside the TikTok/Reels SAFE ZONE — clear of
+// the right-hand like/comment sidebar and the app's caption/username strip.
+// bottom ≈ above the app caption block · middle ≈ screen center · top ≈ below the app header.
 const SUB_POSITIONS = {
-  bottom: 540,
+  bottom: 500,
   middle: 303,
   top: 126,
 };
 // New block when speaker pauses longer than this (seconds).
 const GAP_SPLIT = 0.9;
+// Active-word tracker: the word being spoken pops to 112% of its size
+// (10-15% scale-up rule) with a fast 70ms grow, plus the colour switch.
+const ACTIVE_SCALE = 112;
+const ACTIVE_POP_MS = 70;
+// Auto-emoji: a key term gets ONE fitting emoji next to it (first appearance
+// in the clip, one per page max) — tiny semantic sparkle, zero AI needed.
+const WORD_EMOJI = {
+  money: "💲", cash: "💲", dollar: "💲", dollars: "💲", price: "💲", rich: "💰",
+  win: "🏆", winner: "🏆", won: "🏆", goal: "🎯", target: "🎯",
+  fire: "🔥", hot: "🥵", cold: "🥶",
+  love: "❤️", heart: "❤️", happy: "😄", laugh: "😂", joke: "😂", funny: "😂",
+  wow: "😮", crazy: "🤪", insane: "🤯", mind: "🤯", brain: "🧠",
+  scared: "😱", scary: "😱", fear: "😱", ghost: "👻", dead: "💀",
+  idea: "💡", tip: "💡", tips: "💡", trick: "💡", hack: "💡", secret: "🤫",
+  time: "⏰", fast: "⚡", energy: "⚡", strong: "💪", gym: "💪", muscle: "💪",
+  phone: "📱", call: "📞", app: "📱", video: "🎬", movie: "🎬", camera: "📸",
+  photo: "📸", music: "🎵", song: "🎵", dance: "💃", party: "🎉",
+  game: "🎮", book: "📚", read: "📖", study: "📚", learn: "📚",
+  car: "🚗", home: "🏠", house: "🏠", travel: "✈️", fly: "✈️", world: "🌍",
+  water: "💧", ocean: "🌊", sun: "☀️", rain: "🌧️", dog: "🐶", cat: "🐱", baby: "👶",
+  food: "🍔", pizza: "🍕", coffee: "☕",
+  stop: "🛑", yes: "✅", right: "✅", correct: "✅", true: "✅", no: "❌", wrong: "❌", lie: "🤥",
+  question: "❓", warning: "⚠️", danger: "⚠️", alert: "🚨", breaking: "🚨", news: "📰",
+  success: "🚀", rocket: "🚀", launch: "🚀", magic: "✨", gold: "✨", diamond: "💎",
+  gift: "🎁", shop: "🛒", buy: "🛒", king: "👑", queen: "👑", boss: "😎", cool: "😎",
+  work: "💼", business: "💼", job: "💼", grow: "📈", growth: "📈", chart: "📈",
+  look: "👀", watch: "👀", see: "👀", eyes: "👀", ai: "🤖", robot: "🤖", computer: "💻", code: "💻",
+};
 
 /** Validate free-form style input against whitelists. Always returns a complete style. */
 function normalizeSubStyle(input = {}) {
@@ -361,11 +391,24 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     }
   }
   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
+  const palette = s.style === "rainbow" ? RAINBOW : s.style === "mrbeast" ? BEAST : null;
+  const caps = CAPS_STYLES.has(s.style);
+  // STATIC styles never change colour while speaking → no per-word karaoke
+  // tags (one clean segment per row = one continuous background box).
+  const wholeBox = STATIC_STYLES.has(s.style);
+  const hideKaraoke = s.style === "pop" || s.style === "mrbeast"; // upcoming words invisible
+  const whiteKaraoke = s.style === "highlight" || s.style === "hormozi"; // upcoming words white
+  const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
+  // emoji state: each keyword appears once per clip, one emoji per page max
+  const usedEmoji = new Set();
+  let spokenBase = 0; // palette colours march across pages in speaking order
+
   for (let i = 0; i < pages.length; i++) {
     const p = pages[i];
     const hasTwoRows = p.r2.length > 0;
     const staticRow = p.intro ? [] : p.r1; // intro pages karaoke everything live
     const liveRow = p.intro ? [...p.r1, ...p.r2] : p.r2;
+    const allWords = [...staticRow, ...liveRow];
     const row1Len = p.r1.length;
 
     const evStart = Math.max(0, starts[i]);
@@ -374,31 +417,64 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
 
-    const palette = s.style === "rainbow" ? RAINBOW : s.style === "mrbeast" ? BEAST : null;
-    const caps = CAPS_STYLES.has(s.style);
-    // STATIC styles never change colour while speaking → drop the per-word \k
-    // karaoke tags, otherwise each word becomes its own box/runt. One clean
-    // segment per row = one continuous background box around the whole text.
-    const wholeBox = STATIC_STYLES.has(s.style);
-    const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
-    let wordIdx = i * 10; // colour cycle keeps marching across pages
-    const wordTag = (cs) =>
-      palette ? `{\\1c${palette[wordIdx++ % palette.length]}\\k${cs}}` : `{\\k${cs}}`;
-
-    const parts = [];
-    for (const w of staticRow) parts.push(wholeBox ? fmtWord(w.w) : `${wordTag(5)}${fmtWord(w.w)}`); // already spoken → lit at once
-    let prevStart = null;
-    for (const w of liveRow) {
-      let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
-      if (cs < 5) cs = 5;
-      parts.push(wholeBox ? fmtWord(w.w) : `${wordTag(cs)}${fmtWord(w.w)}`);
-      prevStart = w.s;
+    // Auto-emoji: pick the FIRST mapped word on this page (stable across all
+    // per-word events), only if it never got an emoji earlier in the clip.
+    let emojiAt = -1;
+    if (usedEmoji.size < 4) {
+      for (let j = 0; j < allWords.length; j++) {
+        const key = cleanWord(String(allWords[j].w)).toLowerCase().replace(/[^a-z0-9']+/g, "");
+        if (WORD_EMOJI[key] && !usedEmoji.has(key)) {
+          emojiAt = j;
+          usedEmoji.add(key);
+          break;
+        }
+      }
     }
-    if (!parts.length) continue;
-    const text = hasTwoRows
-      ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
-      : parts.join(" ");
-    events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${text}`);
+    const wordText = (j) => fmtWord(allWords[j].w) + (j === emojiAt ? " " + WORD_EMOJI[cleanWord(String(allWords[j].w)).toLowerCase().replace(/[^a-z0-9']+/g, "")] : "");
+
+    if (wholeBox) {
+      // calm static block: every word in the final colour, one event per page
+      const parts = [];
+      for (let j = 0; j < allWords.length; j++) parts.push(wordText(j));
+      if (!parts.length) continue;
+      const text = hasTwoRows
+        ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
+        : parts.join(" ");
+      events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${text}`);
+      continue;
+    }
+
+    // karaoke styles: one tiny Dialogue per word. The ACTIVE word instantly
+    // switches to full colour AND pops to 112% (10-15% scale rule).
+    const tag = (j, state) => {
+      if (state === "upcoming") return hideKaraoke ? "{\\alpha&HFF&}" : `{\\1c${whiteKaraoke ? "&H00FFFFFF" : KARAOKE_DIM}}`;
+      const col = palette ? palette[(spokenBase + j) % palette.length] : primary;
+      if (state === "active") {
+        return `{\\1c${col}\\fscx100\\fscy100\\t(0,${ACTIVE_POP_MS},\\fscx${ACTIVE_SCALE}\\fscy${ACTIVE_SCALE})}`;
+      }
+      return `{\\1c${col}}`;
+    };
+    const line = (active) => {
+      const parts = [];
+      for (let j = 0; j < allWords.length; j++) {
+        parts.push(tag(j, j === active ? "active" : j < active ? "spoken" : "upcoming") + wordText(j));
+      }
+      return hasTwoRows
+        ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
+        : parts.join(" ");
+    };
+
+    let prevEnd = null;
+    for (let li = 0; li < liveRow.length; li++) {
+      const active = staticRow.length + li;
+      let ws = li === 0 ? evStart : liveRow[li].s - 0.04;
+      if (prevEnd !== null && ws < prevEnd) ws = prevEnd;
+      let we = li + 1 < liveRow.length ? liveRow[li + 1].s - 0.04 : evEnd;
+      if (we <= ws + 0.03) we = ws + 0.03;
+      events.push(`Dialogue: 0,${assTime(ws)},${assTime(we)},Cap,,0,0,0,,${line(active)}`);
+      prevEnd = we;
+    }
+    spokenBase += liveRow.length;
   }
   return header.concat(events).join("\n") + "\n";
 }

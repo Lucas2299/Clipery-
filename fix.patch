@@ -1,238 +1,178 @@
 diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index 67adc4f..08e9ff7 100644
+index 08e9ff7..71b93f7 100644
 --- a/clipery/lib/subtitles.js
 +++ b/clipery/lib/subtitles.js
-@@ -91,11 +91,14 @@ function normalizeSubStyle(input = {}) {
-   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
-   const st = String(input.style).toLowerCase();
-   const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"];
-+  const wds = Math.round(Number(input.words));
-   return {
-     color: pick(input.color, SUB_COLORS, "white"),
-     size: pick(input.size, SUB_SIZES, "medium"),
-     pos: pick(input.pos, SUB_POSITIONS, "bottom"),
-     style: okStyles.includes(st) ? st : "outline",
-+    // words per row (1-8). 0 = engine default. Templates set their own density.
-+    words: Number.isFinite(wds) && wds >= 1 && wds <= 8 ? wds : 0,
-   };
- }
+@@ -77,14 +77,44 @@ const ROW_CHARS = { small: 22, medium: 19 };
+ const ROW_WORDS = 5;
+ // Position: Alignment 8 = anchored at the TOP of the block, MarginV measured
+ // from the top edge → row 1 NEVER moves; row 2 grows downward underneath.
+-// bottom ≈ above watermark strip · middle ≈ screen center · top ≈ below title area.
++// Safety: the spots below sit inside the TikTok/Reels SAFE ZONE — clear of
++// the right-hand like/comment sidebar and the app's caption/username strip.
++// bottom ≈ above the app caption block · middle ≈ screen center · top ≈ below the app header.
+ const SUB_POSITIONS = {
+-  bottom: 540,
++  bottom: 500,
+   middle: 303,
+   top: 126,
+ };
+ // New block when speaker pauses longer than this (seconds).
+ const GAP_SPLIT = 0.9;
++// Active-word tracker: the word being spoken pops to 112% of its size
++// (10-15% scale-up rule) with a fast 70ms grow, plus the colour switch.
++const ACTIVE_SCALE = 112;
++const ACTIVE_POP_MS = 70;
++// Auto-emoji: a key term gets ONE fitting emoji next to it (first appearance
++// in the clip, one per page max) — tiny semantic sparkle, zero AI needed.
++const WORD_EMOJI = {
++  money: "💲", cash: "💲", dollar: "💲", dollars: "💲", price: "💲", rich: "💰",
++  win: "🏆", winner: "🏆", won: "🏆", goal: "🎯", target: "🎯",
++  fire: "🔥", hot: "🥵", cold: "🥶",
++  love: "❤️", heart: "❤️", happy: "😄", laugh: "😂", joke: "😂", funny: "😂",
++  wow: "😮", crazy: "🤪", insane: "🤯", mind: "🤯", brain: "🧠",
++  scared: "😱", scary: "😱", fear: "😱", ghost: "👻", dead: "💀",
++  idea: "💡", tip: "💡", tips: "💡", trick: "💡", hack: "💡", secret: "🤫",
++  time: "⏰", fast: "⚡", energy: "⚡", strong: "💪", gym: "💪", muscle: "💪",
++  phone: "📱", call: "📞", app: "📱", video: "🎬", movie: "🎬", camera: "📸",
++  photo: "📸", music: "🎵", song: "🎵", dance: "💃", party: "🎉",
++  game: "🎮", book: "📚", read: "📖", study: "📚", learn: "📚",
++  car: "🚗", home: "🏠", house: "🏠", travel: "✈️", fly: "✈️", world: "🌍",
++  water: "💧", ocean: "🌊", sun: "☀️", rain: "🌧️", dog: "🐶", cat: "🐱", baby: "👶",
++  food: "🍔", pizza: "🍕", coffee: "☕",
++  stop: "🛑", yes: "✅", right: "✅", correct: "✅", true: "✅", no: "❌", wrong: "❌", lie: "🤥",
++  question: "❓", warning: "⚠️", danger: "⚠️", alert: "🚨", breaking: "🚨", news: "📰",
++  success: "🚀", rocket: "🚀", launch: "🚀", magic: "✨", gold: "✨", diamond: "💎",
++  gift: "🎁", shop: "🛒", buy: "🛒", king: "👑", queen: "👑", boss: "😎", cool: "😎",
++  work: "💼", business: "💼", job: "💼", grow: "📈", growth: "📈", chart: "📈",
++  look: "👀", watch: "👀", see: "👀", eyes: "👀", ai: "🤖", robot: "🤖", computer: "💻", code: "💻",
++};
  
-@@ -163,13 +166,14 @@ const round2 = (v) => Math.round(v * 100) / 100;
-  * so flips never move the top line → zero bouncing, just clean page changes.
-  * A long pause (> GAP_SPLIT) also starts a fresh page for the next sentence.
-  */
--function buildRollingPages(words, rowChars) {
-+function buildRollingPages(words, rowChars, maxWords) {
-+  const pageSize = maxWords || ROW_WORDS;
-   const pages = [];
-   let r1 = [];
-   let r2 = [];
-   let lastEnd = 0;
-   const rowLen = (arr) => arr.reduce((a, x) => a + x.w.length + 1, 0);
--  const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < ROW_WORDS;
-+  const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < pageSize;
- 
-   const closePage = () => {
-     if (!r1.length && !r2.length) return;
-@@ -455,7 +459,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
-   if (wantSubs && words.length) {
-     const style = normalizeSubStyle(opts.subStyle);
-     const rowChars = ROW_CHARS[style.size] - (CAPS_STYLES.has(style.style) ? 2 : 0);
--    pages = buildRollingPages(words, rowChars);
-+    pages = buildRollingPages(words, rowChars, style.words);
+ /** Validate free-form style input against whitelists. Always returns a complete style. */
+ function normalizeSubStyle(input = {}) {
+@@ -361,11 +391,24 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     }
    }
+   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
++  const palette = s.style === "rainbow" ? RAINBOW : s.style === "mrbeast" ? BEAST : null;
++  const caps = CAPS_STYLES.has(s.style);
++  // STATIC styles never change colour while speaking → no per-word karaoke
++  // tags (one clean segment per row = one continuous background box).
++  const wholeBox = STATIC_STYLES.has(s.style);
++  const hideKaraoke = s.style === "pop" || s.style === "mrbeast"; // upcoming words invisible
++  const whiteKaraoke = s.style === "highlight" || s.style === "hormozi"; // upcoming words white
++  const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
++  // emoji state: each keyword appears once per clip, one emoji per page max
++  const usedEmoji = new Set();
++  let spokenBase = 0; // palette colours march across pages in speaking order
++
+   for (let i = 0; i < pages.length; i++) {
+     const p = pages[i];
+     const hasTwoRows = p.r2.length > 0;
+     const staticRow = p.intro ? [] : p.r1; // intro pages karaoke everything live
+     const liveRow = p.intro ? [...p.r1, ...p.r2] : p.r2;
++    const allWords = [...staticRow, ...liveRow];
+     const row1Len = p.r1.length;
  
-   let hook = null;
-diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index c0cae64..af338f1 100644
---- a/clipery/public/studio.html
-+++ b/clipery/public/studio.html
-@@ -100,6 +100,10 @@
+     const evStart = Math.max(0, starts[i]);
+@@ -374,31 +417,64 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
+     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
  
-       .sub-style-grid label{display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9a96a8;font-weight:600}
-       .sub-style-grid select{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem}
-+      .sub-style-grid label.locked{opacity:0.45}
-+      .sub-style-grid label.locked select{cursor:not-allowed}
-+      .tpl-lock{flex-basis:100%;font-size:0.72rem;color:#9a96a8;margin:-0.1rem 0 0.25rem}
-+      .sc-meta{font-size:0.52rem;color:#6f6a80;font-weight:600;text-align:center;line-height:1.15;margin-top:-0.25rem}
-       .sub-style-grid.subs-off{display:none}
-       .sub-preview{flex-basis:100%;display:flex;align-items:center;gap:0.65rem;margin:0.1rem 0 0.35rem}
-       .sub-preview-frame{position:relative;width:88px;height:156px;flex:0 0 auto;border-radius:10px;border:1px solid rgba(255,255,255,0.14);background:linear-gradient(160deg,#241a2e 0%,#12294d 55%,#131020 100%);overflow:hidden}
-@@ -176,7 +180,7 @@
-               <button type="button" class="sub-card sc-full d-plain" data-style="plain"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button><button type="button" class="sub-card sc-full d-outline" data-style="outlined"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Outline</span></button><button type="button" class="sub-card sc-full d-thick" data-style="thick"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Thick</span></button><button type="button" class="sub-card sc-full d-shadow" data-style="shadow"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Shadow</span></button><button type="button" class="sub-card sc-full sc-bdim" data-style="boxdark"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Dim box</span></button><button type="button" class="sub-card sc-full sc-blight" data-style="boxlight"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Light box</span></button><button type="button" class="sub-card sc-bwhite" data-style="boxwhite"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">White box</span></button><button type="button" class="sub-card sc-bred" data-style="boxred"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Red box</span></button><button type="button" class="sub-card sc-bblack" data-style="boxblack"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Black box</span></button>
-             </div>
-             <div class="sub-cards" id="long-cards-templates">
--              <button type="button" class="sub-card sc-anim" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">WORD</span> <span class="w wt">UP</span> <span class="w wt">NOW</span></span><span class="sc-name">🔥 TikTok</span></button><button type="button" class="sub-card sc-anim" data-tpl="beast"><span class="sc-cap"><span class="w y">FIRST</span> <span class="w y">PRIZE</span> <span class="w y">YEAH</span></span><span class="sc-name">💥 Beast</span></button><button type="button" class="sub-card sc-anim sc-popa" data-tpl="candy"><span class="sc-cap"><span class="w pk">SO</span> <span class="w pk">SWEET</span> <span class="w pk">BABY</span></span><span class="sc-name">🍭 Candy</span></button><button type="button" class="sub-card sc-anim sc-hue" data-tpl="rainbow"><span class="sc-cap"><span class="w pk">FUN</span> <span class="w y">TIME</span> <span class="w cy">YEAH</span></span><span class="sc-name">🌈 Rainbow</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">TOP</span> <span class="w wt">NEWS</span> <span class="w wt">TODAY</span></span><span class="sc-name">📰 News</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">BIG</span> <span class="w y">WIN</span> <span class="w y">TONIGHT</span></span><span class="sc-name">👑 Gold box</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FF8A4C" data-tpl="glow"><span class="sc-cap"><span class="w wt">SHINE</span> <span class="w wt">ON</span> <span class="w wt">TODAY</span></span><span class="sc-name">✨ Glow</span></button><button type="button" class="sub-card" data-tpl="clean"><span class="sc-cap"><span class="w wt">EASY</span> <span class="w wt">NOW</span> <span class="w wt">FRIEND</span></span><span class="sc-name">🤍 Clean</span></button><button type="button" class="sub-card sc-anim sc-hiw sc-caps" style="--hl:#FFE74C" data-tpl="hormozi"><span class="sc-cap"><span class="w wt">MAKE</span> <span class="w wt">CASH</span> <span class="w wt">TODAY</span></span><span class="sc-name">💼 Hormozi</span></button><button type="button" class="sub-card sc-anim sc-popa sc-caps" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">WIN</span> <span class="w wt">BIG</span> <span class="w r">NOW</span></span><span class="sc-name">🐐 MrBeast</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FFE74C" data-tpl="reels"><span class="sc-cap"><span class="w wt">VIBE</span> <span class="w wt">CHECK</span> <span class="w wt">ALWAYS</span></span><span class="sc-name">📸 Reels</span></button>
-+              <button type="button" class="sub-card sc-anim" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">WORD</span> <span class="w wt">UP</span> <span class="w wt">NOW</span></span><span class="sc-name">🔥 TikTok</span><span class="sc-meta">white · med · 3 words</span></button><button type="button" class="sub-card sc-anim" data-tpl="beast"><span class="sc-cap"><span class="w y">FIRST</span> <span class="w y">PRIZE</span> <span class="w y">YEAH</span></span><span class="sc-name">💥 Beast</span><span class="sc-meta">yellow · med · 3 words</span></button><button type="button" class="sub-card sc-anim sc-popa" data-tpl="candy"><span class="sc-cap"><span class="w pk">SO</span> <span class="w pk">SWEET</span> <span class="w pk">BABY</span></span><span class="sc-name">🍭 Candy</span><span class="sc-meta">pink · med · 4 words</span></button><button type="button" class="sub-card sc-anim sc-hue" data-tpl="rainbow"><span class="sc-cap"><span class="w pk">FUN</span> <span class="w y">TIME</span> <span class="w cy">YEAH</span></span><span class="sc-name">🌈 Rainbow</span><span class="sc-meta">rainbow · med · 4 words</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">TOP</span> <span class="w wt">NEWS</span> <span class="w wt">TODAY</span></span><span class="sc-name">📰 News</span><span class="sc-meta">white · small · 5 words</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">BIG</span> <span class="w y">WIN</span> <span class="w y">TONIGHT</span></span><span class="sc-name">👑 Gold box</span><span class="sc-meta">yellow · med · 4 words</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FF8A4C" data-tpl="glow"><span class="sc-cap"><span class="w wt">SHINE</span> <span class="w wt">ON</span> <span class="w wt">TODAY</span></span><span class="sc-name">✨ Glow</span><span class="sc-meta">orange · med · 3 words</span></button><button type="button" class="sub-card" data-tpl="clean"><span class="sc-cap"><span class="w wt">EASY</span> <span class="w wt">NOW</span> <span class="w wt">FRIEND</span></span><span class="sc-name">🤍 Clean</span><span class="sc-meta">white · small · 5 words</span></button><button type="button" class="sub-card sc-anim sc-hiw sc-caps" style="--hl:#FFE74C" data-tpl="hormozi"><span class="sc-cap"><span class="w wt">MAKE</span> <span class="w wt">CASH</span> <span class="w wt">TODAY</span></span><span class="sc-name">💼 Hormozi</span><span class="sc-meta">yellow · med · 3 words</span></button><button type="button" class="sub-card sc-anim sc-popa sc-caps" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">WIN</span> <span class="w wt">BIG</span> <span class="w r">NOW</span></span><span class="sc-name">🐐 MrBeast</span><span class="sc-meta">yellow · med · 3 words</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FFE74C" data-tpl="reels"><span class="sc-cap"><span class="w wt">VIBE</span> <span class="w wt">CHECK</span> <span class="w wt">ALWAYS</span></span><span class="sc-name">📸 Reels</span><span class="sc-meta">yellow · med · 3 words</span></button>
-             </div>
-             <label>Color
-               <select id="long-sub-color">
-@@ -222,6 +226,8 @@
-                 <option value="boxlight">Light box (static)</option><option value="boxwhite">White box</option><option value="boxred">Red box</option><option value="boxblack">Black box</option>
-               </select>
-             </label>
-+            <input type="hidden" id="long-sub-words" value="" />
-+            <p class="tpl-lock" id="long-tpl-lock" hidden>🔒 Template picked: colour, size &amp; word count come from the template — you choose the place.</p>
-             <div class="sub-preview" id="long-sub-preview" aria-hidden="true">
-               <div class="sub-preview-frame">
-                 <span class="sub-preview-hook" hidden>YOUR HOOK</span>
-@@ -349,7 +355,7 @@
-               <button type="button" class="sub-card sc-full d-plain" data-style="plain"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button><button type="button" class="sub-card sc-full d-outline" data-style="outlined"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Outline</span></button><button type="button" class="sub-card sc-full d-thick" data-style="thick"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Thick</span></button><button type="button" class="sub-card sc-full d-shadow" data-style="shadow"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Shadow</span></button><button type="button" class="sub-card sc-full sc-bdim" data-style="boxdark"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Dim box</span></button><button type="button" class="sub-card sc-full sc-blight" data-style="boxlight"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Light box</span></button><button type="button" class="sub-card sc-bwhite" data-style="boxwhite"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">White box</span></button><button type="button" class="sub-card sc-bred" data-style="boxred"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Red box</span></button><button type="button" class="sub-card sc-bblack" data-style="boxblack"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Black box</span></button>
-             </div>
-             <div class="sub-cards" id="rank-cards-templates">
--              <button type="button" class="sub-card sc-anim" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">WORD</span> <span class="w wt">UP</span> <span class="w wt">NOW</span></span><span class="sc-name">🔥 TikTok</span></button><button type="button" class="sub-card sc-anim" data-tpl="beast"><span class="sc-cap"><span class="w y">FIRST</span> <span class="w y">PRIZE</span> <span class="w y">YEAH</span></span><span class="sc-name">💥 Beast</span></button><button type="button" class="sub-card sc-anim sc-popa" data-tpl="candy"><span class="sc-cap"><span class="w pk">SO</span> <span class="w pk">SWEET</span> <span class="w pk">BABY</span></span><span class="sc-name">🍭 Candy</span></button><button type="button" class="sub-card sc-anim sc-hue" data-tpl="rainbow"><span class="sc-cap"><span class="w pk">FUN</span> <span class="w y">TIME</span> <span class="w cy">YEAH</span></span><span class="sc-name">🌈 Rainbow</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">TOP</span> <span class="w wt">NEWS</span> <span class="w wt">TODAY</span></span><span class="sc-name">📰 News</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">BIG</span> <span class="w y">WIN</span> <span class="w y">TONIGHT</span></span><span class="sc-name">👑 Gold box</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FF8A4C" data-tpl="glow"><span class="sc-cap"><span class="w wt">SHINE</span> <span class="w wt">ON</span> <span class="w wt">TODAY</span></span><span class="sc-name">✨ Glow</span></button><button type="button" class="sub-card" data-tpl="clean"><span class="sc-cap"><span class="w wt">EASY</span> <span class="w wt">NOW</span> <span class="w wt">FRIEND</span></span><span class="sc-name">🤍 Clean</span></button><button type="button" class="sub-card sc-anim sc-hiw sc-caps" style="--hl:#FFE74C" data-tpl="hormozi"><span class="sc-cap"><span class="w wt">MAKE</span> <span class="w wt">CASH</span> <span class="w wt">TODAY</span></span><span class="sc-name">💼 Hormozi</span></button><button type="button" class="sub-card sc-anim sc-popa sc-caps" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">WIN</span> <span class="w wt">BIG</span> <span class="w r">NOW</span></span><span class="sc-name">🐐 MrBeast</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FFE74C" data-tpl="reels"><span class="sc-cap"><span class="w wt">VIBE</span> <span class="w wt">CHECK</span> <span class="w wt">ALWAYS</span></span><span class="sc-name">📸 Reels</span></button>
-+              <button type="button" class="sub-card sc-anim" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">WORD</span> <span class="w wt">UP</span> <span class="w wt">NOW</span></span><span class="sc-name">🔥 TikTok</span><span class="sc-meta">white · med · 3 words</span></button><button type="button" class="sub-card sc-anim" data-tpl="beast"><span class="sc-cap"><span class="w y">FIRST</span> <span class="w y">PRIZE</span> <span class="w y">YEAH</span></span><span class="sc-name">💥 Beast</span><span class="sc-meta">yellow · med · 3 words</span></button><button type="button" class="sub-card sc-anim sc-popa" data-tpl="candy"><span class="sc-cap"><span class="w pk">SO</span> <span class="w pk">SWEET</span> <span class="w pk">BABY</span></span><span class="sc-name">🍭 Candy</span><span class="sc-meta">pink · med · 4 words</span></button><button type="button" class="sub-card sc-anim sc-hue" data-tpl="rainbow"><span class="sc-cap"><span class="w pk">FUN</span> <span class="w y">TIME</span> <span class="w cy">YEAH</span></span><span class="sc-name">🌈 Rainbow</span><span class="sc-meta">rainbow · med · 4 words</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">TOP</span> <span class="w wt">NEWS</span> <span class="w wt">TODAY</span></span><span class="sc-name">📰 News</span><span class="sc-meta">white · small · 5 words</span></button><button type="button" class="sub-card sc-anim sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">BIG</span> <span class="w y">WIN</span> <span class="w y">TONIGHT</span></span><span class="sc-name">👑 Gold box</span><span class="sc-meta">yellow · med · 4 words</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FF8A4C" data-tpl="glow"><span class="sc-cap"><span class="w wt">SHINE</span> <span class="w wt">ON</span> <span class="w wt">TODAY</span></span><span class="sc-name">✨ Glow</span><span class="sc-meta">orange · med · 3 words</span></button><button type="button" class="sub-card" data-tpl="clean"><span class="sc-cap"><span class="w wt">EASY</span> <span class="w wt">NOW</span> <span class="w wt">FRIEND</span></span><span class="sc-name">🤍 Clean</span><span class="sc-meta">white · small · 5 words</span></button><button type="button" class="sub-card sc-anim sc-hiw sc-caps" style="--hl:#FFE74C" data-tpl="hormozi"><span class="sc-cap"><span class="w wt">MAKE</span> <span class="w wt">CASH</span> <span class="w wt">TODAY</span></span><span class="sc-name">💼 Hormozi</span><span class="sc-meta">yellow · med · 3 words</span></button><button type="button" class="sub-card sc-anim sc-popa sc-caps" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">WIN</span> <span class="w wt">BIG</span> <span class="w r">NOW</span></span><span class="sc-name">🐐 MrBeast</span><span class="sc-meta">yellow · med · 3 words</span></button><button type="button" class="sub-card sc-anim sc-hiw" style="--hl:#FFE74C" data-tpl="reels"><span class="sc-cap"><span class="w wt">VIBE</span> <span class="w wt">CHECK</span> <span class="w wt">ALWAYS</span></span><span class="sc-name">📸 Reels</span><span class="sc-meta">yellow · med · 3 words</span></button>
-             </div>
-             <label>Color
-               <select id="rank-sub-color">
-@@ -395,6 +401,8 @@
-                 <option value="boxlight">Light box (static)</option><option value="boxwhite">White box</option><option value="boxred">Red box</option><option value="boxblack">Black box</option>
-               </select>
-             </label>
-+            <input type="hidden" id="rank-sub-words" value="" />
-+            <p class="tpl-lock" id="rank-tpl-lock" hidden>🔒 Template picked: colour, size &amp; word count come from the template — you choose the place.</p>
-             <div class="sub-preview" id="rank-sub-preview" aria-hidden="true">
-               <div class="sub-preview-frame">
-                 <span class="sub-preview-hook" hidden>YOUR HOOK</span>
+-    const palette = s.style === "rainbow" ? RAINBOW : s.style === "mrbeast" ? BEAST : null;
+-    const caps = CAPS_STYLES.has(s.style);
+-    // STATIC styles never change colour while speaking → drop the per-word \k
+-    // karaoke tags, otherwise each word becomes its own box/runt. One clean
+-    // segment per row = one continuous background box around the whole text.
+-    const wholeBox = STATIC_STYLES.has(s.style);
+-    const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
+-    let wordIdx = i * 10; // colour cycle keeps marching across pages
+-    const wordTag = (cs) =>
+-      palette ? `{\\1c${palette[wordIdx++ % palette.length]}\\k${cs}}` : `{\\k${cs}}`;
+-
+-    const parts = [];
+-    for (const w of staticRow) parts.push(wholeBox ? fmtWord(w.w) : `${wordTag(5)}${fmtWord(w.w)}`); // already spoken → lit at once
+-    let prevStart = null;
+-    for (const w of liveRow) {
+-      let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
+-      if (cs < 5) cs = 5;
+-      parts.push(wholeBox ? fmtWord(w.w) : `${wordTag(cs)}${fmtWord(w.w)}`);
+-      prevStart = w.s;
++    // Auto-emoji: pick the FIRST mapped word on this page (stable across all
++    // per-word events), only if it never got an emoji earlier in the clip.
++    let emojiAt = -1;
++    if (usedEmoji.size < 4) {
++      for (let j = 0; j < allWords.length; j++) {
++        const key = cleanWord(String(allWords[j].w)).toLowerCase().replace(/[^a-z0-9']+/g, "");
++        if (WORD_EMOJI[key] && !usedEmoji.has(key)) {
++          emojiAt = j;
++          usedEmoji.add(key);
++          break;
++        }
++      }
++    }
++    const wordText = (j) => fmtWord(allWords[j].w) + (j === emojiAt ? " " + WORD_EMOJI[cleanWord(String(allWords[j].w)).toLowerCase().replace(/[^a-z0-9']+/g, "")] : "");
++
++    if (wholeBox) {
++      // calm static block: every word in the final colour, one event per page
++      const parts = [];
++      for (let j = 0; j < allWords.length; j++) parts.push(wordText(j));
++      if (!parts.length) continue;
++      const text = hasTwoRows
++        ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
++        : parts.join(" ");
++      events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${text}`);
++      continue;
++    }
++
++    // karaoke styles: one tiny Dialogue per word. The ACTIVE word instantly
++    // switches to full colour AND pops to 112% (10-15% scale rule).
++    const tag = (j, state) => {
++      if (state === "upcoming") return hideKaraoke ? "{\\alpha&HFF&}" : `{\\1c${whiteKaraoke ? "&H00FFFFFF" : KARAOKE_DIM}}`;
++      const col = palette ? palette[(spokenBase + j) % palette.length] : primary;
++      if (state === "active") {
++        return `{\\1c${col}\\fscx100\\fscy100\\t(0,${ACTIVE_POP_MS},\\fscx${ACTIVE_SCALE}\\fscy${ACTIVE_SCALE})}`;
++      }
++      return `{\\1c${col}}`;
++    };
++    const line = (active) => {
++      const parts = [];
++      for (let j = 0; j < allWords.length; j++) {
++        parts.push(tag(j, j === active ? "active" : j < active ? "spoken" : "upcoming") + wordText(j));
++      }
++      return hasTwoRows
++        ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
++        : parts.join(" ");
++    };
++
++    let prevEnd = null;
++    for (let li = 0; li < liveRow.length; li++) {
++      const active = staticRow.length + li;
++      let ws = li === 0 ? evStart : liveRow[li].s - 0.04;
++      if (prevEnd !== null && ws < prevEnd) ws = prevEnd;
++      let we = li + 1 < liveRow.length ? liveRow[li + 1].s - 0.04 : evEnd;
++      if (we <= ws + 0.03) we = ws + 0.03;
++      events.push(`Dialogue: 0,${assTime(ws)},${assTime(we)},Cap,,0,0,0,,${line(active)}`);
++      prevEnd = we;
+     }
+-    if (!parts.length) continue;
+-    const text = hasTwoRows
+-      ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
+-      : parts.join(" ");
+-    events.push(`Dialogue: 0,${assTime(evStart)},${assTime(evEnd)},Cap,,0,0,0,,${text}`);
++    spokenBase += liveRow.length;
+   }
+   return header.concat(events).join("\n") + "\n";
+ }
 diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index b5bc99b..e2b5065 100644
+index e2b5065..043fbc3 100644
 --- a/clipery/public/studio.js
 +++ b/clipery/public/studio.js
-@@ -10,7 +10,7 @@
-       var e = $(prefix + "-sub-" + key);
-       return e ? e.value : "";
-     }
--    return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style") };
-+    return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style"), words: gv("words") };
-   }
- 
-   function wireSubToggle(toggleId, gridId) {
-@@ -128,19 +128,39 @@
-   }
- 
-   var TEMPLATES = {
--    tiktok:  { color: "white",  size: "medium", pos: "bottom", style: "outline" },
--    beast:   { color: "yellow", size: "medium", pos: "middle", style: "outline" },
--    candy:   { color: "pink",   size: "medium", pos: "middle", style: "pop" },
--    rainbow: { color: "pink",   size: "medium", pos: "bottom", style: "rainbow" },
--    news:    { color: "white",  size: "small",  pos: "top",    style: "box" },
--    goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box" },
--    glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight" },
--    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" },
--    hormozi: { color: "yellow", size: "medium", pos: "middle", style: "hormozi" },
--    mrbeast: { color: "yellow", size: "medium", pos: "middle", style: "mrbeast" },
--    reels:   { color: "yellow", size: "medium", pos: "middle", style: "highlight" }
-+    tiktok:  { color: "white",  size: "medium", pos: "bottom", style: "outline",   words: 3 },
-+    beast:   { color: "yellow", size: "medium", pos: "middle", style: "outline",   words: 3 },
-+    candy:   { color: "pink",   size: "medium", pos: "middle", style: "pop",       words: 4 },
-+    rainbow: { color: "pink",   size: "medium", pos: "bottom", style: "rainbow",   words: 4 },
-+    news:    { color: "white",  size: "small",  pos: "top",    style: "box",       words: 5 },
-+    goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box",       words: 4 },
-+    glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight", words: 3 },
-+    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic",   words: 5 },
-+    hormozi: { color: "yellow", size: "medium", pos: "middle", style: "hormozi",   words: 3 },
-+    mrbeast: { color: "yellow", size: "medium", pos: "middle", style: "mrbeast",   words: 3 },
-+    reels:   { color: "yellow", size: "medium", pos: "middle", style: "highlight", words: 3 }
+@@ -57,7 +57,7 @@
+       red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF"
+     },
+     sizes: { small: 9, medium: 11 },
+-    pos: { bottom: "68%", middle: "38%", top: "18%" }, // top clears the hook title zone, same as the engine
++    pos: { bottom: "72%", middle: "38%", top: "18%" }, // matches engine safe zones (top clears the hook title)
+     rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"],
+     beast: ["#FFE74C", "#FFFFFF", "#FF3B3B", "#30D158", "#FF8A4C", "#3CD4F5"]
    };
- 
-+  /* A picked template owns colour, size and word count — only Position stays
-+     free. Styles (cards) leave colour & size open for the user. */
-+  function setTplLock(prefix, on) {
-+    var keys = ["color", "size"];
-+    for (var i = 0; i < keys.length; i++) {
-+      var el = $(prefix + "-sub-" + keys[i]);
-+      if (!el) continue;
-+      el.disabled = !!on;
-+      var lab = el.closest ? el.closest("label") : null;
-+      if (lab) lab.classList.toggle("locked", !!on);
-+    }
-+    var hint = $(prefix + "-tpl-lock");
-+    if (hint) hint.hidden = !on;
-+  }
-+
-+  function setTplWords(prefix, words) {
-+    var el = $(prefix + "-sub-words");
-+    if (el) el.value = words || "";
-+  }
-+
-   /* --- visual style/template cards --- */
-   function cardsIn(prefix, kind) {
-     var grid = $(prefix + "-cards-" + kind);
-@@ -174,6 +194,8 @@
-         var sel = $(prefix + "-sub-style");
-         if (sel && st) sel.value = st;
-         clearTplChips(prefix);
-+        setTplLock(prefix, false); // styles: colour & size stay yours
-+        setTplWords(prefix, "");
-         syncStyleCards(prefix);
-         updateSubPreview(prefix);
-       });
-@@ -210,6 +232,8 @@
-           var sel = $(prefix + "-sub-" + keys[k]);
-           if (sel) sel.value = t[keys[k]];
-         }
-+        setTplWords(prefix, t.words);
-+        setTplLock(prefix, true); // template owns colour/size/words — placement stays yours
-         clearTplChips(prefix);
-         ev.currentTarget.classList.add("sel");
-         syncStyleCards(prefix);
-@@ -223,8 +247,14 @@
-     for (var i = 0; i < keys.length; i++) {
-       var el = $(prefix + "-sub-" + keys[i]);
-       if (el) {
-+        var key = keys[i];
-         el.addEventListener("change", function () {
--          clearTplChips(prefix);
-+          if (key !== "pos") {
-+            // hand-tuning colour/size/style = leaving the template behind
-+            clearTplChips(prefix);
-+            setTplLock(prefix, false);
-+            setTplWords(prefix, "");
-+          }
-           updateSubPreview(prefix);
-         });
-       }
-@@ -475,6 +505,7 @@
-           fd.append("subSize", longStyle.size);
-           fd.append("subPos", longStyle.pos);
-           fd.append("subStyle", longStyle.style);
-+          fd.append("subWords", longStyle.words || "");
-           fd.append("hook", longHook.enabled ? "1" : "0");
-           fd.append("hookMode", longHook.mode);
-           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
-@@ -490,6 +521,7 @@
-               subSize: longStyle.size,
-               subPos: longStyle.pos,
-               subStyle: longStyle.style,
-+              subWords: longStyle.words || "",
-               hook: longHook.enabled,
-               hookMode: longHook.mode,
-             }),
-@@ -710,6 +742,7 @@
-           fd.append("subSize", rankStyle.size);
-           fd.append("subPos", rankStyle.pos);
-           fd.append("subStyle", rankStyle.style);
-+          fd.append("subWords", rankStyle.words || "");
-           fd.append("hook", rankHook.enabled ? "1" : "0");
-           fd.append("hookMode", rankHook.mode);
-           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
-@@ -726,6 +759,7 @@
-               subSize: rankStyle.size,
-               subPos: rankStyle.pos,
-               subStyle: rankStyle.style,
-+              subWords: rankStyle.words || "",
-               hook: rankHook.enabled,
-               hookMode: rankHook.mode,
-             }),
-diff --git a/clipery/server.js b/clipery/server.js
-index 0beae77..a920eda 100644
---- a/clipery/server.js
-+++ b/clipery/server.js
-@@ -339,6 +339,7 @@ function readSubStyle(get) {
-     size: get("subSize"),
-     pos: get("subPos"),
-     style: get("subStyle"),
-+    words: get("subWords"),
-   });
- }
- 
