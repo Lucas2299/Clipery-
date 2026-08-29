@@ -44,10 +44,29 @@
       .sub-toggle input { accent-color:#ff4d6d; width:16px; height:16px; cursor:pointer; }
       .sub-toggle .sub-hint { color:#9a96a8; font-size:0.78rem; }
       .sub-style-grid{display:flex;flex-wrap:wrap;gap:0.5rem 0.75rem;margin:-0.35rem 0 0.9rem}
-      .sub-templates{flex-basis:100%;display:flex;flex-wrap:wrap;gap:0.32rem;margin:0 0 0.2rem}
-      .tpl-chip{border:1px solid rgba(255,255,255,0.14);background:rgba(0,0,0,0.35);color:#e8e6f0;border-radius:999px;padding:0.28rem 0.62rem;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
-      .tpl-chip:hover{border-color:#a86bff;transform:translateY(-1px)}
-      .tpl-chip.active{background:linear-gradient(135deg,#a86bff,#ff4d6d);border-color:transparent;color:#fff}
+      .sub-hidden{display:none !important}
+      .sub-tabs{flex-basis:100%;display:flex;gap:0.5rem;margin:0 0 0.4rem}
+      .sub-tab{flex:1;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.35);color:#c9c5d8;border-radius:10px;padding:0.45rem 0.5rem;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
+      .sub-tab.active{background:linear-gradient(135deg,#a86bff,#ff4d6d);border-color:transparent;color:#fff}
+      .sub-cards{flex-basis:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:0.45rem;margin:0 0 0.35rem}
+      .sub-card{border:1px solid rgba(255,255,255,0.12);background:#17121f;border-radius:12px;padding:0.55rem 0.25rem 0.45rem;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:0.4rem;transition:all .15s;min-height:74px}
+      .sub-card:hover{border-color:#a86bff;transform:translateY(-2px)}
+      .sub-card.sel{box-shadow:0 0 0 2px #a86bff,0 0 16px rgba(168,107,255,0.35);border-color:transparent}
+      .sc-cap{font-weight:800;font-size:0.7rem;letter-spacing:0.02em;text-align:center;line-height:1.3;color:#fff;text-shadow:0 0 3px rgba(0,0,0,0.95)}
+      .sc-cap .w{display:inline-block;padding:0 1px}
+      .sc-cap .w.dim{opacity:0.4}
+      .sc-cap .w.y{color:#FFE74C}
+      .sc-cap .w.pk{color:#FF4D6D}
+      .sc-cap .w.cy{color:#3CD4F5}
+      .sc-cap .w.g{color:#30D158}
+      .sc-cap .w.o{color:#FF8A4C}
+      .sc-cap .w.r{color:#FF3B3B}
+      .sc-full .sc-cap .w{opacity:1}
+      .sc-nodim .sc-cap .w.dim{display:none}
+      .sc-box .sc-cap .w{background:rgba(0,0,0,0.7);padding:0 4px;border-radius:3px}
+      .sc-caps .sc-cap{text-transform:uppercase}
+      .sc-name{font-size:0.6rem;color:#9a96a8;font-weight:700;text-align:center}
+      .sub-card.sel .sc-name{color:#e8e6f0}
 
       .sub-style-grid label{display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9a96a8;font-weight:600}
       .sub-style-grid select{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem}
@@ -116,18 +135,15 @@
             <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
           </label>
           <div class="sub-style-grid" id="long-substyle">
-            <div class="sub-templates" id="long-templates">
-              <button type="button" class="tpl-chip" data-tpl="tiktok">🔥 TikTok</button>
-              <button type="button" class="tpl-chip" data-tpl="beast">💥 Beast</button>
-              <button type="button" class="tpl-chip" data-tpl="candy">🍭 Candy</button>
-              <button type="button" class="tpl-chip" data-tpl="rainbow">🌈 Rainbow</button>
-              <button type="button" class="tpl-chip" data-tpl="news">📰 News</button>
-              <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
-              <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
-              <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
-              <button type="button" class="tpl-chip" data-tpl="hormozi">💼 Hormozi</button>
-              <button type="button" class="tpl-chip" data-tpl="mrbeast">🐐 MrBeast</button>
-              <button type="button" class="tpl-chip" data-tpl="reels">📸 Reels</button>
+            <div class="sub-tabs" id="long-subtabs">
+              <button type="button" class="sub-tab" data-tab="styles">🖌️ Styles</button>
+              <button type="button" class="sub-tab active" data-tab="templates">🏷️ Templates</button>
+            </div>
+            <div class="sub-cards" id="long-cards-styles" hidden>
+              <button type="button" class="sub-card" data-style="outline"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Karaoke</span></button><button type="button" class="sub-card sc-full" data-style="highlight"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Highlight</span></button><button type="button" class="sub-card sc-box" data-style="box"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Box</span></button><button type="button" class="sub-card sc-nodim" data-style="pop"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Pop-in</span></button><button type="button" class="sub-card sc-full" data-style="classic"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button><button type="button" class="sub-card" data-style="rainbow"><span class="sc-cap"><span class="w y">THE</span> <span class="w pk">QUICK</span> <span class="w cy">BROWN</span></span><span class="sc-name">Rainbow</span></button><button type="button" class="sub-card sc-caps sc-full" data-style="hormozi"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Hormozi</span></button><button type="button" class="sub-card sc-caps sc-nodim" data-style="mrbeast"><span class="sc-cap"><span class="w y">THE</span> <span class="w wt">QUICK</span> <span class="w r">BROWN</span></span><span class="sc-name">MrBeast</span></button>
+            </div>
+            <div class="sub-cards" id="long-cards-templates">
+              <button type="button" class="sub-card" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">🔥 TikTok</span></button><button type="button" class="sub-card" data-tpl="beast"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">💥 Beast</span></button><button type="button" class="sub-card sc-nodim" data-tpl="candy"><span class="sc-cap"><span class="w pk">THE</span> <span class="w pk">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">🍭 Candy</span></button><button type="button" class="sub-card" data-tpl="rainbow"><span class="sc-cap"><span class="w y">THE</span> <span class="w pk">QUICK</span> <span class="w cy">BROWN</span></span><span class="sc-name">🌈 Rainbow</span></button><button type="button" class="sub-card sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">📰 News</span></button><button type="button" class="sub-card sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">👑 Gold box</span></button><button type="button" class="sub-card sc-full" data-tpl="glow"><span class="sc-cap"><span class="w o">THE</span> <span class="w o">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">✨ Glow</span></button><button type="button" class="sub-card sc-full" data-tpl="clean"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">🤍 Clean</span></button><button type="button" class="sub-card sc-caps sc-full" data-tpl="hormozi"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">💼 Hormozi</span></button><button type="button" class="sub-card sc-caps sc-nodim" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">THE</span> <span class="w wt">QUICK</span> <span class="w r">BROWN</span></span><span class="sc-name">🐐 MrBeast</span></button><button type="button" class="sub-card sc-full" data-tpl="reels"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">📸 Reels</span></button>
             </div>
             <label>Color
               <select id="long-sub-color">
@@ -155,7 +171,7 @@
                 <option value="top">Top</option>
               </select>
             </label>
-            <label>Style
+            <label class="sub-hidden">Style
               <select id="long-sub-style">
                 <option value="outline" selected>Karaoke (dim → color)</option>
                 <option value="highlight">White + colored word</option>
@@ -286,18 +302,15 @@
             <span>Subtitles <span class="sub-hint">auto captions, TikTok style</span></span>
           </label>
           <div class="sub-style-grid" id="rank-substyle">
-            <div class="sub-templates" id="rank-templates">
-              <button type="button" class="tpl-chip" data-tpl="tiktok">🔥 TikTok</button>
-              <button type="button" class="tpl-chip" data-tpl="beast">💥 Beast</button>
-              <button type="button" class="tpl-chip" data-tpl="candy">🍭 Candy</button>
-              <button type="button" class="tpl-chip" data-tpl="rainbow">🌈 Rainbow</button>
-              <button type="button" class="tpl-chip" data-tpl="news">📰 News</button>
-              <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
-              <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
-              <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
-              <button type="button" class="tpl-chip" data-tpl="hormozi">💼 Hormozi</button>
-              <button type="button" class="tpl-chip" data-tpl="mrbeast">🐐 MrBeast</button>
-              <button type="button" class="tpl-chip" data-tpl="reels">📸 Reels</button>
+            <div class="sub-tabs" id="rank-subtabs">
+              <button type="button" class="sub-tab" data-tab="styles">🖌️ Styles</button>
+              <button type="button" class="sub-tab active" data-tab="templates">🏷️ Templates</button>
+            </div>
+            <div class="sub-cards" id="rank-cards-styles" hidden>
+              <button type="button" class="sub-card" data-style="outline"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Karaoke</span></button><button type="button" class="sub-card sc-full" data-style="highlight"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Highlight</span></button><button type="button" class="sub-card sc-box" data-style="box"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Box</span></button><button type="button" class="sub-card sc-nodim" data-style="pop"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Pop-in</span></button><button type="button" class="sub-card sc-full" data-style="classic"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button><button type="button" class="sub-card" data-style="rainbow"><span class="sc-cap"><span class="w y">THE</span> <span class="w pk">QUICK</span> <span class="w cy">BROWN</span></span><span class="sc-name">Rainbow</span></button><button type="button" class="sub-card sc-caps sc-full" data-style="hormozi"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Hormozi</span></button><button type="button" class="sub-card sc-caps sc-nodim" data-style="mrbeast"><span class="sc-cap"><span class="w y">THE</span> <span class="w wt">QUICK</span> <span class="w r">BROWN</span></span><span class="sc-name">MrBeast</span></button>
+            </div>
+            <div class="sub-cards" id="rank-cards-templates">
+              <button type="button" class="sub-card" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">🔥 TikTok</span></button><button type="button" class="sub-card" data-tpl="beast"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">💥 Beast</span></button><button type="button" class="sub-card sc-nodim" data-tpl="candy"><span class="sc-cap"><span class="w pk">THE</span> <span class="w pk">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">🍭 Candy</span></button><button type="button" class="sub-card" data-tpl="rainbow"><span class="sc-cap"><span class="w y">THE</span> <span class="w pk">QUICK</span> <span class="w cy">BROWN</span></span><span class="sc-name">🌈 Rainbow</span></button><button type="button" class="sub-card sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">📰 News</span></button><button type="button" class="sub-card sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">👑 Gold box</span></button><button type="button" class="sub-card sc-full" data-tpl="glow"><span class="sc-cap"><span class="w o">THE</span> <span class="w o">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">✨ Glow</span></button><button type="button" class="sub-card sc-full" data-tpl="clean"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">🤍 Clean</span></button><button type="button" class="sub-card sc-caps sc-full" data-tpl="hormozi"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">💼 Hormozi</span></button><button type="button" class="sub-card sc-caps sc-nodim" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">THE</span> <span class="w wt">QUICK</span> <span class="w r">BROWN</span></span><span class="sc-name">🐐 MrBeast</span></button><button type="button" class="sub-card sc-full" data-tpl="reels"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">📸 Reels</span></button>
             </div>
             <label>Color
               <select id="rank-sub-color">
@@ -325,7 +338,7 @@
                 <option value="top">Top</option>
               </select>
             </label>
-            <label>Style
+            <label class="sub-hidden">Style
               <select id="rank-sub-style">
                 <option value="outline" selected>Karaoke (dim → color)</option>
                 <option value="highlight">White + colored word</option>

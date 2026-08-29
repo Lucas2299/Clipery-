@@ -111,19 +111,65 @@
     reels:   { color: "yellow", size: "medium", pos: "middle", style: "highlight" }
   };
 
+  /* --- visual style/template cards --- */
+  function cardsIn(prefix, kind) {
+    var grid = $(prefix + "-cards-" + kind);
+    return grid ? grid.querySelectorAll(".sub-card") : [];
+  }
+
+  function clearSel(list) {
+    for (var j = 0; j < list.length; j++) list[j].classList.remove("sel");
+  }
+
   function clearTplChips(prefix) {
-    var row = $(prefix + "-templates");
-    if (!row) return;
-    var chips = row.querySelectorAll(".tpl-chip");
-    for (var j = 0; j < chips.length; j++) chips[j].classList.remove("active");
+    clearSel(cardsIn(prefix, "templates"));
+  }
+
+  function syncStyleCards(prefix) {
+    var styleSel = $(prefix + "-sub-style");
+    var cards = cardsIn(prefix, "styles");
+    clearSel(cards);
+    for (var j = 0; j < cards.length; j++) {
+      if (styleSel && cards[j].getAttribute("data-style") === styleSel.value) {
+        cards[j].classList.add("sel");
+      }
+    }
+  }
+
+  function wireStyleCards(prefix) {
+    var cards = cardsIn(prefix, "styles");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].addEventListener("click", function (ev) {
+        var st = ev.currentTarget.getAttribute("data-style");
+        var sel = $(prefix + "-sub-style");
+        if (sel && st) sel.value = st;
+        clearTplChips(prefix);
+        syncStyleCards(prefix);
+        updateSubPreview(prefix);
+      });
+    }
+  }
+
+  function wireSubTabs(prefix) {
+    var tabs = $(prefix + "-subtabs");
+    if (!tabs) return;
+    var btns = tabs.querySelectorAll(".sub-tab");
+    var styles = $(prefix + "-cards-styles");
+    var tpls = $(prefix + "-cards-templates");
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].addEventListener("click", function (ev) {
+        var mode = ev.currentTarget.getAttribute("data-tab");
+        for (var j = 0; j < btns.length; j++) btns[j].classList.toggle("active", btns[j] === ev.currentTarget);
+        if (styles) styles.hidden = mode !== "styles";
+        if (tpls) tpls.hidden = mode !== "templates";
+      });
+    }
   }
 
   function wireTemplates(prefix) {
-    var row = $(prefix + "-templates");
-    if (!row) return;
-    var chips = row.querySelectorAll(".tpl-chip");
-    for (var i = 0; i < chips.length; i++) {
-      chips[i].addEventListener("click", function (ev) {
+    var cards = cardsIn(prefix, "templates");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].addEventListener("click", function (ev) {
         var t = TEMPLATES[ev.currentTarget.getAttribute("data-tpl")];
         if (!t) return;
         var keys = ["color", "size", "pos", "style"];
@@ -132,7 +178,8 @@
           if (sel) sel.value = t[keys[k]];
         }
         clearTplChips(prefix);
-        ev.currentTarget.classList.add("active");
+        ev.currentTarget.classList.add("sel");
+        syncStyleCards(prefix);
         updateSubPreview(prefix);
       });
     }
@@ -149,7 +196,10 @@
         });
       }
     }
+    wireSubTabs(prefix);
+    wireStyleCards(prefix);
     wireTemplates(prefix);
+    syncStyleCards(prefix);
     updateSubPreview(prefix);
   }
   wireSubPreview("long");
