@@ -372,18 +372,22 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
 
     const palette = s.style === "rainbow" ? RAINBOW : s.style === "mrbeast" ? BEAST : null;
     const caps = CAPS_STYLES.has(s.style);
+    // STATIC styles never change colour while speaking → drop the per-word \k
+    // karaoke tags, otherwise each word becomes its own box/runt. One clean
+    // segment per row = one continuous background box around the whole text.
+    const wholeBox = STATIC_STYLES.has(s.style);
     const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
     let wordIdx = i * 10; // colour cycle keeps marching across pages
     const wordTag = (cs) =>
       palette ? `{\\1c${palette[wordIdx++ % palette.length]}\\k${cs}}` : `{\\k${cs}}`;
 
     const parts = [];
-    for (const w of staticRow) parts.push(`${wordTag(5)}${fmtWord(w.w)}`); // already spoken → lit at once
+    for (const w of staticRow) parts.push(wholeBox ? fmtWord(w.w) : `${wordTag(5)}${fmtWord(w.w)}`); // already spoken → lit at once
     let prevStart = null;
     for (const w of liveRow) {
       let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
       if (cs < 5) cs = 5;
-      parts.push(`${wordTag(cs)}${fmtWord(w.w)}`);
+      parts.push(wholeBox ? fmtWord(w.w) : `${wordTag(cs)}${fmtWord(w.w)}`);
       prevStart = w.s;
     }
     if (!parts.length) continue;

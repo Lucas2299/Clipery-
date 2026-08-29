@@ -89,6 +89,15 @@
     frame.classList.toggle("boxred", s.style === "boxred");
     frame.classList.toggle("boxblack", s.style === "boxblack");
     frame.classList.toggle("pop", s.style === "pop" || s.style === "mrbeast");
+    // boxed looks draw ONE box around the whole line → shrink-wrap the caption strip
+    if (isBoxed) {
+      cap.style.left = "50%"; cap.style.right = "auto";
+      cap.style.width = "fit-content"; cap.style.maxWidth = "94%";
+      cap.style.transform = "translateX(-50%)";
+    } else {
+      cap.style.left = ""; cap.style.right = ""; cap.style.width = "";
+      cap.style.maxWidth = ""; cap.style.transform = "";
+    }
     var STATIC = { classic: 1, plain: 1, outlined: 1, thick: 1, shadow: 1, boxdark: 1, boxlight: 1, boxwhite: 1, boxred: 1, boxblack: 1 };
     var OUT1 = "-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000";
     var shadow = isBoxed ? "none"
