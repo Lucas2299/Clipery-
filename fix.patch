@@ -1,46 +1,159 @@
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index c11e29f..98fd026 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -45,6 +45,24 @@ const BEAST = ["&H004CE7FF", "&H00FFFFFF", "&H003B3BFF", "&H0058D130", "&H004C8A
+ // Styles that shout in UPPERCASE (Hormozi / MrBeast look). Caps are wider,
+ // so caption rows get 2 fewer characters to stay inside the frame.
+ const CAPS_STYLES = new Set(["hormozi", "mrbeast"]);
++// STATIC decoration looks: plain text, every word in YOUR colour, no karaoke
++// fill — the whole block simply changes page by page. These are the calm
++// "Styles" tab options; the fancy animated ones live in Templates.
++const STATIC_STYLES = new Set(["classic", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight"]);
++// Border/decoration per style. Fields after BackColour:
++// Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
++const DECO = {
++  box: "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0", // karaoke: dark backdrop box
++  boxdark: "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0", // static: dark box behind text
++  boxlight: "&H00000000,&H3C000000,1,0,0,0,100,100,0,0,3,8,0", // static: light grey box
++  pop: "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0", // pop-in: hidden ghosts
++  mrbeast: "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0",
++  hormozi: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0", // thick outline, shouty
++  thick: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,4.5,0", // extra thick stroke
++  outlined: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0", // classic black outline
++  shadow: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,1.5,3", // offset drop shadow
++  plain: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,1,1", // clean, barely-there edge
++};
+ // Font sizes in script units (PlayRes 384x684 matches our 608x1080 portrait
+ // canvas exactly, so 1 unit ≈ 1.6 real pixels).
+ const SUB_SIZES = { small: 26, medium: 30 };
+@@ -66,7 +84,7 @@ const GAP_SPLIT = 0.9;
+ function normalizeSubStyle(input = {}) {
+   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
+   const st = String(input.style).toLowerCase();
+-  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast"];
++  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight"];
+   return {
+     color: pick(input.color, SUB_COLORS, "white"),
+     size: pick(input.size, SUB_SIZES, "medium"),
+@@ -290,23 +308,17 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+   const primary = SUB_COLORS[s.color];
+   // Fields: OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,
+   // ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
+-  const deco =
+-    s.style === "box"
+-      ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
+-      : s.style === "pop" || s.style === "mrbeast"
+-        ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: hidden ghosts
+-        : s.style === "hormozi"
+-          ? "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0" // thick outline for the shouty look
+-          : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
++  const deco = DECO[s.style] || "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // karaoke outline
+   // highlight/hormozi = crisp WHITE text, only the spoken words turn into your colour
+-  // classic = plain static text (spoken + upcoming look identical → no karaoke animation)
++  // STATIC (classic/plain/outlined/thick/shadow/boxdark/boxlight) = every word in
++  // your colour at all times → calm static text, page changes only
+   // mrbeast = words pop in coloured, completely hidden until spoken
+   const secondary =
+     s.style === "pop" || s.style === "mrbeast"
+       ? KARAOKE_HIDDEN
+       : s.style === "highlight" || s.style === "hormozi"
+         ? "&H00FFFFFF"
+-        : s.style === "classic"
++        : STATIC_STYLES.has(s.style)
+           ? primary
+           : KARAOKE_DIM;
+ 
 diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 9e5c59e..f2444c5 100644
+index f2444c5..d0e79d4 100644
 --- a/clipery/public/studio.html
 +++ b/clipery/public/studio.html
-@@ -49,6 +49,7 @@
-       .sub-tab{flex:1;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.35);color:#c9c5d8;border-radius:10px;padding:0.45rem 0.5rem;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
-       .sub-tab.active{background:linear-gradient(135deg,#a86bff,#ff4d6d);border-color:transparent;color:#fff}
-       .sub-cards{flex-basis:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:0.45rem;margin:0 0 0.35rem}
-+      .sub-cards[hidden]{display:none} /* the on/off switch must always beat display:grid */
-       .sub-card{border:1px solid rgba(255,255,255,0.12);background:#17121f;border-radius:12px;padding:0.55rem 0.25rem 0.45rem;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:0.4rem;transition:all .15s;min-height:74px}
-       .sub-card:hover{border-color:#a86bff;transform:translateY(-2px)}
-       .sub-card.sel{box-shadow:0 0 0 2px #a86bff,0 0 16px rgba(168,107,255,0.35);border-color:transparent}
-@@ -443,6 +444,6 @@
-       document.getElementById("year").textContent = new Date().getFullYear();
-     </script>
-     <script src="/shared.js?v=2"></script>
--    <script src="/studio.js?v=2"></script>
-+    <script src="/studio.js?v=3"></script>
-   </body>
- </html>
+@@ -66,6 +66,10 @@
+       .sc-nodim .sc-cap .w.dim{display:none}
+       .sc-box .sc-cap .w{background:rgba(0,0,0,0.7);padding:0 4px;border-radius:3px}
+       .sc-caps .sc-cap{text-transform:uppercase}
++      .d-outline .sc-cap{text-shadow:0 0 3px rgba(0,0,0,1),0 0 3px rgba(0,0,0,1)}
++      .d-thick .sc-cap{text-shadow:0 0 3px rgba(0,0,0,1),0 0 3px rgba(0,0,0,1),0 0 4px rgba(0,0,0,1)}
++      .d-shadow .sc-cap{text-shadow:2px 2px 0 rgba(0,0,0,0.9)}
++      .sc-blight .sc-cap .w{background:rgba(0,0,0,0.3);padding:0 4px;border-radius:3px}
+       .sc-name{font-size:0.6rem;color:#9a96a8;font-weight:700;text-align:center}
+       .sub-card.sel .sc-name{color:#e8e6f0}
+ 
+@@ -141,7 +145,7 @@
+               <button type="button" class="sub-tab active" data-tab="templates">🏷️ Templates</button>
+             </div>
+             <div class="sub-cards" id="long-cards-styles" hidden>
+-              <button type="button" class="sub-card" data-style="outline"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Karaoke</span></button><button type="button" class="sub-card sc-full" data-style="highlight"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Highlight</span></button><button type="button" class="sub-card sc-box" data-style="box"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Box</span></button><button type="button" class="sub-card sc-nodim" data-style="pop"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Pop-in</span></button><button type="button" class="sub-card sc-full" data-style="classic"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button>
++              <button type="button" class="sub-card sc-full" data-style="plain"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button><button type="button" class="sub-card sc-full d-outline" data-style="outlined"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Outline</span></button><button type="button" class="sub-card sc-full d-thick" data-style="thick"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Thick</span></button><button type="button" class="sub-card sc-full d-shadow" data-style="shadow"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Shadow</span></button><button type="button" class="sub-card sc-full sc-box" data-style="boxdark"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Dark box</span></button><button type="button" class="sub-card sc-full sc-blight" data-style="boxlight"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Light box</span></button>
+             </div>
+             <div class="sub-cards" id="long-cards-templates">
+               <button type="button" class="sub-card" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">WORD</span> <span class="w wt">UP</span> <span class="w dim">NOW</span></span><span class="sc-name">🔥 TikTok</span></button><button type="button" class="sub-card" data-tpl="beast"><span class="sc-cap"><span class="w y">FIRST</span> <span class="w y">PRIZE</span> <span class="w dim">YEAH</span></span><span class="sc-name">💥 Beast</span></button><button type="button" class="sub-card sc-nodim" data-tpl="candy"><span class="sc-cap"><span class="w pk">SO</span> <span class="w pk">SWEET</span> <span class="w dim">BABY</span></span><span class="sc-name">🍭 Candy</span></button><button type="button" class="sub-card" data-tpl="rainbow"><span class="sc-cap"><span class="w y">FUN</span> <span class="w pk">TIME</span> <span class="w cy">YEAH</span></span><span class="sc-name">🌈 Rainbow</span></button><button type="button" class="sub-card sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">TOP</span> <span class="w wt">NEWS</span> <span class="w dim">TODAY</span></span><span class="sc-name">📰 News</span></button><button type="button" class="sub-card sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">BIG</span> <span class="w y">WIN</span> <span class="w dim">TONIGHT</span></span><span class="sc-name">👑 Gold box</span></button><button type="button" class="sub-card sc-full" data-tpl="glow"><span class="sc-cap"><span class="w o">SHINE</span> <span class="w o">ON</span> <span class="w wt">TODAY</span></span><span class="sc-name">✨ Glow</span></button><button type="button" class="sub-card sc-full" data-tpl="clean"><span class="sc-cap"><span class="w wt">EASY</span> <span class="w wt">NOW</span> <span class="w wt">FRIEND</span></span><span class="sc-name">🤍 Clean</span></button><button type="button" class="sub-card sc-caps sc-full" data-tpl="hormozi"><span class="sc-cap"><span class="w y">MAKE</span> <span class="w y">CASH</span> <span class="w wt">TODAY</span></span><span class="sc-name">💼 Hormozi</span></button><button type="button" class="sub-card sc-caps sc-nodim" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">WIN</span> <span class="w wt">BIG</span> <span class="w r">NOW</span></span><span class="sc-name">🐐 MrBeast</span></button><button type="button" class="sub-card sc-full" data-tpl="reels"><span class="sc-cap"><span class="w y">VIBE</span> <span class="w y">CHECK</span> <span class="w wt">ALWAYS</span></span><span class="sc-name">📸 Reels</span></button>
+@@ -182,6 +186,12 @@
+                 <option value="rainbow">Rainbow words</option>
+                 <option value="hormozi">Hormozi (caps + highlight)</option>
+                 <option value="mrbeast">MrBeast (color pop)</option>
++                <option value="plain">Plain (static)</option>
++                <option value="outlined">Outline (static)</option>
++                <option value="thick">Thick outline (static)</option>
++                <option value="shadow">Shadow (static)</option>
++                <option value="boxdark">Dark box (static)</option>
++                <option value="boxlight">Light box (static)</option>
+               </select>
+             </label>
+             <div class="sub-preview" id="long-sub-preview" aria-hidden="true">
+@@ -308,7 +318,7 @@
+               <button type="button" class="sub-tab active" data-tab="templates">🏷️ Templates</button>
+             </div>
+             <div class="sub-cards" id="rank-cards-styles" hidden>
+-              <button type="button" class="sub-card" data-style="outline"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Karaoke</span></button><button type="button" class="sub-card sc-full" data-style="highlight"><span class="sc-cap"><span class="w y">THE</span> <span class="w y">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Highlight</span></button><button type="button" class="sub-card sc-box" data-style="box"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Box</span></button><button type="button" class="sub-card sc-nodim" data-style="pop"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w dim">BROWN</span></span><span class="sc-name">Pop-in</span></button><button type="button" class="sub-card sc-full" data-style="classic"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button>
++              <button type="button" class="sub-card sc-full" data-style="plain"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Plain</span></button><button type="button" class="sub-card sc-full d-outline" data-style="outlined"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Outline</span></button><button type="button" class="sub-card sc-full d-thick" data-style="thick"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Thick</span></button><button type="button" class="sub-card sc-full d-shadow" data-style="shadow"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Shadow</span></button><button type="button" class="sub-card sc-full sc-box" data-style="boxdark"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Dark box</span></button><button type="button" class="sub-card sc-full sc-blight" data-style="boxlight"><span class="sc-cap"><span class="w wt">THE</span> <span class="w wt">QUICK</span> <span class="w wt">BROWN</span></span><span class="sc-name">Light box</span></button>
+             </div>
+             <div class="sub-cards" id="rank-cards-templates">
+               <button type="button" class="sub-card" data-tpl="tiktok"><span class="sc-cap"><span class="w wt">WORD</span> <span class="w wt">UP</span> <span class="w dim">NOW</span></span><span class="sc-name">🔥 TikTok</span></button><button type="button" class="sub-card" data-tpl="beast"><span class="sc-cap"><span class="w y">FIRST</span> <span class="w y">PRIZE</span> <span class="w dim">YEAH</span></span><span class="sc-name">💥 Beast</span></button><button type="button" class="sub-card sc-nodim" data-tpl="candy"><span class="sc-cap"><span class="w pk">SO</span> <span class="w pk">SWEET</span> <span class="w dim">BABY</span></span><span class="sc-name">🍭 Candy</span></button><button type="button" class="sub-card" data-tpl="rainbow"><span class="sc-cap"><span class="w y">FUN</span> <span class="w pk">TIME</span> <span class="w cy">YEAH</span></span><span class="sc-name">🌈 Rainbow</span></button><button type="button" class="sub-card sc-box" data-tpl="news"><span class="sc-cap"><span class="w wt">TOP</span> <span class="w wt">NEWS</span> <span class="w dim">TODAY</span></span><span class="sc-name">📰 News</span></button><button type="button" class="sub-card sc-box" data-tpl="goldbox"><span class="sc-cap"><span class="w y">BIG</span> <span class="w y">WIN</span> <span class="w dim">TONIGHT</span></span><span class="sc-name">👑 Gold box</span></button><button type="button" class="sub-card sc-full" data-tpl="glow"><span class="sc-cap"><span class="w o">SHINE</span> <span class="w o">ON</span> <span class="w wt">TODAY</span></span><span class="sc-name">✨ Glow</span></button><button type="button" class="sub-card sc-full" data-tpl="clean"><span class="sc-cap"><span class="w wt">EASY</span> <span class="w wt">NOW</span> <span class="w wt">FRIEND</span></span><span class="sc-name">🤍 Clean</span></button><button type="button" class="sub-card sc-caps sc-full" data-tpl="hormozi"><span class="sc-cap"><span class="w y">MAKE</span> <span class="w y">CASH</span> <span class="w wt">TODAY</span></span><span class="sc-name">💼 Hormozi</span></button><button type="button" class="sub-card sc-caps sc-nodim" data-tpl="mrbeast"><span class="sc-cap"><span class="w y">WIN</span> <span class="w wt">BIG</span> <span class="w r">NOW</span></span><span class="sc-name">🐐 MrBeast</span></button><button type="button" class="sub-card sc-full" data-tpl="reels"><span class="sc-cap"><span class="w y">VIBE</span> <span class="w y">CHECK</span> <span class="w wt">ALWAYS</span></span><span class="sc-name">📸 Reels</span></button>
+@@ -349,6 +359,12 @@
+                 <option value="rainbow">Rainbow words</option>
+                 <option value="hormozi">Hormozi (caps + highlight)</option>
+                 <option value="mrbeast">MrBeast (color pop)</option>
++                <option value="plain">Plain (static)</option>
++                <option value="outlined">Outline (static)</option>
++                <option value="thick">Thick outline (static)</option>
++                <option value="shadow">Shadow (static)</option>
++                <option value="boxdark">Dark box (static)</option>
++                <option value="boxlight">Light box (static)</option>
+               </select>
+             </label>
+             <div class="sub-preview" id="rank-sub-preview" aria-hidden="true">
 diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index f357713..cd1ab82 100644
+index cd1ab82..0aaaddd 100644
 --- a/clipery/public/studio.js
 +++ b/clipery/public/studio.js
-@@ -156,14 +156,17 @@
-     var btns = tabs.querySelectorAll(".sub-tab");
-     var styles = $(prefix + "-cards-styles");
-     var tpls = $(prefix + "-cards-templates");
-+    function showMode(mode) {
-+      for (var j = 0; j < btns.length; j++) btns[j].classList.toggle("active", btns[j].getAttribute("data-tab") === mode);
-+      if (styles) { styles.hidden = mode !== "styles"; styles.style.display = mode === "styles" ? "grid" : "none"; }
-+      if (tpls) { tpls.hidden = mode !== "templates"; tpls.style.display = mode === "templates" ? "grid" : "none"; }
-+    }
-     for (var i = 0; i < btns.length; i++) {
-       btns[i].addEventListener("click", function (ev) {
--        var mode = ev.currentTarget.getAttribute("data-tab");
--        for (var j = 0; j < btns.length; j++) btns[j].classList.toggle("active", btns[j] === ev.currentTarget);
--        if (styles) styles.hidden = mode !== "styles";
--        if (tpls) tpls.hidden = mode !== "templates";
-+        showMode(ev.currentTarget.getAttribute("data-tab"));
-       });
-     }
-+    showMode("templates"); // start on the Templates tab
-   }
- 
-   function wireTemplates(prefix) {
+@@ -72,18 +72,24 @@
+     var col = SUB_PREV.colors[s.color] || "#ffffff";
+     cap.style.fontSize = (SUB_PREV.sizes[s.size] || 11) + "px";
+     cap.style.top = SUB_PREV.pos[s.pos] || "68%";
+-    frame.classList.toggle("box", s.style === "box");
+-    frame.classList.toggle("pop", s.style === "pop");
+-    var shadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
++    var isBoxed = s.style === "box" || s.style === "boxdark" || s.style === "boxlight";
++    frame.classList.toggle("box", isBoxed);
++    frame.classList.toggle("pop", s.style === "pop" || s.style === "mrbeast");
++    var STATIC = { classic: 1, plain: 1, outlined: 1, thick: 1, shadow: 1, boxdark: 1, boxlight: 1 };
++    var shadow = isBoxed ? "none"
++      : s.style === "thick" ? "0 0 3px #000, 0 0 3px #000, 0 0 4px #000"
++      : s.style === "shadow" ? "2px 2px 0 rgba(0,0,0,0.9)"
++      : s.style === "plain" ? "0 0 2px rgba(0,0,0,0.7)"
++      : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
+     cap.style.textTransform = (s.style === "hormozi" || s.style === "mrbeast") ? "uppercase" : "none";
+     var spans = cap.querySelectorAll(".lit, .dim");
+     for (var i = 0; i < spans.length; i++) {
+       var w = spans[i];
+       var isDim = w.className === "dim";
+       if (isDim) {
+-        // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for classic
++        // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for static looks
+         if (s.style === "pop" || s.style === "mrbeast") { w.style.color = "#fff"; w.style.opacity = "0"; }
+-        else if (s.style === "classic") { w.style.color = col; w.style.opacity = "1"; }
++        else if (STATIC[s.style]) { w.style.color = col; w.style.opacity = "1"; }
+         else if (s.style === "highlight" || s.style === "hormozi") { w.style.color = "#fff"; w.style.opacity = "1"; }
+         else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
+         w.style.textShadow = shadow;

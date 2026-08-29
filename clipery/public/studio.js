@@ -72,18 +72,24 @@
     var col = SUB_PREV.colors[s.color] || "#ffffff";
     cap.style.fontSize = (SUB_PREV.sizes[s.size] || 11) + "px";
     cap.style.top = SUB_PREV.pos[s.pos] || "68%";
-    frame.classList.toggle("box", s.style === "box");
-    frame.classList.toggle("pop", s.style === "pop");
-    var shadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
+    var isBoxed = s.style === "box" || s.style === "boxdark" || s.style === "boxlight";
+    frame.classList.toggle("box", isBoxed);
+    frame.classList.toggle("pop", s.style === "pop" || s.style === "mrbeast");
+    var STATIC = { classic: 1, plain: 1, outlined: 1, thick: 1, shadow: 1, boxdark: 1, boxlight: 1 };
+    var shadow = isBoxed ? "none"
+      : s.style === "thick" ? "0 0 3px #000, 0 0 3px #000, 0 0 4px #000"
+      : s.style === "shadow" ? "2px 2px 0 rgba(0,0,0,0.9)"
+      : s.style === "plain" ? "0 0 2px rgba(0,0,0,0.7)"
+      : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
     cap.style.textTransform = (s.style === "hormozi" || s.style === "mrbeast") ? "uppercase" : "none";
     var spans = cap.querySelectorAll(".lit, .dim");
     for (var i = 0; i < spans.length; i++) {
       var w = spans[i];
       var isDim = w.className === "dim";
       if (isDim) {
-        // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for classic
+        // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for static looks
         if (s.style === "pop" || s.style === "mrbeast") { w.style.color = "#fff"; w.style.opacity = "0"; }
-        else if (s.style === "classic") { w.style.color = col; w.style.opacity = "1"; }
+        else if (STATIC[s.style]) { w.style.color = col; w.style.opacity = "1"; }
         else if (s.style === "highlight" || s.style === "hormozi") { w.style.color = "#fff"; w.style.opacity = "1"; }
         else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
         w.style.textShadow = shadow;

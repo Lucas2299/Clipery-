@@ -45,6 +45,24 @@ const BEAST = ["&H004CE7FF", "&H00FFFFFF", "&H003B3BFF", "&H0058D130", "&H004C8A
 // Styles that shout in UPPERCASE (Hormozi / MrBeast look). Caps are wider,
 // so caption rows get 2 fewer characters to stay inside the frame.
 const CAPS_STYLES = new Set(["hormozi", "mrbeast"]);
+// STATIC decoration looks: plain text, every word in YOUR colour, no karaoke
+// fill — the whole block simply changes page by page. These are the calm
+// "Styles" tab options; the fancy animated ones live in Templates.
+const STATIC_STYLES = new Set(["classic", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight"]);
+// Border/decoration per style. Fields after BackColour:
+// Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
+const DECO = {
+  box: "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0", // karaoke: dark backdrop box
+  boxdark: "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0", // static: dark box behind text
+  boxlight: "&H00000000,&H3C000000,1,0,0,0,100,100,0,0,3,8,0", // static: light grey box
+  pop: "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0", // pop-in: hidden ghosts
+  mrbeast: "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0",
+  hormozi: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0", // thick outline, shouty
+  thick: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,4.5,0", // extra thick stroke
+  outlined: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0", // classic black outline
+  shadow: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,1.5,3", // offset drop shadow
+  plain: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,1,1", // clean, barely-there edge
+};
 // Font sizes in script units (PlayRes 384x684 matches our 608x1080 portrait
 // canvas exactly, so 1 unit ≈ 1.6 real pixels).
 const SUB_SIZES = { small: 26, medium: 30 };
@@ -66,7 +84,7 @@ const GAP_SPLIT = 0.9;
 function normalizeSubStyle(input = {}) {
   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
   const st = String(input.style).toLowerCase();
-  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast"];
+  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight"];
   return {
     color: pick(input.color, SUB_COLORS, "white"),
     size: pick(input.size, SUB_SIZES, "medium"),
@@ -290,23 +308,17 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   const primary = SUB_COLORS[s.color];
   // Fields: OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,
   // ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
-  const deco =
-    s.style === "box"
-      ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
-      : s.style === "pop" || s.style === "mrbeast"
-        ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: hidden ghosts
-        : s.style === "hormozi"
-          ? "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0" // thick outline for the shouty look
-          : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
+  const deco = DECO[s.style] || "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // karaoke outline
   // highlight/hormozi = crisp WHITE text, only the spoken words turn into your colour
-  // classic = plain static text (spoken + upcoming look identical → no karaoke animation)
+  // STATIC (classic/plain/outlined/thick/shadow/boxdark/boxlight) = every word in
+  // your colour at all times → calm static text, page changes only
   // mrbeast = words pop in coloured, completely hidden until spoken
   const secondary =
     s.style === "pop" || s.style === "mrbeast"
       ? KARAOKE_HIDDEN
       : s.style === "highlight" || s.style === "hormozi"
         ? "&H00FFFFFF"
-        : s.style === "classic"
+        : STATIC_STYLES.has(s.style)
           ? primary
           : KARAOKE_DIM;
 
