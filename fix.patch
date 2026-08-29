@@ -1,72 +1,175 @@
 --- a/clipery/lib/subtitles.js
 +++ b/clipery/lib/subtitles.js
-@@ -127,54 +127,47 @@
- const round2 = (v) => Math.round(v * 100) / 100;
+@@ -40,6 +40,11 @@
+ // Rainbow karaoke: the spoken word cycles through this palette, one colour
+ // per word — party-style captions.
+ const RAINBOW = ["&H004CE7FF", "&H006D4DFF", "&H00F5D43C", "&H0058D130", "&H004C8AFF", "&H00FF6BA8"];
++// MrBeast pop-in captions: punchy yellow-heavy palette, one colour per word.
++const BEAST = ["&H004CE7FF", "&H00FFFFFF", "&H003B3BFF", "&H0058D130", "&H004C8AFF", "&H00F5D43C"];
++// Styles that shout in UPPERCASE (Hormozi / MrBeast look). Caps are wider,
++// so caption rows get 2 fewer characters to stay inside the frame.
++const CAPS_STYLES = new Set(["hormozi", "mrbeast"]);
+ // Font sizes in script units (PlayRes 384x684 matches our 608x1080 portrait
+ // canvas exactly, so 1 unit ≈ 1.6 real pixels).
+ const SUB_SIZES = { small: 26, medium: 30 };
+@@ -61,7 +66,7 @@
+ function normalizeSubStyle(input = {}) {
+   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
+   const st = String(input.style).toLowerCase();
+-  const okStyles = ["box", "pop", "highlight", "classic", "rainbow"];
++  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast"];
+   return {
+     color: pick(input.color, SUB_COLORS, "white"),
+     size: pick(input.size, SUB_SIZES, "medium"),
+@@ -288,15 +293,18 @@
+   const deco =
+     s.style === "box"
+       ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
+-      : s.style === "pop"
+-        ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: no outline, hidden ghosts
+-        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
+-  // highlight = crisp WHITE text, only the spoken words turn into your colour
++      : s.style === "pop" || s.style === "mrbeast"
++        ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: hidden ghosts
++        : s.style === "hormozi"
++          ? "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0" // thick outline for the shouty look
++          : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
++  // highlight/hormozi = crisp WHITE text, only the spoken words turn into your colour
+   // classic = plain static text (spoken + upcoming look identical → no karaoke animation)
++  // mrbeast = words pop in coloured, completely hidden until spoken
+   const secondary =
+-    s.style === "pop"
++    s.style === "pop" || s.style === "mrbeast"
+       ? KARAOKE_HIDDEN
+-      : s.style === "highlight"
++      : s.style === "highlight" || s.style === "hormozi"
+         ? "&H00FFFFFF"
+         : s.style === "classic"
+           ? primary
+@@ -344,18 +352,20 @@
+     if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
+     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
  
- /**
-- * Rolling 2-row karaoke window (the real TikTok pattern):
-- * words fill row 1 left→right, overflow continues on row 2 below;
-- * when row 2 is full it SLIDES UP to become row 1 and fresh words take
-- * row 2. The caption area is always the same height → zero bouncing.
-- * A long pause (> GAP_SPLIT) resets the window for the next sentence.
-+ * Caption pages: words appear one by one, left to right (karaoke).
-+ * A page starts as ONE row and can grow to a MAXIMUM of 2 rows;
-+ * once the 2nd row is full, we flip to a fresh page (starting with 1 row again).
-+ * Row 1 is pinned to the same Y (ASS Alignment 8 + margin from the top edge),
-+ * so flips never move the top line → zero bouncing, just clean page changes.
-+ * A long pause (> GAP_SPLIT) also starts a fresh page for the next sentence.
-  */
- function buildRollingPages(words, rowChars) {
-   const pages = [];
-   let r1 = [];
-   let r2 = [];
-   let lastEnd = 0;
--  let intro = true; // true while a fresh window's rows are still being spoken (karaoke live)
-   const rowLen = (arr) => arr.reduce((a, x) => a + x.w.length + 1, 0);
-   const fits = (arr, word) => rowLen(arr) + word.length <= rowChars && arr.length < ROW_WORDS;
+-    const isRainbow = s.style === "rainbow";
++    const palette = s.style === "rainbow" ? RAINBOW : s.style === "mrbeast" ? BEAST : null;
++    const caps = CAPS_STYLES.has(s.style);
++    const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
+     let wordIdx = i * 10; // colour cycle keeps marching across pages
+     const wordTag = (cs) =>
+-      isRainbow ? `{\\1c${RAINBOW[wordIdx++ % RAINBOW.length]}\\k${cs}}` : `{\\k${cs}}`;
++      palette ? `{\\1c${palette[wordIdx++ % palette.length]}\\k${cs}}` : `{\\k${cs}}`;
  
--  const closePage = (fresh) => {
-+  const closePage = () => {
-     if (!r1.length && !r2.length) return;
--    pages.push({ r1, r2, intro });
--    if (fresh) {
--      r1 = [];
--      r2 = [];
--      intro = true;
--    } else {
--      r1 = r2; // the filled row 2 scrolls up to become row 1
--      r2 = [];
--      intro = false;
--    }
-+    pages.push({ r1, r2, intro: true }); // every page is spoken live
-+    r1 = [];
-+    r2 = [];
+     const parts = [];
+-    for (const w of staticRow) parts.push(`${wordTag(5)}${cleanWord(w.w)}`); // already spoken → lit at once
++    for (const w of staticRow) parts.push(`${wordTag(5)}${fmtWord(w.w)}`); // already spoken → lit at once
+     let prevStart = null;
+     for (const w of liveRow) {
+       let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
+       if (cs < 5) cs = 5;
+-      parts.push(`${wordTag(cs)}${cleanWord(w.w)}`);
++      parts.push(`${wordTag(cs)}${fmtWord(w.w)}`);
+       prevStart = w.s;
+     }
+     if (!parts.length) continue;
+@@ -422,7 +432,8 @@
+   let pages = [];
+   if (wantSubs && words.length) {
+     const style = normalizeSubStyle(opts.subStyle);
+-    pages = buildRollingPages(words, ROW_CHARS[style.size]);
++    const rowChars = ROW_CHARS[style.size] - (CAPS_STYLES.has(style.style) ? 2 : 0);
++    pages = buildRollingPages(words, rowChars);
+   }
+ 
+   let hook = null;
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -125,6 +125,9 @@
+               <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
+               <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
+               <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
++              <button type="button" class="tpl-chip" data-tpl="hormozi">💼 Hormozi</button>
++              <button type="button" class="tpl-chip" data-tpl="mrbeast">🐐 MrBeast</button>
++              <button type="button" class="tpl-chip" data-tpl="reels">📸 Reels</button>
+             </div>
+             <label>Color
+               <select id="long-sub-color">
+@@ -160,6 +163,8 @@
+                 <option value="pop">Pop-in words</option>
+                 <option value="classic">Plain (no karaoke)</option>
+                 <option value="rainbow">Rainbow words</option>
++                <option value="hormozi">Hormozi (caps + highlight)</option>
++                <option value="mrbeast">MrBeast (color pop)</option>
+               </select>
+             </label>
+             <div class="sub-preview" id="long-sub-preview" aria-hidden="true">
+@@ -290,6 +295,9 @@
+               <button type="button" class="tpl-chip" data-tpl="goldbox">👑 Gold box</button>
+               <button type="button" class="tpl-chip" data-tpl="glow">✨ Glow</button>
+               <button type="button" class="tpl-chip" data-tpl="clean">🤍 Clean</button>
++              <button type="button" class="tpl-chip" data-tpl="hormozi">💼 Hormozi</button>
++              <button type="button" class="tpl-chip" data-tpl="mrbeast">🐐 MrBeast</button>
++              <button type="button" class="tpl-chip" data-tpl="reels">📸 Reels</button>
+             </div>
+             <label>Color
+               <select id="rank-sub-color">
+@@ -325,6 +333,8 @@
+                 <option value="pop">Pop-in words</option>
+                 <option value="classic">Plain (no karaoke)</option>
+                 <option value="rainbow">Rainbow words</option>
++                <option value="hormozi">Hormozi (caps + highlight)</option>
++                <option value="mrbeast">MrBeast (color pop)</option>
+               </select>
+             </label>
+             <div class="sub-preview" id="rank-sub-preview" aria-hidden="true">
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -58,7 +58,8 @@
+     },
+     sizes: { small: 9, medium: 11 },
+     pos: { bottom: "68%", middle: "38%", top: "8%" },
+-    rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"]
++    rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"],
++    beast: ["#FFE74C", "#FFFFFF", "#FF3B3B", "#30D158", "#FF8A4C", "#3CD4F5"]
    };
  
-   for (const w of words) {
--    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(true); // pause → fresh window
-+    if ((r1.length || r2.length) && w.s - lastEnd > GAP_SPLIT) closePage(); // pause → fresh page
- 
-     if (!r1.length && !r2.length) {
-       r1.push(w);
-     } else if (!r2.length) {
-       if (fits(r1, w.w)) r1.push(w); // still filling row 1
--      else r2.push(w); // row 1 full → row 2 starts
-+      else r2.push(w); // row 1 full → row 2 starts below
-     } else {
-       if (fits(r2, w.w)) {
-         r2.push(w);
+   function updateSubPreview(prefix) {
+@@ -74,20 +75,23 @@
+     frame.classList.toggle("box", s.style === "box");
+     frame.classList.toggle("pop", s.style === "pop");
+     var shadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
++    cap.style.textTransform = (s.style === "hormozi" || s.style === "mrbeast") ? "uppercase" : "none";
+     var spans = cap.querySelectorAll(".lit, .dim");
+     for (var i = 0; i < spans.length; i++) {
+       var w = spans[i];
+       var isDim = w.className === "dim";
+       if (isDim) {
+-        // upcoming words: karaoke dim, hidden for pop, full-look for classic/highlight
+-        if (s.style === "pop") { w.style.color = "#fff"; w.style.opacity = "0"; }
++        // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for classic
++        if (s.style === "pop" || s.style === "mrbeast") { w.style.color = "#fff"; w.style.opacity = "0"; }
+         else if (s.style === "classic") { w.style.color = col; w.style.opacity = "1"; }
+-        else if (s.style === "highlight") { w.style.color = "#fff"; w.style.opacity = "1"; }
++        else if (s.style === "highlight" || s.style === "hormozi") { w.style.color = "#fff"; w.style.opacity = "1"; }
+         else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
+         w.style.textShadow = shadow;
        } else {
--        closePage(false); // row 2 full → slide content up
--        r2.push(w);
-+        closePage(); // 2-row max reached → flip to a fresh page
-+        r1.push(w);
+         w.style.opacity = "1";
+-        w.style.color = s.style === "rainbow" ? SUB_PREV.rainbow[i % SUB_PREV.rainbow.length] : col;
++        w.style.color = s.style === "rainbow" ? SUB_PREV.rainbow[i % SUB_PREV.rainbow.length]
++          : s.style === "mrbeast" ? SUB_PREV.beast[i % SUB_PREV.beast.length]
++          : col;
+         w.style.textShadow = shadow;
        }
      }
-     lastEnd = Math.max(lastEnd, w.e);
-   }
--  closePage(true);
-+  closePage();
-   return pages;
- }
+@@ -101,7 +105,10 @@
+     news:    { color: "white",  size: "small",  pos: "top",    style: "box" },
+     goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box" },
+     glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight" },
+-    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" }
++    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" },
++    hormozi: { color: "yellow", size: "medium", pos: "middle", style: "hormozi" },
++    mrbeast: { color: "yellow", size: "medium", pos: "middle", style: "mrbeast" },
++    reels:   { color: "yellow", size: "medium", pos: "middle", style: "highlight" }
+   };
  
+   function clearTplChips(prefix) {

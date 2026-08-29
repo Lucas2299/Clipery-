@@ -58,7 +58,8 @@
     },
     sizes: { small: 9, medium: 11 },
     pos: { bottom: "68%", middle: "38%", top: "8%" },
-    rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"]
+    rainbow: ["#FFE74C", "#FF4D6D", "#3CD4F5", "#30D158", "#FF8A4C", "#A86BFF"],
+    beast: ["#FFE74C", "#FFFFFF", "#FF3B3B", "#30D158", "#FF8A4C", "#3CD4F5"]
   };
 
   function updateSubPreview(prefix) {
@@ -74,20 +75,23 @@
     frame.classList.toggle("box", s.style === "box");
     frame.classList.toggle("pop", s.style === "pop");
     var shadow = s.style === "box" ? "none" : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
+    cap.style.textTransform = (s.style === "hormozi" || s.style === "mrbeast") ? "uppercase" : "none";
     var spans = cap.querySelectorAll(".lit, .dim");
     for (var i = 0; i < spans.length; i++) {
       var w = spans[i];
       var isDim = w.className === "dim";
       if (isDim) {
-        // upcoming words: karaoke dim, hidden for pop, full-look for classic/highlight
-        if (s.style === "pop") { w.style.color = "#fff"; w.style.opacity = "0"; }
+        // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for classic
+        if (s.style === "pop" || s.style === "mrbeast") { w.style.color = "#fff"; w.style.opacity = "0"; }
         else if (s.style === "classic") { w.style.color = col; w.style.opacity = "1"; }
-        else if (s.style === "highlight") { w.style.color = "#fff"; w.style.opacity = "1"; }
+        else if (s.style === "highlight" || s.style === "hormozi") { w.style.color = "#fff"; w.style.opacity = "1"; }
         else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
         w.style.textShadow = shadow;
       } else {
         w.style.opacity = "1";
-        w.style.color = s.style === "rainbow" ? SUB_PREV.rainbow[i % SUB_PREV.rainbow.length] : col;
+        w.style.color = s.style === "rainbow" ? SUB_PREV.rainbow[i % SUB_PREV.rainbow.length]
+          : s.style === "mrbeast" ? SUB_PREV.beast[i % SUB_PREV.beast.length]
+          : col;
         w.style.textShadow = shadow;
       }
     }
@@ -101,7 +105,10 @@
     news:    { color: "white",  size: "small",  pos: "top",    style: "box" },
     goldbox: { color: "yellow", size: "medium", pos: "bottom", style: "box" },
     glow:    { color: "orange", size: "medium", pos: "middle", style: "highlight" },
-    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" }
+    clean:   { color: "white",  size: "small",  pos: "bottom", style: "classic" },
+    hormozi: { color: "yellow", size: "medium", pos: "middle", style: "hormozi" },
+    mrbeast: { color: "yellow", size: "medium", pos: "middle", style: "mrbeast" },
+    reels:   { color: "yellow", size: "medium", pos: "middle", style: "highlight" }
   };
 
   function clearTplChips(prefix) {

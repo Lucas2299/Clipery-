@@ -40,6 +40,11 @@ const KARAOKE_HIDDEN = "&HFFFFFFFF";
 // Rainbow karaoke: the spoken word cycles through this palette, one colour
 // per word — party-style captions.
 const RAINBOW = ["&H004CE7FF", "&H006D4DFF", "&H00F5D43C", "&H0058D130", "&H004C8AFF", "&H00FF6BA8"];
+// MrBeast pop-in captions: punchy yellow-heavy palette, one colour per word.
+const BEAST = ["&H004CE7FF", "&H00FFFFFF", "&H003B3BFF", "&H0058D130", "&H004C8AFF", "&H00F5D43C"];
+// Styles that shout in UPPERCASE (Hormozi / MrBeast look). Caps are wider,
+// so caption rows get 2 fewer characters to stay inside the frame.
+const CAPS_STYLES = new Set(["hormozi", "mrbeast"]);
 // Font sizes in script units (PlayRes 384x684 matches our 608x1080 portrait
 // canvas exactly, so 1 unit ≈ 1.6 real pixels).
 const SUB_SIZES = { small: 26, medium: 30 };
@@ -61,7 +66,7 @@ const GAP_SPLIT = 0.9;
 function normalizeSubStyle(input = {}) {
   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
   const st = String(input.style).toLowerCase();
-  const okStyles = ["box", "pop", "highlight", "classic", "rainbow"];
+  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast"];
   return {
     color: pick(input.color, SUB_COLORS, "white"),
     size: pick(input.size, SUB_SIZES, "medium"),
@@ -288,15 +293,18 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   const deco =
     s.style === "box"
       ? "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0" // semi-transparent backdrop box
-      : s.style === "pop"
-        ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: no outline, hidden ghosts
-        : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
-  // highlight = crisp WHITE text, only the spoken words turn into your colour
+      : s.style === "pop" || s.style === "mrbeast"
+        ? "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0" // true pop-in: hidden ghosts
+        : s.style === "hormozi"
+          ? "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0" // thick outline for the shouty look
+          : "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // classic outline / highlight
+  // highlight/hormozi = crisp WHITE text, only the spoken words turn into your colour
   // classic = plain static text (spoken + upcoming look identical → no karaoke animation)
+  // mrbeast = words pop in coloured, completely hidden until spoken
   const secondary =
-    s.style === "pop"
+    s.style === "pop" || s.style === "mrbeast"
       ? KARAOKE_HIDDEN
-      : s.style === "highlight"
+      : s.style === "highlight" || s.style === "hormozi"
         ? "&H00FFFFFF"
         : s.style === "classic"
           ? primary
@@ -344,18 +352,20 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     if (i + 1 < pages.length) evEnd = Math.min(evEnd, Math.max(0, starts[i + 1]) - 0.02);
     if (evEnd <= evStart + 0.2) evEnd = evStart + 0.2;
 
-    const isRainbow = s.style === "rainbow";
+    const palette = s.style === "rainbow" ? RAINBOW : s.style === "mrbeast" ? BEAST : null;
+    const caps = CAPS_STYLES.has(s.style);
+    const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
     let wordIdx = i * 10; // colour cycle keeps marching across pages
     const wordTag = (cs) =>
-      isRainbow ? `{\\1c${RAINBOW[wordIdx++ % RAINBOW.length]}\\k${cs}}` : `{\\k${cs}}`;
+      palette ? `{\\1c${palette[wordIdx++ % palette.length]}\\k${cs}}` : `{\\k${cs}}`;
 
     const parts = [];
-    for (const w of staticRow) parts.push(`${wordTag(5)}${cleanWord(w.w)}`); // already spoken → lit at once
+    for (const w of staticRow) parts.push(`${wordTag(5)}${fmtWord(w.w)}`); // already spoken → lit at once
     let prevStart = null;
     for (const w of liveRow) {
       let cs = prevStart === null ? Math.round((w.s - evStart) * 100) : Math.round((w.s - prevStart) * 100);
       if (cs < 5) cs = 5;
-      parts.push(`${wordTag(cs)}${cleanWord(w.w)}`);
+      parts.push(`${wordTag(cs)}${fmtWord(w.w)}`);
       prevStart = w.s;
     }
     if (!parts.length) continue;
@@ -422,7 +432,8 @@ async function tryEnhanceClip(videoPath, opts = {}) {
   let pages = [];
   if (wantSubs && words.length) {
     const style = normalizeSubStyle(opts.subStyle);
-    pages = buildRollingPages(words, ROW_CHARS[style.size]);
+    const rowChars = ROW_CHARS[style.size] - (CAPS_STYLES.has(style.style) ? 2 : 0);
+    pages = buildRollingPages(words, rowChars);
   }
 
   let hook = null;
