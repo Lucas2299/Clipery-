@@ -156,14 +156,17 @@
     var btns = tabs.querySelectorAll(".sub-tab");
     var styles = $(prefix + "-cards-styles");
     var tpls = $(prefix + "-cards-templates");
+    function showMode(mode) {
+      for (var j = 0; j < btns.length; j++) btns[j].classList.toggle("active", btns[j].getAttribute("data-tab") === mode);
+      if (styles) { styles.hidden = mode !== "styles"; styles.style.display = mode === "styles" ? "grid" : "none"; }
+      if (tpls) { tpls.hidden = mode !== "templates"; tpls.style.display = mode === "templates" ? "grid" : "none"; }
+    }
     for (var i = 0; i < btns.length; i++) {
       btns[i].addEventListener("click", function (ev) {
-        var mode = ev.currentTarget.getAttribute("data-tab");
-        for (var j = 0; j < btns.length; j++) btns[j].classList.toggle("active", btns[j] === ev.currentTarget);
-        if (styles) styles.hidden = mode !== "styles";
-        if (tpls) tpls.hidden = mode !== "templates";
+        showMode(ev.currentTarget.getAttribute("data-tab"));
       });
     }
+    showMode("templates"); // start on the Templates tab
   }
 
   function wireTemplates(prefix) {

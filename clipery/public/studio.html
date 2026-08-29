@@ -49,6 +49,7 @@
       .sub-tab{flex:1;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.35);color:#c9c5d8;border-radius:10px;padding:0.45rem 0.5rem;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s}
       .sub-tab.active{background:linear-gradient(135deg,#a86bff,#ff4d6d);border-color:transparent;color:#fff}
       .sub-cards{flex-basis:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:0.45rem;margin:0 0 0.35rem}
+      .sub-cards[hidden]{display:none} /* the on/off switch must always beat display:grid */
       .sub-card{border:1px solid rgba(255,255,255,0.12);background:#17121f;border-radius:12px;padding:0.55rem 0.25rem 0.45rem;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:0.4rem;transition:all .15s;min-height:74px}
       .sub-card:hover{border-color:#a86bff;transform:translateY(-2px)}
       .sub-card.sel{box-shadow:0 0 0 2px #a86bff,0 0 16px rgba(168,107,255,0.35);border-color:transparent}
@@ -443,6 +444,6 @@
       document.getElementById("year").textContent = new Date().getFullYear();
     </script>
     <script src="/shared.js?v=2"></script>
-    <script src="/studio.js?v=2"></script>
+    <script src="/studio.js?v=3"></script>
   </body>
 </html>
