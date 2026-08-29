@@ -70,18 +70,26 @@
     if (!frame || !cap) return;
     var s = collectSubStyle(prefix);
     var col = SUB_PREV.colors[s.color] || "#ffffff";
+    // FIXED text colour for styles with their own solid background box
+    var FIXED = { boxwhite: "#17171B", boxred: "#ffffff", boxblack: "#ffffff" };
+    var wordCol = FIXED[s.style] || col;
     // style cards preview the real look: their sample words wear the chosen colour
     var sCards = cardsIn(prefix, "styles");
     for (var ci = 0; ci < sCards.length; ci++) {
+      if (/sc-bwhite|sc-bred|sc-bblack/.test(sCards[ci].className)) continue; // fixed-colour boxes
       var cws = sCards[ci].querySelectorAll(".sc-cap .w");
       for (var cw = 0; cw < cws.length; cw++) cws[cw].style.color = col;
     }
     cap.style.fontSize = (SUB_PREV.sizes[s.size] || 11) + "px";
     cap.style.top = SUB_PREV.pos[s.pos] || "68%";
-    var isBoxed = s.style === "box" || s.style === "boxdark" || s.style === "boxlight";
+    var isBoxed = s.style === "box" || s.style === "boxdark" || s.style === "boxlight"
+      || s.style === "boxwhite" || s.style === "boxred" || s.style === "boxblack";
     frame.classList.toggle("box", isBoxed);
+    frame.classList.toggle("boxwhite", s.style === "boxwhite");
+    frame.classList.toggle("boxred", s.style === "boxred");
+    frame.classList.toggle("boxblack", s.style === "boxblack");
     frame.classList.toggle("pop", s.style === "pop" || s.style === "mrbeast");
-    var STATIC = { classic: 1, plain: 1, outlined: 1, thick: 1, shadow: 1, boxdark: 1, boxlight: 1 };
+    var STATIC = { classic: 1, plain: 1, outlined: 1, thick: 1, shadow: 1, boxdark: 1, boxlight: 1, boxwhite: 1, boxred: 1, boxblack: 1 };
     var OUT1 = "-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000";
     var shadow = isBoxed ? "none"
       : s.style === "thick" ? "-2px 0 0 #000,2px 0 0 #000,0 -2px 0 #000,0 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000"
@@ -96,7 +104,7 @@
       if (isDim) {
         // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for static looks
         if (s.style === "pop" || s.style === "mrbeast") { w.style.color = "#fff"; w.style.opacity = "0"; }
-        else if (STATIC[s.style]) { w.style.color = col; w.style.opacity = "1"; }
+        else if (STATIC[s.style]) { w.style.color = wordCol; w.style.opacity = "1"; }
         else if (s.style === "highlight" || s.style === "hormozi") { w.style.color = "#fff"; w.style.opacity = "1"; }
         else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
         w.style.textShadow = shadow;
@@ -104,7 +112,7 @@
         w.style.opacity = "1";
         w.style.color = s.style === "rainbow" ? SUB_PREV.rainbow[i % SUB_PREV.rainbow.length]
           : s.style === "mrbeast" ? SUB_PREV.beast[i % SUB_PREV.beast.length]
-          : col;
+          : wordCol;
         w.style.textShadow = shadow;
       }
     }

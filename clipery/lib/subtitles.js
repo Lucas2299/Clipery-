@@ -48,13 +48,19 @@ const CAPS_STYLES = new Set(["hormozi", "mrbeast"]);
 // STATIC decoration looks: plain text, every word in YOUR colour, no karaoke
 // fill — the whole block simply changes page by page. These are the calm
 // "Styles" tab options; the fancy animated ones live in Templates.
-const STATIC_STYLES = new Set(["classic", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight"]);
+const STATIC_STYLES = new Set(["classic", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"]);
+// Styles with a FORCED text colour (never the user's colour) so the words stay
+// readable on their fixed background box.
+const FIXED_PRIMARY = { boxwhite: "&H00000000", boxred: "&H00FFFFFF", boxblack: "&H00FFFFFF" };
 // Border/decoration per style. Fields after BackColour:
 // Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
 const DECO = {
-  box: "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0", // karaoke: dark backdrop box
-  boxdark: "&H00000000,&H78000000,1,0,0,0,100,100,0,0,3,8,0", // static: dark box behind text
-  boxlight: "&H00000000,&H3C000000,1,0,0,0,100,100,0,0,3,8,0", // static: light grey box
+  box: "&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // karaoke: translucent dark backdrop box (box colour lives in OutlineColour!)
+  boxdark: "&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: translucent dark box behind text
+  boxlight: "&H3C000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: faint see-through box
+  boxwhite: "&H00FFFFFF,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: solid WHITE box, black text
+  boxred: "&H003B3BFF,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: solid RED box, white text
+  boxblack: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: solid BLACK box, white text
   pop: "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0", // pop-in: hidden ghosts
   mrbeast: "&HFFFFFFFF,&H00000000,1,0,0,0,100,100,0,0,1,0,0",
   hormozi: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0", // thick outline, shouty
@@ -84,7 +90,7 @@ const GAP_SPLIT = 0.9;
 function normalizeSubStyle(input = {}) {
   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
   const st = String(input.style).toLowerCase();
-  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight"];
+  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"];
   return {
     color: pick(input.color, SUB_COLORS, "white"),
     size: pick(input.size, SUB_SIZES, "medium"),
@@ -305,7 +311,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   const s = normalizeSubStyle(sub);
   const size = SUB_SIZES[s.size];
   const marginV = SUB_POSITIONS[s.pos];
-  const primary = SUB_COLORS[s.color];
+  const primary = FIXED_PRIMARY[s.style] || SUB_COLORS[s.color];
   // Fields: OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,
   // ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
   const deco = DECO[s.style] || "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // karaoke outline
