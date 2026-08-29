@@ -70,17 +70,24 @@
     if (!frame || !cap) return;
     var s = collectSubStyle(prefix);
     var col = SUB_PREV.colors[s.color] || "#ffffff";
+    // style cards preview the real look: their sample words wear the chosen colour
+    var sCards = cardsIn(prefix, "styles");
+    for (var ci = 0; ci < sCards.length; ci++) {
+      var cws = sCards[ci].querySelectorAll(".sc-cap .w");
+      for (var cw = 0; cw < cws.length; cw++) cws[cw].style.color = col;
+    }
     cap.style.fontSize = (SUB_PREV.sizes[s.size] || 11) + "px";
     cap.style.top = SUB_PREV.pos[s.pos] || "68%";
     var isBoxed = s.style === "box" || s.style === "boxdark" || s.style === "boxlight";
     frame.classList.toggle("box", isBoxed);
     frame.classList.toggle("pop", s.style === "pop" || s.style === "mrbeast");
     var STATIC = { classic: 1, plain: 1, outlined: 1, thick: 1, shadow: 1, boxdark: 1, boxlight: 1 };
+    var OUT1 = "-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000";
     var shadow = isBoxed ? "none"
-      : s.style === "thick" ? "0 0 3px #000, 0 0 3px #000, 0 0 4px #000"
-      : s.style === "shadow" ? "2px 2px 0 rgba(0,0,0,0.9)"
-      : s.style === "plain" ? "0 0 2px rgba(0,0,0,0.7)"
-      : "0 0 3px rgba(0,0,0,.95), 0 0 3px rgba(0,0,0,.95)";
+      : s.style === "thick" ? "-2px 0 0 #000,2px 0 0 #000,0 -2px 0 #000,0 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000"
+      : s.style === "shadow" ? "0 0 2px rgba(0,0,0,0.9),2px 2px 0 #000"
+      : s.style === "plain" ? "0 1px 2px rgba(0,0,0,0.6)"
+      : OUT1;
     cap.style.textTransform = (s.style === "hormozi" || s.style === "mrbeast") ? "uppercase" : "none";
     var spans = cap.querySelectorAll(".lit, .dim");
     for (var i = 0; i < spans.length; i++) {
