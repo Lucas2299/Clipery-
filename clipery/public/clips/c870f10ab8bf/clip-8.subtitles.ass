@@ -1,0 +1,24 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,26,&H0058D130,&H73FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0,8,12,12,303,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.10,0:00:03.20,Hook,,0,0,0,,{\1c&H0058D130}THIS IS SEEING IT\NIN A RIDICULOUS
+Dialogue: 0,0:00:00.00,0:00:02.26,Cap,,0,0,0,,{\k5}this {\k18}is {\k12}seeing {\k38}it {\k9}in\N{\k14}a {\k27}ridiculous {\k66}the {\k14}coast
+Dialogue: 0,0:00:02.28,0:00:03.99,Cap,,0,0,0,,{\k5}a {\k5}ridiculous {\k5}the {\k5}coast\N{\k8}are {\k10}they {\k49}in {\k49}the {\k13}jungle
+Dialogue: 0,0:00:04.01,0:00:05.49,Cap,,0,0,0,,{\k5}are {\k5}they {\k5}in {\k5}the {\k5}jungle\N{\k8}of {\k14}nature {\k65}medicine
+Dialogue: 0,0:00:05.51,0:00:06.92,Cap,,0,0,0,,{\k5}of {\k5}nature {\k5}medicine\N{\k8}where {\k26}cross {\k28}six {\k50}the
+Dialogue: 0,0:00:06.94,0:00:08.21,Cap,,0,0,0,,{\k5}where {\k5}cross {\k5}six {\k5}the\N{\k8}entrees {\k62}and {\k23}ninety
+Dialogue: 0,0:00:08.23,0:00:09.96,Cap,,0,0,0,,{\k5}entrees {\k5}and {\k5}ninety\N{\k8}three {\k42}thousand {\k68}people
+Dialogue: 0,0:00:09.98,0:00:10.71,Cap,,0,0,0,,{\k5}three {\k5}thousand {\k5}people\N{\k8}they {\k13}found {\k25}people
+Dialogue: 0,0:00:10.73,0:00:11.81,Cap,,0,0,0,,{\k5}they {\k5}found {\k5}people\N{\k8}they're {\k18}rated {\k35}engaging
+Dialogue: 0,0:00:11.83,0:00:12.79,Cap,,0,0,0,,{\k5}they're {\k5}rated {\k5}engaging\N{\k8}in {\k12}all {\k19}this

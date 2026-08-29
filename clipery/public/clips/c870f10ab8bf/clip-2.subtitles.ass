@@ -1,0 +1,30 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,26,&H0058D130,&H73FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0,8,12,12,303,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.10,0:00:03.20,Hook,,0,0,0,,{\1c&H0058D130}IN COMPARISON TO\NWHEN YOU SAY GOD
+Dialogue: 0,0:00:00.00,0:00:02.26,Cap,,0,0,0,,{\k5}in {\k15}comparison {\k77}to {\k11}when\N{\k15}you {\k12}say {\k12}god {\k38}i {\k19}guess
+Dialogue: 0,0:00:02.28,0:00:03.35,Cap,,0,0,0,,{\k5}you {\k5}say {\k5}god {\k5}i {\k5}guess\N{\k8}that {\k33}is {\k11}so {\k17}it {\k19}is
+Dialogue: 0,0:00:03.37,0:00:04.31,Cap,,0,0,0,,{\k5}that {\k5}is {\k5}so {\k5}it {\k5}is\N{\k8}going {\k22}to {\k14}fly {\k34}and {\k14}then
+Dialogue: 0,0:00:04.33,0:00:05.27,Cap,,0,0,0,,{\k5}going {\k5}to {\k5}fly {\k5}and {\k5}then\N{\k8}finish {\k44}your {\k16}dues
+Dialogue: 0,0:00:05.29,0:00:06.72,Cap,,0,0,0,,{\k5}finish {\k5}your {\k5}dues\N{\k8}growth {\k41}all {\k30}analysis {\k64}i
+Dialogue: 0,0:00:06.74,0:00:07.94,Cap,,0,0,0,,{\k5}growth {\k5}all {\k5}analysis {\k5}i\N{\k8}think {\k21}it {\k26}is {\k27}brushes
+Dialogue: 0,0:00:07.96,0:00:09.57,Cap,,0,0,0,,{\k5}think {\k5}it {\k5}is {\k5}brushes\N{\k8}aside {\k48}his {\k18}pocket {\k46}is {\k27}by
+Dialogue: 0,0:00:09.59,0:00:10.74,Cap,,0,0,0,,{\k5}aside {\k5}his {\k5}pocket {\k5}is {\k5}by\N{\k8}that {\k26}do {\k25}stroke {\k43}one
+Dialogue: 0,0:00:10.76,0:00:11.82,Cap,,0,0,0,,{\k5}that {\k5}do {\k5}stroke {\k5}one\N{\k8}else {\k30}after {\k32}the {\k17}few
+Dialogue: 0,0:00:11.84,0:00:13.19,Cap,,0,0,0,,{\k5}else {\k5}after {\k5}the {\k5}few\N{\k8}things {\k34}like {\k19}doing {\k52}ah
+Dialogue: 0,0:00:13.21,0:00:14.78,Cap,,0,0,0,,{\k5}things {\k5}like {\k5}doing {\k5}ah\N{\k8}such {\k25}wasted {\k44}time {\k37}rated
+Dialogue: 0,0:00:14.80,0:00:15.85,Cap,,0,0,0,,{\k5}such {\k5}wasted {\k5}time {\k5}rated\N{\k8}believe {\k35}me {\k18}pose {\k41}it
+Dialogue: 0,0:00:15.87,0:00:16.90,Cap,,0,0,0,,{\k5}believe {\k5}me {\k5}pose {\k5}it\N{\k8}always {\k56}you {\k12}it {\k11}is {\k13}for
+Dialogue: 0,0:00:16.92,0:00:18.20,Cap,,0,0,0,,{\k5}always {\k5}you {\k5}it {\k5}is {\k5}for\N{\k8}you {\k19}like {\k18}high {\k52}is {\k15}that
+Dialogue: 0,0:00:18.22,0:00:19.48,Cap,,0,0,0,,{\k5}you {\k5}like {\k5}high {\k5}is {\k5}that\N{\k8}good {\k24}times {\k42}that
