@@ -1,108 +1,325 @@
 diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
-index 23a222c..3a68efb 100644
+index 3a68efb..83516bf 100644
 --- a/clipery/lib/clipEngine.js
 +++ b/clipery/lib/clipEngine.js
-@@ -53,6 +53,21 @@ function run(cmd, args, opts = {}) {
+@@ -3,7 +3,7 @@ const fs = require("fs");
+ const path = require("path");
+ const { promisify } = require("util");
+ const crypto = require("crypto");
+-const { tryEnhanceClip } = require("./subtitles");
++const { tryEnhanceClip, transcribeToWords } = require("./subtitles");
+ 
+ const execFileAsync = promisify(execFile);
+ 
+@@ -519,6 +519,19 @@ async function processVideo(sourcePath, options = {}) {
+     job.progress = 28;
+     writeJob(job);
+ 
++    // Trend keywords: transcribe the source once, then boost moments that
++    // actually SAY the hot words (whisper brain → better hits).
++    let videoWords = null;
++    if (Array.isArray(options.trends) && options.trends.length) {
++      const tmpWords = path.join(JOBS_DIR, `${id}.trendwords.json`);
++      await transcribeToWords(sourcePath, tmpWords);
++      try {
++        videoWords = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
++      } catch {}
++      try { fs.unlinkSync(tmpWords); } catch {}
++    }
++    const trendSet = videoWords ? new Set(options.trends) : null;
++
+     const scored = [];
+     for (let i = 0; i < candidates.length; i++) {
+       const c = candidates[i];
+@@ -526,6 +539,15 @@ async function processVideo(sourcePath, options = {}) {
+         ? await sampleEnergy(sourcePath, c.start, c.end)
+         : { energy: 55, punch: 55 };
+       const dims = scoreDimensions(c, meta.duration, energy, mode, i);
++      if (trendSet) {
++        let hits = 0;
++        for (const w of videoWords) {
++          if (w.s >= c.end) break;
++          if (w.s >= c.start && trendSet.has(String(w.w).toLowerCase().replace(/[^a-z0-9']+/g, ""))) hits++;
++        }
++        dims.keywords = hits; // how many trend words this moment actually contains
++        if (hits) dims.total = Math.min(99, dims.total + Math.min(12, hits * 4));
++      }
+       scored.push({
+         ...c,
+         score: dims.total,
+@@ -608,6 +630,7 @@ async function processVideo(sourcePath, options = {}) {
+           clipDur: +(c.end - c.start).toFixed(2),
+           subStyle: options.subtitles ? options.subStyle : null,
+           hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
++          trends: options.trends,
+         });
+         if (er.subtitlesApplied) job.subtitlesApplied = true;
+         if (er.hookApplied) {
+diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
+index 8c144a1..8b857d4 100644
+--- a/clipery/lib/linkVideoEngine.js
++++ b/clipery/lib/linkVideoEngine.js
+@@ -644,6 +644,7 @@ async function processMultiRank(sources, options = {}) {
+       const er = await tryEnhanceClip(compPath, {
+         subStyle: options.subtitles ? options.subStyle : null,
+         hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
++        trends: options.trends,
+       });
+       if (er.subtitlesApplied) job.subtitlesApplied = true;
+       if (er.hookApplied) {
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index c14e300..20f2c5d 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -273,7 +273,7 @@ function trimHookTail(arr) {
+  * Heuristic: split early speech into phrases at pauses, score for power words,
+  * numbers and a punchy length, earliest strong phrase wins. Uppercase result.
+  */
+-function pickHookText(words) {
++function pickHookText(words, extraPower) {
+   const early = words.filter((w) => w.s < 8);
+   if (!early.length) return null;
+ 
+@@ -295,6 +295,7 @@ function pickHookText(words) {
+     for (const w of waitWords) {
+       const lw = w.w.toLowerCase();
+       if (HOOK_POWER.has(lw)) score += 2;
++      if (extraPower && extraPower.has(lw)) score += 3; // user trend words hit harder
+       if (HOOK_NUMBERS.test(lw)) score += 1.5;
+     }
+     if (waitWords.length >= 3 && waitWords.length <= 7) score += 1; // punchy length
+@@ -323,8 +324,9 @@ function hookRows(text) {
+ }
+ 
+ /** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
+-function buildHook(words, clipDur, mode) {
+-  const text = pickHookText(words);
++function buildHook(words, clipDur, mode, trends) {
++  const extraPower = Array.isArray(trends) && trends.length ? new Set(trends) : null;
++  const text = pickHookText(words, extraPower);
+   if (!text) return null;
+   const dur = Math.max(clipDur || 0, 0.6);
+   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
+@@ -545,7 +547,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
+   let hook = null;
+   if (wantHook && words.length) {
+     const dur = opts.clipDur || (await probeDuration(videoPath));
+-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro");
++    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
+   }
+ 
+   if (!pages.length && !hook) {
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 4cc4f34..2bd4ceb 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -99,7 +99,7 @@
+       .sub-card.sel .sc-name{color:#e8e6f0}
+ 
+       .sub-style-grid label{display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9a96a8;font-weight:600}
+-      .sub-style-grid select{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem}
++      .sub-style-grid select,.sub-style-grid input[type=text]{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem;font-family:inherit}
+       .sub-style-grid label.locked{opacity:0.45}
+       .sub-style-grid label.locked select{cursor:not-allowed}
+       .tpl-lock{flex-basis:100%;font-size:0.72rem;color:#9a96a8;margin:-0.1rem 0 0.25rem}
+@@ -243,6 +243,9 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
++            <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
++              <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
++            </label>
+           </div>
+           <button type="button" class="btn btn-primary btn-lg btn-block" id="long-go">Generate clips</button>
+           <p class="form-msg" id="long-msg"></p>
+@@ -418,6 +421,9 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
++            <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
++              <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
++            </label>
+           </div>
+           <button type="button" class="btn btn-primary btn-lg btn-block" id="rank-go" style="margin-top:1.1rem">Generate ranking video</button>
+           <p class="form-msg" id="rank-msg"></p>
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index 043fbc3..86da8b6 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -13,6 +13,11 @@
+     return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style"), words: gv("words") };
+   }
+ 
++  function collectTrends(prefix) {
++    var e = $(prefix + "-trends");
++    return e ? e.value.trim() : "";
++  }
++
+   function wireSubToggle(toggleId, gridId) {
+     var t = $(toggleId);
+     var g = $(gridId);
+@@ -495,6 +500,7 @@
+         var subsEl = document.getElementById("long-subs");
+         var wantSubs = subsEl ? subsEl.checked : true;
+         var longStyle = collectSubStyle("long");
++        var longTrends = collectTrends("long");
+         var longHook = collectHook("long");
+         if (fileObj) {
+           var fd = new FormData();
+@@ -506,6 +512,7 @@
+           fd.append("subPos", longStyle.pos);
+           fd.append("subStyle", longStyle.style);
+           fd.append("subWords", longStyle.words || "");
++          fd.append("trends", longTrends);
+           fd.append("hook", longHook.enabled ? "1" : "0");
+           fd.append("hookMode", longHook.mode);
+           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
+@@ -522,6 +529,7 @@
+               subPos: longStyle.pos,
+               subStyle: longStyle.style,
+               subWords: longStyle.words || "",
++              trends: longTrends,
+               hook: longHook.enabled,
+               hookMode: longHook.mode,
+             }),
+@@ -729,6 +737,7 @@
+         var rankSubsEl = document.getElementById("rank-subs");
+         var wantRankSubs = rankSubsEl ? rankSubsEl.checked : true;
+         var rankStyle = collectSubStyle("rank");
++        var rankTrends = collectTrends("rank");
+         var rankHook = collectHook("rank");
+         if (fileList.length) {
+           var fd = new FormData();
+@@ -743,6 +752,7 @@
+           fd.append("subPos", rankStyle.pos);
+           fd.append("subStyle", rankStyle.style);
+           fd.append("subWords", rankStyle.words || "");
++          fd.append("trends", rankTrends);
+           fd.append("hook", rankHook.enabled ? "1" : "0");
+           fd.append("hookMode", rankHook.mode);
+           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
+@@ -760,6 +770,7 @@
+               subPos: rankStyle.pos,
+               subStyle: rankStyle.style,
+               subWords: rankStyle.words || "",
++              trends: rankTrends,
+               hook: rankHook.enabled,
+               hookMode: rankHook.mode,
+             }),
+diff --git a/clipery/server.js b/clipery/server.js
+index a920eda..d5a1e57 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -343,6 +343,16 @@ function readSubStyle(get) {
    });
  }
  
-+/* -------- face-follow crop: centre the 9:16 frame on the speaker -------- */
-+const PY = process.env.PYTHON || "python3";
-+const FACE_PY = path.join(__dirname, "facedetect.py");
-+
-+/** Median face-centre X (0..1) for a time window, or null (centre crop). */
-+async function faceCenterX(source, start, end) {
-+  try {
-+    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
-+    const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
-+    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) return r.x;
-+    if (r && r.reason === "no-cv2") console.warn("[clipEngine] face-follow off (pip install opencv-python-headless)");
-+  } catch {}
-+  return null;
++// user-supplied trend keywords: lowercase word list, max 12 — boosts hooks & ranking
++function readTrends(get) {
++  const raw = String(get("trends") || "").toLowerCase();
++  const list = raw
++    .split(/[\s,;]+/)
++    .map((w) => w.replace(/[^a-z0-9']/g, ""))
++    .filter(Boolean);
++  return [...new Set(list)].slice(0, 12);
 +}
 +
- async function probe(file) {
-   const { stdout } = await run("ffprobe", [
-     "-v",
-@@ -328,9 +343,15 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
-   const targetH = 1080;
-   const accent = mode.id === "viral" ? "0xFF4D6D" : "0x8B7CFF";
+ // hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
+ function readHook(get) {
+   return {
+@@ -558,14 +568,18 @@ const server = http.createServer(async (req, res) => {
+         const p = parts.find((x) => x.name === n);
+         return p ? p.body.toString("utf8") : "";
+       });
++      const trends = readTrends((n) => {
++        const p = parts.find((x) => x.name === n);
++        return p ? p.body.toString("utf8") : "";
++      });
  
-+  // Face-follow: lock the portrait frame onto the speaker (centre crop fallback)
-+  const faceX = await faceCenterX(source, start, end);
-+  const crop = faceX
-+    ? `crop=${targetW}:${targetH}:x='clip(iw*${faceX}-${targetW / 2}\\,0\\,iw-${targetW})'`
-+    : `crop=${targetW}:${targetH}`;
-+
-   const vf = [
-     `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
--    `crop=${targetW}:${targetH}`,
-+    crop,
-     `drawbox=x=0:y=0:w=8:h=ih:color=${accent}:t=fill`,
-     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
-     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
-diff --git a/clipery/lib/facedetect.py b/clipery/lib/facedetect.py
-new file mode 100644
-index 0000000..ee72a31
---- /dev/null
-+++ b/clipery/lib/facedetect.py
-@@ -0,0 +1,59 @@
-+#!/usr/bin/env python3
-+"""Face-follow helper for Clipery: find the speaker's face centre X (0..1).
-+
-+Usage: facedetect.py <media> <start_sec> <end_sec>
-+Prints JSON: {"ok": true, "x": 0.62, "faces": 9}  — median face centre fraction,
-+or {"ok": false, "reason": "..."} when there is nothing to lock onto.
-+
-+The crop in clipEngine then centres the 9:16 frame on that point, so the
-+camera quietly follows the speaker instead of cropping dead centre.
-+
-+Requires: pip install opencv-python-headless
-+"""
-+import json
-+import sys
-+
-+
-+def main() -> None:
-+    src, start, end = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
-+    try:
-+        import cv2
-+    except Exception:
-+        print(json.dumps({"ok": False, "reason": "no-cv2"}))
-+        return
-+
-+    cap = cv2.VideoCapture(src)
-+    if not cap.isOpened():
-+        print(json.dumps({"ok": False, "reason": "open-failed"}))
-+        return
-+
-+    cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
-+    xs = []
-+    total = max(0.2, end - start)
-+    step = max(0.5, total / 12.0)  # ~12 samples per clip is plenty
-+    t = start
-+    while t < end:
-+        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000)
-+        ok, frame = cap.read()
-+        if not ok:
-+            t += step
-+            continue
-+        small_w = 384  # small for speed, but big enough for mid-distance faces
-+        small = cv2.resize(frame, (small_w, max(1, int(frame.shape[0] * small_w / frame.shape[1]))))
-+        gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
-+        faces = cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=3, minSize=(18, 18))
-+        if len(faces):
-+            fx, fy, fw, fh = max(faces, key=lambda r: r[2] * r[3])  # biggest face = the speaker
-+            xs.append((fx + fw / 2) / small.shape[1])
-+        t += step
-+    cap.release()
-+
-+    if not xs:
-+        print(json.dumps({"ok": False, "reason": "no-faces"}))
-+        return
-+    xs.sort()
-+    print(json.dumps({"ok": True, "x": round(xs[len(xs) // 2], 4), "faces": len(xs)}))
-+
-+
-+if __name__ == "__main__":
-+    main()
+       const jobId = crypto.randomBytes(6).toString("hex");
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.writeFileSync(dest, filePart.body);
+-      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode });
++      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
+       const q = enqueue(dest, {
+         jobId, sourceName: orig, mode, subtitles, subStyle,
+-        hook: hookOpts.enabled, hookMode: hookOpts.mode,
++        hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+       });
+       return send(res, 202, {
+         ok: true,
+@@ -594,6 +608,7 @@ const server = http.createServer(async (req, res) => {
+       const subtitles = wantSubtitles(body.subtitles);
+       const subStyle = readSubStyle((n) => body[n]);
+       const hookOpts = readHook((n) => body[n]);
++      const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+       seedJob(jobId, {
+         mode,
+@@ -602,13 +617,14 @@ const server = http.createServer(async (req, res) => {
+         subStyle,
+         hook: hookOpts.enabled,
+         hookMode: hookOpts.mode,
++        trends,
+       });
+       const q = enqueueItem({
+         type: "from-url",
+         url: videoUrl,
+         meta: {
+           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
+-          hook: hookOpts.enabled, hookMode: hookOpts.mode,
++          hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+         },
+       });
+       return send(res, 202, {
+@@ -731,6 +747,7 @@ const server = http.createServer(async (req, res) => {
+       const subtitles = wantSubtitles(body.subtitles);
+       const subStyle = readSubStyle((n) => body[n]);
+       const hookOpts = readHook((n) => body[n]);
++      const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+       seedJob(jobId, {
+         mode: "link-rank-video",
+@@ -740,6 +757,7 @@ const server = http.createServer(async (req, res) => {
+         subStyle,
+         hook: hookOpts.enabled,
+         hookMode: hookOpts.mode,
++        trends,
+       });
+       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
+       const q = enqueueItem({
+@@ -753,6 +771,7 @@ const server = http.createServer(async (req, res) => {
+           subStyle,
+           hook: hookOpts.enabled,
+           hookMode: hookOpts.mode,
++          trends,
+         },
+       });
+       return send(res, 202, {
+@@ -829,6 +848,10 @@ const server = http.createServer(async (req, res) => {
+         const p = parts.find((x) => x.name === n);
+         return p ? p.body.toString("utf8") : "";
+       });
++      const trendsUp = readTrends((n) => {
++        const p = parts.find((x) => x.name === n);
++        return p ? p.body.toString("utf8") : "";
++      });
+       seedJob(jobId, {
+         mode: "link-rank-video",
+         modeLabel: "Link ranking video",
+@@ -837,13 +860,14 @@ const server = http.createServer(async (req, res) => {
+         subStyle,
+         hook: hookOptsUp.enabled,
+         hookMode: hookOptsUp.mode,
++        trends: trendsUp,
+       });
+       const q = enqueueItem({
+         type: "multi-rank",
+         sources,
+         meta: {
+           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode,
++          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, trends: trendsUp,
+         },
+       });
+       return send(res, 202, {

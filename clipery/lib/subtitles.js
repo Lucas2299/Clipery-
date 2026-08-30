@@ -273,7 +273,7 @@ function trimHookTail(arr) {
  * Heuristic: split early speech into phrases at pauses, score for power words,
  * numbers and a punchy length, earliest strong phrase wins. Uppercase result.
  */
-function pickHookText(words) {
+function pickHookText(words, extraPower) {
   const early = words.filter((w) => w.s < 8);
   if (!early.length) return null;
 
@@ -295,6 +295,7 @@ function pickHookText(words) {
     for (const w of waitWords) {
       const lw = w.w.toLowerCase();
       if (HOOK_POWER.has(lw)) score += 2;
+      if (extraPower && extraPower.has(lw)) score += 3; // user trend words hit harder
       if (HOOK_NUMBERS.test(lw)) score += 1.5;
     }
     if (waitWords.length >= 3 && waitWords.length <= 7) score += 1; // punchy length
@@ -323,8 +324,9 @@ function hookRows(text) {
 }
 
 /** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
-function buildHook(words, clipDur, mode) {
-  const text = pickHookText(words);
+function buildHook(words, clipDur, mode, trends) {
+  const extraPower = Array.isArray(trends) && trends.length ? new Set(trends) : null;
+  const text = pickHookText(words, extraPower);
   if (!text) return null;
   const dur = Math.max(clipDur || 0, 0.6);
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
@@ -545,7 +547,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
   let hook = null;
   if (wantHook && words.length) {
     const dur = opts.clipDur || (await probeDuration(videoPath));
-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro");
+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
   }
 
   if (!pages.length && !hook) {

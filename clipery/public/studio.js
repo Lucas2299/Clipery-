@@ -13,6 +13,11 @@
     return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style"), words: gv("words") };
   }
 
+  function collectTrends(prefix) {
+    var e = $(prefix + "-trends");
+    return e ? e.value.trim() : "";
+  }
+
   function wireSubToggle(toggleId, gridId) {
     var t = $(toggleId);
     var g = $(gridId);
@@ -495,6 +500,7 @@
         var subsEl = document.getElementById("long-subs");
         var wantSubs = subsEl ? subsEl.checked : true;
         var longStyle = collectSubStyle("long");
+        var longTrends = collectTrends("long");
         var longHook = collectHook("long");
         if (fileObj) {
           var fd = new FormData();
@@ -506,6 +512,7 @@
           fd.append("subPos", longStyle.pos);
           fd.append("subStyle", longStyle.style);
           fd.append("subWords", longStyle.words || "");
+          fd.append("trends", longTrends);
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
@@ -522,6 +529,7 @@
               subPos: longStyle.pos,
               subStyle: longStyle.style,
               subWords: longStyle.words || "",
+              trends: longTrends,
               hook: longHook.enabled,
               hookMode: longHook.mode,
             }),
@@ -729,6 +737,7 @@
         var rankSubsEl = document.getElementById("rank-subs");
         var wantRankSubs = rankSubsEl ? rankSubsEl.checked : true;
         var rankStyle = collectSubStyle("rank");
+        var rankTrends = collectTrends("rank");
         var rankHook = collectHook("rank");
         if (fileList.length) {
           var fd = new FormData();
@@ -743,6 +752,7 @@
           fd.append("subPos", rankStyle.pos);
           fd.append("subStyle", rankStyle.style);
           fd.append("subWords", rankStyle.words || "");
+          fd.append("trends", rankTrends);
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
@@ -760,6 +770,7 @@
               subPos: rankStyle.pos,
               subStyle: rankStyle.style,
               subWords: rankStyle.words || "",
+              trends: rankTrends,
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
             }),

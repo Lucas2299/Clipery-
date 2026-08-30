@@ -343,6 +343,16 @@ function readSubStyle(get) {
   });
 }
 
+// user-supplied trend keywords: lowercase word list, max 12 — boosts hooks & ranking
+function readTrends(get) {
+  const raw = String(get("trends") || "").toLowerCase();
+  const list = raw
+    .split(/[\s,;]+/)
+    .map((w) => w.replace(/[^a-z0-9']/g, ""))
+    .filter(Boolean);
+  return [...new Set(list)].slice(0, 12);
+}
+
 // hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
 function readHook(get) {
   return {
@@ -558,14 +568,18 @@ const server = http.createServer(async (req, res) => {
         const p = parts.find((x) => x.name === n);
         return p ? p.body.toString("utf8") : "";
       });
+      const trends = readTrends((n) => {
+        const p = parts.find((x) => x.name === n);
+        return p ? p.body.toString("utf8") : "";
+      });
 
       const jobId = crypto.randomBytes(6).toString("hex");
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
-      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode });
+      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
       const q = enqueue(dest, {
         jobId, sourceName: orig, mode, subtitles, subStyle,
-        hook: hookOpts.enabled, hookMode: hookOpts.mode,
+        hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
       });
       return send(res, 202, {
         ok: true,
@@ -594,6 +608,7 @@ const server = http.createServer(async (req, res) => {
       const subtitles = wantSubtitles(body.subtitles);
       const subStyle = readSubStyle((n) => body[n]);
       const hookOpts = readHook((n) => body[n]);
+      const trends = readTrends((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode,
@@ -602,13 +617,14 @@ const server = http.createServer(async (req, res) => {
         subStyle,
         hook: hookOpts.enabled,
         hookMode: hookOpts.mode,
+        trends,
       });
       const q = enqueueItem({
         type: "from-url",
         url: videoUrl,
         meta: {
           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
-          hook: hookOpts.enabled, hookMode: hookOpts.mode,
+          hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
         },
       });
       return send(res, 202, {
@@ -731,6 +747,7 @@ const server = http.createServer(async (req, res) => {
       const subtitles = wantSubtitles(body.subtitles);
       const subStyle = readSubStyle((n) => body[n]);
       const hookOpts = readHook((n) => body[n]);
+      const trends = readTrends((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
       seedJob(jobId, {
         mode: "link-rank-video",
@@ -740,6 +757,7 @@ const server = http.createServer(async (req, res) => {
         subStyle,
         hook: hookOpts.enabled,
         hookMode: hookOpts.mode,
+        trends,
       });
       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
       const q = enqueueItem({
@@ -753,6 +771,7 @@ const server = http.createServer(async (req, res) => {
           subStyle,
           hook: hookOpts.enabled,
           hookMode: hookOpts.mode,
+          trends,
         },
       });
       return send(res, 202, {
@@ -829,6 +848,10 @@ const server = http.createServer(async (req, res) => {
         const p = parts.find((x) => x.name === n);
         return p ? p.body.toString("utf8") : "";
       });
+      const trendsUp = readTrends((n) => {
+        const p = parts.find((x) => x.name === n);
+        return p ? p.body.toString("utf8") : "";
+      });
       seedJob(jobId, {
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
@@ -837,13 +860,14 @@ const server = http.createServer(async (req, res) => {
         subStyle,
         hook: hookOptsUp.enabled,
         hookMode: hookOptsUp.mode,
+        trends: trendsUp,
       });
       const q = enqueueItem({
         type: "multi-rank",
         sources,
         meta: {
           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode,
+          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, trends: trendsUp,
         },
       });
       return send(res, 202, {

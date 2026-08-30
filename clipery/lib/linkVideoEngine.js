@@ -644,6 +644,7 @@ async function processMultiRank(sources, options = {}) {
       const er = await tryEnhanceClip(compPath, {
         subStyle: options.subtitles ? options.subStyle : null,
         hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+        trends: options.trends,
       });
       if (er.subtitlesApplied) job.subtitlesApplied = true;
       if (er.hookApplied) {

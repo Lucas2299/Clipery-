@@ -99,7 +99,7 @@
       .sub-card.sel .sc-name{color:#e8e6f0}
 
       .sub-style-grid label{display:flex;flex-direction:column;gap:0.2rem;font-size:0.75rem;color:#9a96a8;font-weight:600}
-      .sub-style-grid select{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem}
+      .sub-style-grid select,.sub-style-grid input[type=text]{background:rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);color:#e8e6f0;border-radius:8px;padding:0.35rem 0.5rem;font-size:0.82rem;font-family:inherit}
       .sub-style-grid label.locked{opacity:0.45}
       .sub-style-grid label.locked select{cursor:not-allowed}
       .tpl-lock{flex-basis:100%;font-size:0.72rem;color:#9a96a8;margin:-0.1rem 0 0.25rem}
@@ -242,6 +242,9 @@
                 <option value="intro" selected>First seconds</option>
                 <option value="full">Whole clip</option>
               </select>
+            </label>
+            <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+              <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
           </div>
           <button type="button" class="btn btn-primary btn-lg btn-block" id="long-go">Generate clips</button>
@@ -417,6 +420,9 @@
                 <option value="intro" selected>First seconds</option>
                 <option value="full">Whole clip</option>
               </select>
+            </label>
+            <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+              <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
           </div>
           <button type="button" class="btn btn-primary btn-lg btn-block" id="rank-go" style="margin-top:1.1rem">Generate ranking video</button>

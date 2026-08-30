@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const crypto = require("crypto");
-const { tryEnhanceClip } = require("./subtitles");
+const { tryEnhanceClip, transcribeToWords } = require("./subtitles");
 
 const execFileAsync = promisify(execFile);
 
@@ -519,6 +519,19 @@ async function processVideo(sourcePath, options = {}) {
     job.progress = 28;
     writeJob(job);
 
+    // Trend keywords: transcribe the source once, then boost moments that
+    // actually SAY the hot words (whisper brain → better hits).
+    let videoWords = null;
+    if (Array.isArray(options.trends) && options.trends.length) {
+      const tmpWords = path.join(JOBS_DIR, `${id}.trendwords.json`);
+      await transcribeToWords(sourcePath, tmpWords);
+      try {
+        videoWords = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
+      } catch {}
+      try { fs.unlinkSync(tmpWords); } catch {}
+    }
+    const trendSet = videoWords ? new Set(options.trends) : null;
+
     const scored = [];
     for (let i = 0; i < candidates.length; i++) {
       const c = candidates[i];
@@ -526,6 +539,15 @@ async function processVideo(sourcePath, options = {}) {
         ? await sampleEnergy(sourcePath, c.start, c.end)
         : { energy: 55, punch: 55 };
       const dims = scoreDimensions(c, meta.duration, energy, mode, i);
+      if (trendSet) {
+        let hits = 0;
+        for (const w of videoWords) {
+          if (w.s >= c.end) break;
+          if (w.s >= c.start && trendSet.has(String(w.w).toLowerCase().replace(/[^a-z0-9']+/g, ""))) hits++;
+        }
+        dims.keywords = hits; // how many trend words this moment actually contains
+        if (hits) dims.total = Math.min(99, dims.total + Math.min(12, hits * 4));
+      }
       scored.push({
         ...c,
         score: dims.total,
@@ -608,6 +630,7 @@ async function processVideo(sourcePath, options = {}) {
           clipDur: +(c.end - c.start).toFixed(2),
           subStyle: options.subtitles ? options.subStyle : null,
           hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+          trends: options.trends,
         });
         if (er.subtitlesApplied) job.subtitlesApplied = true;
         if (er.hookApplied) {
