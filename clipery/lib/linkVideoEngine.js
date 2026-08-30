@@ -38,9 +38,16 @@ async function faceCenterX(source, start, end) {
   try {
     const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
     const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
-    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) return r.x;
-    if (r && r.reason === "no-cv2") console.warn("[linkVideoEngine] face-follow off (pip install opencv-python-headless)");
-  } catch {}
+    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) {
+      console.log(`[face-follow][linkVideoEngine] speaker face at x=${r.x.toFixed(2)} (${r.faces || 0} faces)`);
+      return r.x;
+    }
+    if (r && r.ok) console.log(`[face-follow][linkVideoEngine] no clear face -> centre crop (faces=${r.faces || 0})`);
+    else if (r && r.reason === "no-cv2") console.warn("[face-follow][linkVideoEngine] off — run: pip install opencv-python-headless");
+    else console.warn(`[face-follow][linkVideoEngine] detector problem: ${(r && r.error) || "unknown"} -> centre crop`);
+  } catch (e) {
+    console.warn(`[face-follow][linkVideoEngine] failed: ${e.message} -> centre crop`);
+  }
   return null;
 }
 

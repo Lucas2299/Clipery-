@@ -1,0 +1,38 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,26,&H00FFFFFF,&H73FFFFFF,&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0,8,12,12,126,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.10,0:00:03.20,Hook,,0,0,0,,{\1c&H00FFFFFF}THE DETECTIVE IS\NASKING ABOUT A WOMAN
+Dialogue: 0,0:00:00.00,0:00:00.03,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}The {\1c&H73FFFFFF}detective {\1c&H73FFFFFF}is\N{\1c&H73FFFFFF}asking {\1c&H73FFFFFF}about {\1c&H73FFFFFF}a {\1c&H73FFFFFF}woman
+Dialogue: 0,0:00:00.03,0:00:00.32,Cap,,0,0,0,,{\1c&H00FFFFFF}The {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}detective {\1c&H73FFFFFF}is\N{\1c&H73FFFFFF}asking {\1c&H73FFFFFF}about {\1c&H73FFFFFF}a {\1c&H73FFFFFF}woman
+Dialogue: 0,0:00:00.32,0:00:00.56,Cap,,0,0,0,,{\1c&H00FFFFFF}The {\1c&H00FFFFFF}detective {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}is\N{\1c&H73FFFFFF}asking {\1c&H73FFFFFF}about {\1c&H73FFFFFF}a {\1c&H73FFFFFF}woman
+Dialogue: 0,0:00:00.56,0:00:00.88,Cap,,0,0,0,,{\1c&H00FFFFFF}The {\1c&H00FFFFFF}detective {\1c&H00FFFFFF}is\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}asking {\1c&H73FFFFFF}about {\1c&H73FFFFFF}a {\1c&H73FFFFFF}woman
+Dialogue: 0,0:00:00.88,0:00:01.14,Cap,,0,0,0,,{\1c&H00FFFFFF}The {\1c&H00FFFFFF}detective {\1c&H00FFFFFF}is\N{\1c&H00FFFFFF}asking {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}about {\1c&H73FFFFFF}a {\1c&H73FFFFFF}woman
+Dialogue: 0,0:00:01.14,0:00:01.30,Cap,,0,0,0,,{\1c&H00FFFFFF}The {\1c&H00FFFFFF}detective {\1c&H00FFFFFF}is\N{\1c&H00FFFFFF}asking {\1c&H00FFFFFF}about {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}woman
+Dialogue: 0,0:00:01.30,0:00:01.48,Cap,,0,0,0,,{\1c&H00FFFFFF}The {\1c&H00FFFFFF}detective {\1c&H00FFFFFF}is\N{\1c&H00FFFFFF}asking {\1c&H00FFFFFF}about {\1c&H00FFFFFF}a {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}woman
+Dialogue: 0,0:00:01.50,0:00:01.86,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}named {\1c&H73FFFFFF}Madison. {\1c&H73FFFFFF}She\N{\1c&H73FFFFFF}hadn't {\1c&H73FFFFFF}reported {\1c&H73FFFFFF}Lamar
+Dialogue: 0,0:00:01.86,0:00:02.94,Cap,,0,0,0,,{\1c&H00FFFFFF}named {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Madison. {\1c&H73FFFFFF}She\N{\1c&H73FFFFFF}hadn't {\1c&H73FFFFFF}reported {\1c&H73FFFFFF}Lamar
+Dialogue: 0,0:00:02.94,0:00:03.12,Cap,,0,0,0,,{\1c&H00FFFFFF}named {\1c&H00FFFFFF}Madison. {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}She\N{\1c&H73FFFFFF}hadn't {\1c&H73FFFFFF}reported {\1c&H73FFFFFF}Lamar
+Dialogue: 0,0:00:03.12,0:00:03.40,Cap,,0,0,0,,{\1c&H00FFFFFF}named {\1c&H00FFFFFF}Madison. {\1c&H00FFFFFF}She\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}hadn't {\1c&H73FFFFFF}reported {\1c&H73FFFFFF}Lamar
+Dialogue: 0,0:00:03.40,0:00:03.68,Cap,,0,0,0,,{\1c&H00FFFFFF}named {\1c&H00FFFFFF}Madison. {\1c&H00FFFFFF}She\N{\1c&H00FFFFFF}hadn't {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}reported {\1c&H73FFFFFF}Lamar
+Dialogue: 0,0:00:03.68,0:00:04.06,Cap,,0,0,0,,{\1c&H00FFFFFF}named {\1c&H00FFFFFF}Madison. {\1c&H00FFFFFF}She\N{\1c&H00FFFFFF}hadn't {\1c&H00FFFFFF}reported {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Lamar
+Dialogue: 0,0:00:04.08,0:00:04.92,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}herself, {\1c&H73FFFFFF}in {\1c&H73FFFFFF}fact {\1c&H73FFFFFF}she\N{\1c&H73FFFFFF}doesn't {\1c&H73FFFFFF}yet {\1c&H73FFFFFF}know {\1c&H73FFFFFF}she's
+Dialogue: 0,0:00:04.92,0:00:05.00,Cap,,0,0,0,,{\1c&H00FFFFFF}herself, {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}in {\1c&H73FFFFFF}fact {\1c&H73FFFFFF}she\N{\1c&H73FFFFFF}doesn't {\1c&H73FFFFFF}yet {\1c&H73FFFFFF}know {\1c&H73FFFFFF}she's
+Dialogue: 0,0:00:05.00,0:00:05.34,Cap,,0,0,0,,{\1c&H00FFFFFF}herself, {\1c&H00FFFFFF}in {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}fact {\1c&H73FFFFFF}she\N{\1c&H73FFFFFF}doesn't {\1c&H73FFFFFF}yet {\1c&H73FFFFFF}know {\1c&H73FFFFFF}she's
+Dialogue: 0,0:00:05.34,0:00:05.58,Cap,,0,0,0,,{\1c&H00FFFFFF}herself, {\1c&H00FFFFFF}in {\1c&H00FFFFFF}fact {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}she\N{\1c&H73FFFFFF}doesn't {\1c&H73FFFFFF}yet {\1c&H73FFFFFF}know {\1c&H73FFFFFF}she's
+Dialogue: 0,0:00:05.58,0:00:05.90,Cap,,0,0,0,,{\1c&H00FFFFFF}herself, {\1c&H00FFFFFF}in {\1c&H00FFFFFF}fact {\1c&H00FFFFFF}she\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}doesn't {\1c&H73FFFFFF}yet {\1c&H73FFFFFF}know {\1c&H73FFFFFF}she's
+Dialogue: 0,0:00:05.90,0:00:06.04,Cap,,0,0,0,,{\1c&H00FFFFFF}herself, {\1c&H00FFFFFF}in {\1c&H00FFFFFF}fact {\1c&H00FFFFFF}she\N{\1c&H00FFFFFF}doesn't {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}yet {\1c&H73FFFFFF}know {\1c&H73FFFFFF}she's
+Dialogue: 0,0:00:06.04,0:00:06.40,Cap,,0,0,0,,{\1c&H00FFFFFF}herself, {\1c&H00FFFFFF}in {\1c&H00FFFFFF}fact {\1c&H00FFFFFF}she\N{\1c&H00FFFFFF}doesn't {\1c&H00FFFFFF}yet {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}know {\1c&H73FFFFFF}she's
+Dialogue: 0,0:00:06.40,0:00:06.80,Cap,,0,0,0,,{\1c&H00FFFFFF}herself, {\1c&H00FFFFFF}in {\1c&H00FFFFFF}fact {\1c&H00FFFFFF}she\N{\1c&H00FFFFFF}doesn't {\1c&H00FFFFFF}yet {\1c&H00FFFFFF}know {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}she's
+Dialogue: 0,0:00:06.82,0:00:06.94,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}victim.
+Dialogue: 0,0:00:06.94,0:00:07.67,Cap,,0,0,0,,{\1c&H00FFFFFF}a {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}victim.

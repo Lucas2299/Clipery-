@@ -1,0 +1,51 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,26,&H00FFFFFF,&H73FFFFFF,&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0,8,12,12,126,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.10,0:00:03.20,Hook,,0,0,0,,{\1c&H00FFFFFF}BY MADISON'S\NACCOUNT LAMAR KEPT COMING
+Dialogue: 0,0:00:00.00,0:00:00.12,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}By {\1c&H73FFFFFF}Madison's {\1c&H73FFFFFF}account\N{\1c&H73FFFFFF}Lamar {\1c&H73FFFFFF}kept {\1c&H73FFFFFF}coming
+Dialogue: 0,0:00:00.12,0:00:00.64,Cap,,0,0,0,,{\1c&H00FFFFFF}By {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Madison's {\1c&H73FFFFFF}account\N{\1c&H73FFFFFF}Lamar {\1c&H73FFFFFF}kept {\1c&H73FFFFFF}coming
+Dialogue: 0,0:00:00.64,0:00:00.92,Cap,,0,0,0,,{\1c&H00FFFFFF}By {\1c&H00FFFFFF}Madison's {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}account\N{\1c&H73FFFFFF}Lamar {\1c&H73FFFFFF}kept {\1c&H73FFFFFF}coming
+Dialogue: 0,0:00:00.92,0:00:01.26,Cap,,0,0,0,,{\1c&H00FFFFFF}By {\1c&H00FFFFFF}Madison's {\1c&H00FFFFFF}account\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Lamar {\1c&H73FFFFFF}kept {\1c&H73FFFFFF}coming
+Dialogue: 0,0:00:01.26,0:00:01.44,Cap,,0,0,0,,{\1c&H00FFFFFF}By {\1c&H00FFFFFF}Madison's {\1c&H00FFFFFF}account\N{\1c&H00FFFFFF}Lamar {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}kept {\1c&H73FFFFFF}coming
+Dialogue: 0,0:00:01.44,0:00:01.78,Cap,,0,0,0,,{\1c&H00FFFFFF}By {\1c&H00FFFFFF}Madison's {\1c&H00FFFFFF}account\N{\1c&H00FFFFFF}Lamar {\1c&H00FFFFFF}kept {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}coming
+Dialogue: 0,0:00:01.80,0:00:02.68,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}back, {\1c&H73FFFFFF}approaching {\1c&H73FFFFFF}her\N{\1c&H73FFFFFF}three {\1c&H73FFFFFF}or {\1c&H73FFFFFF}four {\1c&H73FFFFFF}times,
+Dialogue: 0,0:00:02.68,0:00:03.02,Cap,,0,0,0,,{\1c&H00FFFFFF}back, {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}approaching {\1c&H73FFFFFF}her\N{\1c&H73FFFFFF}three {\1c&H73FFFFFF}or {\1c&H73FFFFFF}four {\1c&H73FFFFFF}times,
+Dialogue: 0,0:00:03.02,0:00:03.26,Cap,,0,0,0,,{\1c&H00FFFFFF}back, {\1c&H00FFFFFF}approaching {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}her\N{\1c&H73FFFFFF}three {\1c&H73FFFFFF}or {\1c&H73FFFFFF}four {\1c&H73FFFFFF}times,
+Dialogue: 0,0:00:03.26,0:00:03.62,Cap,,0,0,0,,{\1c&H00FFFFFF}back, {\1c&H00FFFFFF}approaching {\1c&H00FFFFFF}her\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}three {\1c&H73FFFFFF}or {\1c&H73FFFFFF}four {\1c&H73FFFFFF}times,
+Dialogue: 0,0:00:03.62,0:00:03.76,Cap,,0,0,0,,{\1c&H00FFFFFF}back, {\1c&H00FFFFFF}approaching {\1c&H00FFFFFF}her\N{\1c&H00FFFFFF}three {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}or {\1c&H73FFFFFF}four {\1c&H73FFFFFF}times,
+Dialogue: 0,0:00:03.76,0:00:04.02,Cap,,0,0,0,,{\1c&H00FFFFFF}back, {\1c&H00FFFFFF}approaching {\1c&H00FFFFFF}her\N{\1c&H00FFFFFF}three {\1c&H00FFFFFF}or {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}four {\1c&H73FFFFFF}times,
+Dialogue: 0,0:00:04.02,0:00:04.82,Cap,,0,0,0,,{\1c&H00FFFFFF}back, {\1c&H00FFFFFF}approaching {\1c&H00FFFFFF}her\N{\1c&H00FFFFFF}three {\1c&H00FFFFFF}or {\1c&H00FFFFFF}four {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}times,
+Dialogue: 0,0:00:04.84,0:00:05.08,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}even {\1c&H73FFFFFF}as {\1c&H73FFFFFF}other {\1c&H73FFFFFF}people\N{\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}pulled {\1c&H73FFFFFF}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:05.08,0:00:05.26,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}as {\1c&H73FFFFFF}other {\1c&H73FFFFFF}people\N{\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}pulled {\1c&H73FFFFFF}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:05.26,0:00:05.46,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF}as {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}other {\1c&H73FFFFFF}people\N{\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}pulled {\1c&H73FFFFFF}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:05.46,0:00:05.70,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF}as {\1c&H00FFFFFF}other {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}people\N{\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}pulled {\1c&H73FFFFFF}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:05.70,0:00:05.92,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF}as {\1c&H00FFFFFF}other {\1c&H00FFFFFF}people\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}pulled {\1c&H73FFFFFF}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:05.92,0:00:06.12,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF}as {\1c&H00FFFFFF}other {\1c&H00FFFFFF}people\N{\1c&H00FFFFFF}on {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}set {\1c&H73FFFFFF}pulled {\1c&H73FFFFFF}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:06.12,0:00:06.36,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF}as {\1c&H00FFFFFF}other {\1c&H00FFFFFF}people\N{\1c&H00FFFFFF}on {\1c&H00FFFFFF}set {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}pulled {\1c&H73FFFFFF}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:06.36,0:00:06.56,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF}as {\1c&H00FFFFFF}other {\1c&H00FFFFFF}people\N{\1c&H00FFFFFF}on {\1c&H00FFFFFF}set {\1c&H00FFFFFF}pulled {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}her {\1c&H73FFFFFF}away
+Dialogue: 0,0:00:06.56,0:00:06.74,Cap,,0,0,0,,{\1c&H00FFFFFF}even {\1c&H00FFFFFF}as {\1c&H00FFFFFF}other {\1c&H00FFFFFF}people\N{\1c&H00FFFFFF}on {\1c&H00FFFFFF}set {\1c&H00FFFFFF}pulled {\1c&H00FFFFFF}her {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}away
+Dialogue: 0,0:00:06.76,0:00:07.04,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}from {\1c&H73FFFFFF}him. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}one\N{\1c&H73FFFFFF}comment {\1c&H73FFFFFF}would {\1c&H73FFFFFF}later
+Dialogue: 0,0:00:07.04,0:00:07.70,Cap,,0,0,0,,{\1c&H00FFFFFF}from {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}him. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}one\N{\1c&H73FFFFFF}comment {\1c&H73FFFFFF}would {\1c&H73FFFFFF}later
+Dialogue: 0,0:00:07.70,0:00:07.88,Cap,,0,0,0,,{\1c&H00FFFFFF}from {\1c&H00FFFFFF}him. {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}But {\1c&H73FFFFFF}one\N{\1c&H73FFFFFF}comment {\1c&H73FFFFFF}would {\1c&H73FFFFFF}later
+Dialogue: 0,0:00:07.88,0:00:08.16,Cap,,0,0,0,,{\1c&H00FFFFFF}from {\1c&H00FFFFFF}him. {\1c&H00FFFFFF}But {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}one\N{\1c&H73FFFFFF}comment {\1c&H73FFFFFF}would {\1c&H73FFFFFF}later
+Dialogue: 0,0:00:08.16,0:00:08.62,Cap,,0,0,0,,{\1c&H00FFFFFF}from {\1c&H00FFFFFF}him. {\1c&H00FFFFFF}But {\1c&H00FFFFFF}one\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}comment {\1c&H73FFFFFF}would {\1c&H73FFFFFF}later
+Dialogue: 0,0:00:08.62,0:00:08.84,Cap,,0,0,0,,{\1c&H00FFFFFF}from {\1c&H00FFFFFF}him. {\1c&H00FFFFFF}But {\1c&H00FFFFFF}one\N{\1c&H00FFFFFF}comment {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}would {\1c&H73FFFFFF}later
+Dialogue: 0,0:00:08.84,0:00:09.06,Cap,,0,0,0,,{\1c&H00FFFFFF}from {\1c&H00FFFFFF}him. {\1c&H00FFFFFF}But {\1c&H00FFFFFF}one\N{\1c&H00FFFFFF}comment {\1c&H00FFFFFF}would {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}later
+Dialogue: 0,0:00:09.08,0:00:09.44,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}prove {\1c&H73FFFFFF}to {\1c&H73FFFFFF}be {\1c&H73FFFFFF}more {\1c&H73FFFFFF}than\N{\1c&H73FFFFFF}inappropriate
+Dialogue: 0,0:00:09.44,0:00:09.60,Cap,,0,0,0,,{\1c&H00FFFFFF}prove {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to {\1c&H73FFFFFF}be {\1c&H73FFFFFF}more {\1c&H73FFFFFF}than\N{\1c&H73FFFFFF}inappropriate
+Dialogue: 0,0:00:09.60,0:00:09.74,Cap,,0,0,0,,{\1c&H00FFFFFF}prove {\1c&H00FFFFFF}to {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}be {\1c&H73FFFFFF}more {\1c&H73FFFFFF}than\N{\1c&H73FFFFFF}inappropriate
+Dialogue: 0,0:00:09.74,0:00:10.10,Cap,,0,0,0,,{\1c&H00FFFFFF}prove {\1c&H00FFFFFF}to {\1c&H00FFFFFF}be {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}more {\1c&H73FFFFFF}than\N{\1c&H73FFFFFF}inappropriate
+Dialogue: 0,0:00:10.10,0:00:10.36,Cap,,0,0,0,,{\1c&H00FFFFFF}prove {\1c&H00FFFFFF}to {\1c&H00FFFFFF}be {\1c&H00FFFFFF}more {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}than\N{\1c&H73FFFFFF}inappropriate
+Dialogue: 0,0:00:10.36,0:00:11.00,Cap,,0,0,0,,{\1c&H00FFFFFF}prove {\1c&H00FFFFFF}to {\1c&H00FFFFFF}be {\1c&H00FFFFFF}more {\1c&H00FFFFFF}than\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}inappropriate
+Dialogue: 0,0:00:11.02,0:00:12.03,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}behavior.

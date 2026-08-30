@@ -1,0 +1,52 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,26,&H00FFFFFF,&H73FFFFFF,&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0,8,12,12,126,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.10,0:00:03.20,Hook,,0,0,0,,{\1c&H00FFFFFF}BUT AT THIS POINT,\NI WAS LIKE,
+Dialogue: 0,0:00:00.00,0:00:00.04,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}But {\1c&H73FFFFFF}at {\1c&H73FFFFFF}this {\1c&H73FFFFFF}point, {\1c&H73FFFFFF}I\N{\1c&H73FFFFFF}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:00.04,0:00:00.26,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}at {\1c&H73FFFFFF}this {\1c&H73FFFFFF}point, {\1c&H73FFFFFF}I\N{\1c&H73FFFFFF}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:00.26,0:00:00.48,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}this {\1c&H73FFFFFF}point, {\1c&H73FFFFFF}I\N{\1c&H73FFFFFF}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:00.48,0:00:00.84,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF}this {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}point, {\1c&H73FFFFFF}I\N{\1c&H73FFFFFF}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:00.84,0:00:00.87,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF}this {\1c&H00FFFFFF}point, {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}I\N{\1c&H73FFFFFF}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:00.87,0:00:01.00,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF}this {\1c&H00FFFFFF}point, {\1c&H00FFFFFF}I\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:01.00,0:00:01.22,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF}this {\1c&H00FFFFFF}point, {\1c&H00FFFFFF}I\N{\1c&H00FFFFFF}was {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}like, {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:01.22,0:00:01.34,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF}this {\1c&H00FFFFFF}point, {\1c&H00FFFFFF}I\N{\1c&H00FFFFFF}was {\1c&H00FFFFFF}like, {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}is {\1c&H73FFFFFF}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:01.34,0:00:01.44,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF}this {\1c&H00FFFFFF}point, {\1c&H00FFFFFF}I\N{\1c&H00FFFFFF}was {\1c&H00FFFFFF}like, {\1c&H00FFFFFF}is {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:01.44,0:00:01.56,Cap,,0,0,0,,{\1c&H00FFFFFF}But {\1c&H00FFFFFF}at {\1c&H00FFFFFF}this {\1c&H00FFFFFF}point, {\1c&H00FFFFFF}I\N{\1c&H00FFFFFF}was {\1c&H00FFFFFF}like, {\1c&H00FFFFFF}is {\1c&H00FFFFFF}he {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a
+Dialogue: 0,0:00:01.58,0:00:01.74,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}real {\1c&H73FFFFFF}cop {\1c&H73FFFFFF}or {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}in {\1c&H73FFFFFF}part {\1c&H73FFFFFF}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:01.74,0:00:01.90,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}cop {\1c&H73FFFFFF}or {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}in {\1c&H73FFFFFF}part {\1c&H73FFFFFF}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:01.90,0:00:02.12,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}or {\1c&H73FFFFFF}is {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}in {\1c&H73FFFFFF}part {\1c&H73FFFFFF}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:02.12,0:00:02.30,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF}or {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}is {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}in {\1c&H73FFFFFF}part {\1c&H73FFFFFF}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:02.30,0:00:02.36,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF}or {\1c&H00FFFFFF}is {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he\N{\1c&H73FFFFFF}in {\1c&H73FFFFFF}part {\1c&H73FFFFFF}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:02.36,0:00:02.46,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF}or {\1c&H00FFFFFF}is {\1c&H00FFFFFF}he\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}in {\1c&H73FFFFFF}part {\1c&H73FFFFFF}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:02.46,0:00:02.56,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF}or {\1c&H00FFFFFF}is {\1c&H00FFFFFF}he\N{\1c&H00FFFFFF}in {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}part {\1c&H73FFFFFF}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:02.56,0:00:02.68,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF}or {\1c&H00FFFFFF}is {\1c&H00FFFFFF}he\N{\1c&H00FFFFFF}in {\1c&H00FFFFFF}part {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}of {\1c&H73FFFFFF}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:02.68,0:00:02.78,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF}or {\1c&H00FFFFFF}is {\1c&H00FFFFFF}he\N{\1c&H00FFFFFF}in {\1c&H00FFFFFF}part {\1c&H00FFFFFF}of {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the {\1c&H73FFFFFF}costume
+Dialogue: 0,0:00:02.78,0:00:03.04,Cap,,0,0,0,,{\1c&H00FFFFFF}real {\1c&H00FFFFFF}cop {\1c&H00FFFFFF}or {\1c&H00FFFFFF}is {\1c&H00FFFFFF}he\N{\1c&H00FFFFFF}in {\1c&H00FFFFFF}part {\1c&H00FFFFFF}of {\1c&H00FFFFFF}the {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}costume
+Dialogue: 0,0:00:03.06,0:00:04.12,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}show? {\1c&H73FFFFFF}Without {\1c&H73FFFFFF}knowing\N{\1c&H73FFFFFF}if {\1c&H73FFFFFF}Lamar {\1c&H73FFFFFF}was {\1c&H73FFFFFF}a {\1c&H73FFFFFF}real
+Dialogue: 0,0:00:04.12,0:00:04.48,Cap,,0,0,0,,{\1c&H00FFFFFF}show? {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Without {\1c&H73FFFFFF}knowing\N{\1c&H73FFFFFF}if {\1c&H73FFFFFF}Lamar {\1c&H73FFFFFF}was {\1c&H73FFFFFF}a {\1c&H73FFFFFF}real
+Dialogue: 0,0:00:04.48,0:00:04.84,Cap,,0,0,0,,{\1c&H00FFFFFF}show? {\1c&H00FFFFFF}Without {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}knowing\N{\1c&H73FFFFFF}if {\1c&H73FFFFFF}Lamar {\1c&H73FFFFFF}was {\1c&H73FFFFFF}a {\1c&H73FFFFFF}real
+Dialogue: 0,0:00:04.84,0:00:05.00,Cap,,0,0,0,,{\1c&H00FFFFFF}show? {\1c&H00FFFFFF}Without {\1c&H00FFFFFF}knowing\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}if {\1c&H73FFFFFF}Lamar {\1c&H73FFFFFF}was {\1c&H73FFFFFF}a {\1c&H73FFFFFF}real
+Dialogue: 0,0:00:05.00,0:00:05.38,Cap,,0,0,0,,{\1c&H00FFFFFF}show? {\1c&H00FFFFFF}Without {\1c&H00FFFFFF}knowing\N{\1c&H00FFFFFF}if {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Lamar {\1c&H73FFFFFF}was {\1c&H73FFFFFF}a {\1c&H73FFFFFF}real
+Dialogue: 0,0:00:05.38,0:00:05.56,Cap,,0,0,0,,{\1c&H00FFFFFF}show? {\1c&H00FFFFFF}Without {\1c&H00FFFFFF}knowing\N{\1c&H00FFFFFF}if {\1c&H00FFFFFF}Lamar {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}was {\1c&H73FFFFFF}a {\1c&H73FFFFFF}real
+Dialogue: 0,0:00:05.56,0:00:05.68,Cap,,0,0,0,,{\1c&H00FFFFFF}show? {\1c&H00FFFFFF}Without {\1c&H00FFFFFF}knowing\N{\1c&H00FFFFFF}if {\1c&H00FFFFFF}Lamar {\1c&H00FFFFFF}was {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}real
+Dialogue: 0,0:00:05.68,0:00:05.92,Cap,,0,0,0,,{\1c&H00FFFFFF}show? {\1c&H00FFFFFF}Without {\1c&H00FFFFFF}knowing\N{\1c&H00FFFFFF}if {\1c&H00FFFFFF}Lamar {\1c&H00FFFFFF}was {\1c&H00FFFFFF}a {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}real
+Dialogue: 0,0:00:05.94,0:00:06.70,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}deputy, {\1c&H73FFFFFF}Madison {\1c&H73FFFFFF}tried\N{\1c&H73FFFFFF}to {\1c&H73FFFFFF}continue {\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}as
+Dialogue: 0,0:00:06.70,0:00:06.94,Cap,,0,0,0,,{\1c&H00FFFFFF}deputy, {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Madison {\1c&H73FFFFFF}tried\N{\1c&H73FFFFFF}to {\1c&H73FFFFFF}continue {\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}as
+Dialogue: 0,0:00:06.94,0:00:07.20,Cap,,0,0,0,,{\1c&H00FFFFFF}deputy, {\1c&H00FFFFFF}Madison {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}tried\N{\1c&H73FFFFFF}to {\1c&H73FFFFFF}continue {\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}as
+Dialogue: 0,0:00:07.20,0:00:07.32,Cap,,0,0,0,,{\1c&H00FFFFFF}deputy, {\1c&H00FFFFFF}Madison {\1c&H00FFFFFF}tried\N{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to {\1c&H73FFFFFF}continue {\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}as
+Dialogue: 0,0:00:07.32,0:00:07.72,Cap,,0,0,0,,{\1c&H00FFFFFF}deputy, {\1c&H00FFFFFF}Madison {\1c&H00FFFFFF}tried\N{\1c&H00FFFFFF}to {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}continue {\1c&H73FFFFFF}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}as
+Dialogue: 0,0:00:07.72,0:00:07.94,Cap,,0,0,0,,{\1c&H00FFFFFF}deputy, {\1c&H00FFFFFF}Madison {\1c&H00FFFFFF}tried\N{\1c&H00FFFFFF}to {\1c&H00FFFFFF}continue {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}on {\1c&H73FFFFFF}set {\1c&H73FFFFFF}as
+Dialogue: 0,0:00:07.94,0:00:08.14,Cap,,0,0,0,,{\1c&H00FFFFFF}deputy, {\1c&H00FFFFFF}Madison {\1c&H00FFFFFF}tried\N{\1c&H00FFFFFF}to {\1c&H00FFFFFF}continue {\1c&H00FFFFFF}on {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}set {\1c&H73FFFFFF}as
+Dialogue: 0,0:00:08.14,0:00:08.26,Cap,,0,0,0,,{\1c&H00FFFFFF}deputy, {\1c&H00FFFFFF}Madison {\1c&H00FFFFFF}tried\N{\1c&H00FFFFFF}to {\1c&H00FFFFFF}continue {\1c&H00FFFFFF}on {\1c&H00FFFFFF}set {\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}as
+Dialogue: 0,0:00:08.28,0:00:08.95,Cap,,0,0,0,,{\1c&H00FFFFFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}normal.
