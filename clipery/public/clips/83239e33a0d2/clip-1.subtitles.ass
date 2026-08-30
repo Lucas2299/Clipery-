@@ -1,0 +1,75 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,30,&H004CE7FF,&H73FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0,8,12,12,500,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.10,0:00:03.20,Hook,,0,0,0,,{\1c&H004CE7FF}IT WAS LIKE, HOW\NDID YOU KNOW
+Dialogue: 0,0:00:00.00,0:00:00.12,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}It {\1c&H73FFFFFF}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}how\N{\1c&H73FFFFFF}did {\1c&H73FFFFFF}you {\1c&H73FFFFFF}know {\1c&H73FFFFFF}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:00.12,0:00:00.26,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}was {\1c&H73FFFFFF}like, {\1c&H73FFFFFF}how\N{\1c&H73FFFFFF}did {\1c&H73FFFFFF}you {\1c&H73FFFFFF}know {\1c&H73FFFFFF}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:00.26,0:00:00.46,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF}was {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}like, {\1c&H73FFFFFF}how\N{\1c&H73FFFFFF}did {\1c&H73FFFFFF}you {\1c&H73FFFFFF}know {\1c&H73FFFFFF}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:00.46,0:00:00.60,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF}was {\1c&H004CE7FF}like, {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}how\N{\1c&H73FFFFFF}did {\1c&H73FFFFFF}you {\1c&H73FFFFFF}know {\1c&H73FFFFFF}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:00.60,0:00:00.68,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF}was {\1c&H004CE7FF}like, {\1c&H004CE7FF}how\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}did {\1c&H73FFFFFF}you {\1c&H73FFFFFF}know {\1c&H73FFFFFF}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:00.68,0:00:00.84,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF}was {\1c&H004CE7FF}like, {\1c&H004CE7FF}how\N{\1c&H004CE7FF}did {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}you {\1c&H73FFFFFF}know {\1c&H73FFFFFF}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:00.84,0:00:00.96,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF}was {\1c&H004CE7FF}like, {\1c&H004CE7FF}how\N{\1c&H004CE7FF}did {\1c&H004CE7FF}you {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}know {\1c&H73FFFFFF}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:00.96,0:00:01.08,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF}was {\1c&H004CE7FF}like, {\1c&H004CE7FF}how\N{\1c&H004CE7FF}did {\1c&H004CE7FF}you {\1c&H004CE7FF}know {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}it {\1c&H73FFFFFF}was
+Dialogue: 0,0:00:01.08,0:00:01.18,Cap,,0,0,0,,{\1c&H004CE7FF}It {\1c&H004CE7FF}was {\1c&H004CE7FF}like, {\1c&H004CE7FF}how\N{\1c&H004CE7FF}did {\1c&H004CE7FF}you {\1c&H004CE7FF}know {\1c&H004CE7FF}it {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}was
+Dialogue: 0,0:00:01.20,0:00:01.38,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}me {\1c&H73FFFFFF}who {\1c&H73FFFFFF}used {\1c&H73FFFFFF}to\N{\1c&H73FFFFFF}think {\1c&H73FFFFFF}what {\1c&H73FFFFFF}you {\1c&H73FFFFFF}had
+Dialogue: 0,0:00:01.38,0:00:01.66,Cap,,0,0,0,,{\1c&H004CE7FF}me {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}who {\1c&H73FFFFFF}used {\1c&H73FFFFFF}to\N{\1c&H73FFFFFF}think {\1c&H73FFFFFF}what {\1c&H73FFFFFF}you {\1c&H73FFFFFF}had
+Dialogue: 0,0:00:01.66,0:00:01.76,Cap,,0,0,0,,{\1c&H004CE7FF}me {\1c&H004CE7FF}who {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}used {\1c&H73FFFFFF}to\N{\1c&H73FFFFFF}think {\1c&H73FFFFFF}what {\1c&H73FFFFFF}you {\1c&H73FFFFFF}had
+Dialogue: 0,0:00:01.76,0:00:01.82,Cap,,0,0,0,,{\1c&H004CE7FF}me {\1c&H004CE7FF}who {\1c&H004CE7FF}used {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to\N{\1c&H73FFFFFF}think {\1c&H73FFFFFF}what {\1c&H73FFFFFF}you {\1c&H73FFFFFF}had
+Dialogue: 0,0:00:01.82,0:00:01.92,Cap,,0,0,0,,{\1c&H004CE7FF}me {\1c&H004CE7FF}who {\1c&H004CE7FF}used {\1c&H004CE7FF}to\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}think {\1c&H73FFFFFF}what {\1c&H73FFFFFF}you {\1c&H73FFFFFF}had
+Dialogue: 0,0:00:01.92,0:00:02.08,Cap,,0,0,0,,{\1c&H004CE7FF}me {\1c&H004CE7FF}who {\1c&H004CE7FF}used {\1c&H004CE7FF}to\N{\1c&H004CE7FF}think {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}what {\1c&H73FFFFFF}you {\1c&H73FFFFFF}had
+Dialogue: 0,0:00:02.08,0:00:02.24,Cap,,0,0,0,,{\1c&H004CE7FF}me {\1c&H004CE7FF}who {\1c&H004CE7FF}used {\1c&H004CE7FF}to\N{\1c&H004CE7FF}think {\1c&H004CE7FF}what {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}you {\1c&H73FFFFFF}had
+Dialogue: 0,0:00:02.24,0:00:02.28,Cap,,0,0,0,,{\1c&H004CE7FF}me {\1c&H004CE7FF}who {\1c&H004CE7FF}used {\1c&H004CE7FF}to\N{\1c&H004CE7FF}think {\1c&H004CE7FF}what {\1c&H004CE7FF}you {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}had
+Dialogue: 0,0:00:02.30,0:00:02.60,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}found {\1c&H73FFFFFF}to {\1c&H73FFFFFF}be {\1c&H73FFFFFF}an\N{\1c&H73FFFFFF}employee {\1c&H73FFFFFF}robot? 🤖 {\1c&H73FFFFFF}A
+Dialogue: 0,0:00:02.60,0:00:02.84,Cap,,0,0,0,,{\1c&H004CE7FF}found {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to {\1c&H73FFFFFF}be {\1c&H73FFFFFF}an\N{\1c&H73FFFFFF}employee {\1c&H73FFFFFF}robot? 🤖 {\1c&H73FFFFFF}A
+Dialogue: 0,0:00:02.84,0:00:02.96,Cap,,0,0,0,,{\1c&H004CE7FF}found {\1c&H004CE7FF}to {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}be {\1c&H73FFFFFF}an\N{\1c&H73FFFFFF}employee {\1c&H73FFFFFF}robot? 🤖 {\1c&H73FFFFFF}A
+Dialogue: 0,0:00:02.96,0:00:03.00,Cap,,0,0,0,,{\1c&H004CE7FF}found {\1c&H004CE7FF}to {\1c&H004CE7FF}be {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}an\N{\1c&H73FFFFFF}employee {\1c&H73FFFFFF}robot? 🤖 {\1c&H73FFFFFF}A
+Dialogue: 0,0:00:03.00,0:00:03.30,Cap,,0,0,0,,{\1c&H004CE7FF}found {\1c&H004CE7FF}to {\1c&H004CE7FF}be {\1c&H004CE7FF}an\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}employee {\1c&H73FFFFFF}robot? 🤖 {\1c&H73FFFFFF}A
+Dialogue: 0,0:00:03.30,0:00:03.94,Cap,,0,0,0,,{\1c&H004CE7FF}found {\1c&H004CE7FF}to {\1c&H004CE7FF}be {\1c&H004CE7FF}an\N{\1c&H004CE7FF}employee {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}robot? 🤖 {\1c&H73FFFFFF}A
+Dialogue: 0,0:00:03.94,0:00:04.06,Cap,,0,0,0,,{\1c&H004CE7FF}found {\1c&H004CE7FF}to {\1c&H004CE7FF}be {\1c&H004CE7FF}an\N{\1c&H004CE7FF}employee {\1c&H004CE7FF}robot? 🤖 {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}A
+Dialogue: 0,0:00:04.08,0:00:04.46,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}report {\1c&H73FFFFFF}of {\1c&H73FFFFFF}police\N{\1c&H73FFFFFF}misconduct {\1c&H73FFFFFF}sparks {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:04.46,0:00:04.66,Cap,,0,0,0,,{\1c&H004CE7FF}report {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}of {\1c&H73FFFFFF}police\N{\1c&H73FFFFFF}misconduct {\1c&H73FFFFFF}sparks {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:04.66,0:00:04.96,Cap,,0,0,0,,{\1c&H004CE7FF}report {\1c&H004CE7FF}of {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}police\N{\1c&H73FFFFFF}misconduct {\1c&H73FFFFFF}sparks {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:04.96,0:00:05.68,Cap,,0,0,0,,{\1c&H004CE7FF}report {\1c&H004CE7FF}of {\1c&H004CE7FF}police\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}misconduct {\1c&H73FFFFFF}sparks {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:05.68,0:00:06.10,Cap,,0,0,0,,{\1c&H004CE7FF}report {\1c&H004CE7FF}of {\1c&H004CE7FF}police\N{\1c&H004CE7FF}misconduct {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}sparks {\1c&H73FFFFFF}a
+Dialogue: 0,0:00:06.10,0:00:06.30,Cap,,0,0,0,,{\1c&H004CE7FF}report {\1c&H004CE7FF}of {\1c&H004CE7FF}police\N{\1c&H004CE7FF}misconduct {\1c&H004CE7FF}sparks {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a
+Dialogue: 0,0:00:06.32,0:00:06.70,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}criminal\N{\1c&H73FFFFFF}investigation,
+Dialogue: 0,0:00:06.70,0:00:07.95,Cap,,0,0,0,,{\1c&H004CE7FF}criminal\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}investigation,
+Dialogue: 0,0:00:08.14,0:00:08.40,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}revealing {\1c&H73FFFFFF}not {\1c&H73FFFFFF}only\N{\1c&H73FFFFFF}a {\1c&H73FFFFFF}disturbing {\1c&H73FFFFFF}abuse
+Dialogue: 0,0:00:08.40,0:00:08.76,Cap,,0,0,0,,{\1c&H004CE7FF}revealing {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}not {\1c&H73FFFFFF}only\N{\1c&H73FFFFFF}a {\1c&H73FFFFFF}disturbing {\1c&H73FFFFFF}abuse
+Dialogue: 0,0:00:08.76,0:00:09.04,Cap,,0,0,0,,{\1c&H004CE7FF}revealing {\1c&H004CE7FF}not {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}only\N{\1c&H73FFFFFF}a {\1c&H73FFFFFF}disturbing {\1c&H73FFFFFF}abuse
+Dialogue: 0,0:00:09.04,0:00:09.16,Cap,,0,0,0,,{\1c&H004CE7FF}revealing {\1c&H004CE7FF}not {\1c&H004CE7FF}only\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}disturbing {\1c&H73FFFFFF}abuse
+Dialogue: 0,0:00:09.16,0:00:09.58,Cap,,0,0,0,,{\1c&H004CE7FF}revealing {\1c&H004CE7FF}not {\1c&H004CE7FF}only\N{\1c&H004CE7FF}a {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}disturbing {\1c&H73FFFFFF}abuse
+Dialogue: 0,0:00:09.58,0:00:09.94,Cap,,0,0,0,,{\1c&H004CE7FF}revealing {\1c&H004CE7FF}not {\1c&H004CE7FF}only\N{\1c&H004CE7FF}a {\1c&H004CE7FF}disturbing {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}abuse
+Dialogue: 0,0:00:09.96,0:00:10.20,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}of {\1c&H73FFFFFF}automated\N{\1c&H73FFFFFF}license {\1c&H73FFFFFF}plate
+Dialogue: 0,0:00:10.20,0:00:10.60,Cap,,0,0,0,,{\1c&H004CE7FF}of {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}automated\N{\1c&H73FFFFFF}license {\1c&H73FFFFFF}plate
+Dialogue: 0,0:00:10.60,0:00:11.00,Cap,,0,0,0,,{\1c&H004CE7FF}of {\1c&H004CE7FF}automated\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}license {\1c&H73FFFFFF}plate
+Dialogue: 0,0:00:11.00,0:00:11.26,Cap,,0,0,0,,{\1c&H004CE7FF}of {\1c&H004CE7FF}automated\N{\1c&H004CE7FF}license {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}plate
+Dialogue: 0,0:00:11.28,0:00:11.80,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}recognition\N{\1c&H73FFFFFF}systems, {\1c&H73FFFFFF}but {\1c&H73FFFFFF}just
+Dialogue: 0,0:00:11.80,0:00:12.92,Cap,,0,0,0,,{\1c&H004CE7FF}recognition\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}systems, {\1c&H73FFFFFF}but {\1c&H73FFFFFF}just
+Dialogue: 0,0:00:12.92,0:00:13.10,Cap,,0,0,0,,{\1c&H004CE7FF}recognition\N{\1c&H004CE7FF}systems, {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}but {\1c&H73FFFFFF}just
+Dialogue: 0,0:00:13.10,0:00:13.24,Cap,,0,0,0,,{\1c&H004CE7FF}recognition\N{\1c&H004CE7FF}systems, {\1c&H004CE7FF}but {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}just
+Dialogue: 0,0:00:13.26,0:00:13.50,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}how {\1c&H73FFFFFF}far {\1c&H73FFFFFF}a {\1c&H73FFFFFF}Florida\N{\1c&H73FFFFFF}deputy {\1c&H73FFFFFF}was {\1c&H73FFFFFF}willing
+Dialogue: 0,0:00:13.50,0:00:13.86,Cap,,0,0,0,,{\1c&H004CE7FF}how {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}far {\1c&H73FFFFFF}a {\1c&H73FFFFFF}Florida\N{\1c&H73FFFFFF}deputy {\1c&H73FFFFFF}was {\1c&H73FFFFFF}willing
+Dialogue: 0,0:00:13.86,0:00:13.96,Cap,,0,0,0,,{\1c&H004CE7FF}how {\1c&H004CE7FF}far {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}Florida\N{\1c&H73FFFFFF}deputy {\1c&H73FFFFFF}was {\1c&H73FFFFFF}willing
+Dialogue: 0,0:00:13.96,0:00:14.28,Cap,,0,0,0,,{\1c&H004CE7FF}how {\1c&H004CE7FF}far {\1c&H004CE7FF}a {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Florida\N{\1c&H73FFFFFF}deputy {\1c&H73FFFFFF}was {\1c&H73FFFFFF}willing
+Dialogue: 0,0:00:14.28,0:00:14.68,Cap,,0,0,0,,{\1c&H004CE7FF}how {\1c&H004CE7FF}far {\1c&H004CE7FF}a {\1c&H004CE7FF}Florida\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}deputy {\1c&H73FFFFFF}was {\1c&H73FFFFFF}willing
+Dialogue: 0,0:00:14.68,0:00:15.00,Cap,,0,0,0,,{\1c&H004CE7FF}how {\1c&H004CE7FF}far {\1c&H004CE7FF}a {\1c&H004CE7FF}Florida\N{\1c&H004CE7FF}deputy {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}was {\1c&H73FFFFFF}willing
+Dialogue: 0,0:00:15.00,0:00:15.20,Cap,,0,0,0,,{\1c&H004CE7FF}how {\1c&H004CE7FF}far {\1c&H004CE7FF}a {\1c&H004CE7FF}Florida\N{\1c&H004CE7FF}deputy {\1c&H004CE7FF}was {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}willing
+Dialogue: 0,0:00:15.22,0:00:15.44,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to {\1c&H73FFFFFF}go {\1c&H73FFFFFF}to {\1c&H73FFFFFF}get {\1c&H73FFFFFF}what\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}wanted.
+Dialogue: 0,0:00:15.44,0:00:15.62,Cap,,0,0,0,,{\1c&H004CE7FF}to {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}go {\1c&H73FFFFFF}to {\1c&H73FFFFFF}get {\1c&H73FFFFFF}what\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}wanted.
+Dialogue: 0,0:00:15.62,0:00:15.78,Cap,,0,0,0,,{\1c&H004CE7FF}to {\1c&H004CE7FF}go {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to {\1c&H73FFFFFF}get {\1c&H73FFFFFF}what\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}wanted.
+Dialogue: 0,0:00:15.78,0:00:16.02,Cap,,0,0,0,,{\1c&H004CE7FF}to {\1c&H004CE7FF}go {\1c&H004CE7FF}to {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}get {\1c&H73FFFFFF}what\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}wanted.
+Dialogue: 0,0:00:16.02,0:00:16.30,Cap,,0,0,0,,{\1c&H004CE7FF}to {\1c&H004CE7FF}go {\1c&H004CE7FF}to {\1c&H004CE7FF}get {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}what\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}wanted.
+Dialogue: 0,0:00:16.30,0:00:16.50,Cap,,0,0,0,,{\1c&H004CE7FF}to {\1c&H004CE7FF}go {\1c&H004CE7FF}to {\1c&H004CE7FF}get {\1c&H004CE7FF}what\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he {\1c&H73FFFFFF}wanted.
+Dialogue: 0,0:00:16.50,0:00:17.41,Cap,,0,0,0,,{\1c&H004CE7FF}to {\1c&H004CE7FF}go {\1c&H004CE7FF}to {\1c&H004CE7FF}get {\1c&H004CE7FF}what\N{\1c&H004CE7FF}he {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}wanted.

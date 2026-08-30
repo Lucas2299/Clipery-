@@ -29,6 +29,21 @@ function jobPath(id) {
   return path.join(JOBS_DIR, `${id}.json`);
 }
 
+/* -------- face-follow crop: centre the 9:16 frame on the speaker -------- */
+const PY = process.env.PYTHON || "python3";
+const FACE_PY = path.join(__dirname, "facedetect.py");
+
+/** Median face-centre X (0..1) for a time window, or null (centre crop). */
+async function faceCenterX(source, start, end) {
+  try {
+    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
+    const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
+    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) return r.x;
+    if (r && r.reason === "no-cv2") console.warn("[linkVideoEngine] face-follow off (pip install opencv-python-headless)");
+  } catch {}
+  return null;
+}
+
 function readJob(id) {
   try {
     return JSON.parse(fs.readFileSync(jobPath(id), "utf8"));
@@ -227,15 +242,20 @@ function buildRankingOverlay({
   currentRank,
   total,
   highlight = true,
+  faceX = null,
 }) {
   const W = 608;
   const H = 1080;
   const titleText = escapeDrawtext(title || "Top Videos");
   const cap = escapeDrawtext((caption || "").slice(0, 42));
 
+  const crop = faceX
+    ? `crop=${W}:${H}:x='clip(iw*${faceX}-${W / 2}\\,0\\,iw-${W})'`
+    : `crop=${W}:${H}`;
+
   const filters = [
     `scale=${W}:${H}:force_original_aspect_ratio=increase`,
-    `crop=${W}:${H}`,
+    crop,
     // Title — yellow, top center (no background box)
     `drawtext=text='${titleText}':fontsize=50:fontcolor=0xFFE600:borderw=5:bordercolor=black:x=(w-text_w)/2:y=42:font=Sans`,
   ];
@@ -273,12 +293,14 @@ async function renderTikTokRankClip(source, outFile, {
 }) {
   const meta = await probe(source);
   const take = Math.min(Math.max(meta.duration || 3, 0.5), maxSeconds);
+  const faceX = await faceCenterX(source, 0, take);
   const vf = buildRankingOverlay({
     title,
     caption,
     currentRank: rank,
     total,
     highlight: true,
+    faceX,
   });
 
   if (meta.hasAudio) {
