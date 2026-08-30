@@ -25,9 +25,9 @@ const MODES = {
     id: "viral",
     label: "Viral clips",
     description: "Short hook-first cuts optimized for TikTok / Reels / Shorts",
-    targetMin: 12,
-    targetMax: 28,
-    ideal: 18,
+    targetMin: 30,
+    targetMax: 90,
+    ideal: 60,
     maxClips: 8,
     sceneThreshold: 0.2,
     captionStyle: "viral",
@@ -36,9 +36,9 @@ const MODES = {
     id: "ranking",
     label: "Ranking analysis",
     description: "Score every moment with a full breakdown — post order ready",
-    targetMin: 10,
-    targetMax: 40,
-    ideal: 24,
+    targetMin: 30,
+    targetMax: 90,
+    ideal: 60,
     maxClips: 10,
     sceneThreshold: 0.18,
     captionStyle: "rank",
@@ -157,49 +157,46 @@ async function sampleEnergy(file, start, end) {
 }
 
 function buildCandidates(duration, sceneTimes, mode) {
-  const bounds = [0, ...sceneTimes, duration].sort((a, b) => a - b);
+  const MIN = mode.targetMin;   // never shorter than this
+  const MAX = mode.targetMax;   // soft cap ("can be more" lives up to here)
+  const IDEAL = mode.ideal;     // the sweet spot (~60s)
+  const bounds = [0, ...sceneTimes.filter((t) => t > 0.5 && t < duration - 1), duration].sort((a, b) => a - b);
   const raw = [];
-  const chunk = mode.ideal + 4;
 
-  for (let i = 0; i < bounds.length - 1; i++) {
-    const start = bounds[i];
-    const end = bounds[i + 1];
-    const len = end - start;
-    if (len < 6) continue;
-    if (len <= mode.targetMax + 8) {
-      raw.push({ start, end: Math.min(end, start + mode.targetMax + 6) });
-    } else {
-      let s = start;
-      while (s < end - 8) {
-        const e = Math.min(s + chunk, end);
-        if (e - s >= 8) raw.push({ start: s, end: e });
-        s += Math.max(10, mode.ideal - 4);
-      }
-    }
+  // A window starting at every scene cut, grown to the ideal length
+  // (clips may happily span several scene cuts)
+  for (const start of bounds) {
+    const end = Math.min(start + IDEAL, duration);
+    if (end - start >= MIN) raw.push({ start, end });
   }
 
-  if (raw.length < 5) {
-    const step = Math.max(10, duration / 8);
-    for (let s = 0; s < duration - 8; s += step) {
-      const e = Math.min(s + mode.ideal + 4, duration);
-      if (e - s >= 8) raw.push({ start: s, end: e });
-    }
+  // Sliding starts every ~20s so nothing between scene cuts is missed
+  for (let s = 20; s + MIN <= duration; s += 20) {
+    raw.push({ start: s, end: Math.min(s + IDEAL, duration) });
   }
 
-  // Viral mode: add cold-open dedicated window
-  if (mode.id === "viral" && duration > 20) {
-    raw.unshift({ start: 0, end: Math.min(mode.ideal + 2, duration) });
+  // One longer variant ("can be more") from each scene start
+  for (const start of bounds) {
+    const end = Math.min(start + MAX, duration);
+    if (end - start >= MIN) raw.push({ start, end });
   }
 
-  raw.sort((a, b) => a.start - b.start);
+  // Short-video fallback: take as much as we can from the very top
+  if (!raw.length && duration >= 8) raw.push({ start: 0, end: duration });
+
+  // Viral mode: dedicated cold-open window
+  if (mode.id === "viral" && duration >= MIN) {
+    raw.unshift({ start: 0, end: Math.min(IDEAL, duration) });
+  }
+
+  raw.sort((a, b) => a.start - b.start || (a.end - a.start) - (b.end - b.start));
   const out = [];
   for (const c of raw) {
-    const last = out[out.length - 1];
-    if (last && Math.abs(last.start - c.start) < 4) continue;
     const start = Math.max(0, +c.start.toFixed(2));
-    let end = Math.min(duration, +c.end.toFixed(2));
-    if (end - start > mode.targetMax + 10) end = start + mode.targetMax + 6;
-    if (end - start >= 7) out.push({ start, end });
+    const end = Math.min(duration, +c.end.toFixed(2));
+    if (end - start < MIN && end < duration) continue; // never ship under 30s
+    if (out.some((o) => Math.abs(o.start - start) < 6 && Math.abs((o.end - o.start) - (end - start)) < 12)) continue;
+    out.push({ start, end });
   }
   return out.slice(0, 16);
 }
@@ -209,12 +206,13 @@ function scoreDimensions(c, duration, energy, mode, index) {
   const mid = (c.start + c.end) / 2;
   const pos = mid / Math.max(duration, 1);
 
-  // Length fit — TikTok sweet spot 12–28s
-  let length = 40;
-  if (len >= 15 && len <= 25) length = 98;
-  else if (len >= mode.targetMin && len <= mode.targetMax) length = 92;
-  else if (len >= mode.targetMin - 4 && len <= mode.targetMax + 8) length = 78;
-  else if (len >= 8 && len <= 45) length = 58;
+  // Length fit — 30s minimum, ~60s is the sweet spot, longer is fine
+  let length = 30;
+  if (len >= 50 && len <= 70) length = 98;
+  else if (len >= 40 && len <= 85) length = 92;
+  else if (len >= mode.targetMin && len <= mode.targetMax) length = 84;
+  else if (len > mode.targetMax) length = 70;
+  else if (len >= 20) length = 45;
 
   // Hook / cold-open strength (first seconds win the algorithm)
   let hook = 70;
@@ -230,7 +228,7 @@ function scoreDimensions(c, duration, energy, mode, index) {
 
   // Retention proxy
   let retention = Math.round(
-    length * 0.4 + pacing * 0.4 + (100 - Math.abs(len - mode.ideal) * 3) * 0.2
+    length * 0.4 + pacing * 0.4 + (100 - Math.min(80, Math.abs(len - mode.ideal) * 1.2)) * 0.2
   );
   retention = Math.min(99, Math.max(35, retention));
 
@@ -239,7 +237,7 @@ function scoreDimensions(c, duration, energy, mode, index) {
 
   // Replay / share potential
   const replay = Math.round(
-    Math.min(99, pacing * 0.4 + hook * 0.35 + (len >= 12 && len <= 30 ? 90 : 55) * 0.25)
+    Math.min(99, pacing * 0.4 + hook * 0.35 + (len >= 30 && len <= 85 ? 90 : 55) * 0.25)
   );
 
   // AI viral prediction (weighted for “will this go viral?”)

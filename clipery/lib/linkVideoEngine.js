@@ -119,11 +119,11 @@ async function sampleEnergy(file, duration) {
 
 function scoreVideo(meta, energy, index, label) {
   const dur = meta.duration || 0;
-  let length = 50;
-  if (dur >= 12 && dur <= 30) length = 96;
-  else if (dur >= 8 && dur <= 45) length = 82;
-  else if (dur >= 5 && dur <= 60) length = 68;
-  else if (dur > 60) length = 55;
+  let length = 45;
+  if (dur >= 50 && dur <= 70) length = 98;
+  else if (dur >= 30 && dur <= 90) length = 92;
+  else if (dur > 90 && dur <= 180) length = 72;
+  else if (dur >= 15) length = 58;
 
   const pacing = Math.round(energy.energy * 0.55 + energy.punch * 0.45);
   // vertical bonus
