@@ -53,6 +53,21 @@ function run(cmd, args, opts = {}) {
   });
 }
 
+/* -------- face-follow crop: centre the 9:16 frame on the speaker -------- */
+const PY = process.env.PYTHON || "python3";
+const FACE_PY = path.join(__dirname, "facedetect.py");
+
+/** Median face-centre X (0..1) for a time window, or null (centre crop). */
+async function faceCenterX(source, start, end) {
+  try {
+    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
+    const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
+    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) return r.x;
+    if (r && r.reason === "no-cv2") console.warn("[clipEngine] face-follow off (pip install opencv-python-headless)");
+  } catch {}
+  return null;
+}
+
 async function probe(file) {
   const { stdout } = await run("ffprobe", [
     "-v",
@@ -328,9 +343,15 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
   const targetH = 1080;
   const accent = mode.id === "viral" ? "0xFF4D6D" : "0x8B7CFF";
 
+  // Face-follow: lock the portrait frame onto the speaker (centre crop fallback)
+  const faceX = await faceCenterX(source, start, end);
+  const crop = faceX
+    ? `crop=${targetW}:${targetH}:x='clip(iw*${faceX}-${targetW / 2}\\,0\\,iw-${targetW})'`
+    : `crop=${targetW}:${targetH}`;
+
   const vf = [
     `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
-    `crop=${targetW}:${targetH}`,
+    crop,
     `drawbox=x=0:y=0:w=8:h=ih:color=${accent}:t=fill`,
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,

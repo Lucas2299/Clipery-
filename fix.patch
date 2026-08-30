@@ -1,159 +1,108 @@
---- a/clipery/lib/transcribe.py
-+++ b/clipery/lib/transcribe.py
-@@ -1,15 +1,19 @@
- #!/usr/bin/env python3
--"""PocketSphinx speech transcriber for Clipery karaoke subtitles.
-+"""Speech transcriber for Clipery karaoke subtitles.
-+
-+Engine order (smartest first):
-+1) faster-whisper  — big-brain accuracy, word timings, offline.
-+                     pip install faster-whisper   (model downloads once, ~150MB)
-+2) pocketsphinx    — tiny offline fallback (pip install pocketsphinx)
- 
- Usage: transcribe.py <input media> <output> [start_offset_sec]
- 
- - Converts input to 16k mono wav itself (via ffmpeg) when needed.
--- Decodes in 20s blocks for reliability, keeping global timestamps.
- - Output .json  -> word-level timings: {"words":[{"w":"hello","s":0.1,"e":0.4}, ...]}
-   (used to build TikTok-style karaoke captions: word by word, left to right)
- - Output .srt   -> legacy phrase-level SRT (kept for compatibility)
- 
--Requires: pip install pocketsphinx
-+Model size can be tuned with env CLIPERY_WHISPER_MODEL (tiny|base|small).
- """
- import json
- import os
-@@ -17,6 +21,9 @@
- import subprocess
- import sys
- import wave
-+
-+FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
-+_WHISPER_MODEL = None
- 
- 
- def to_wav(src: str, dst: str) -> None:
-@@ -30,7 +37,7 @@
-         except Exception:
-             pass
-     subprocess.run(
--        ["ffmpeg", "-y", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", dst],
-+        [FFMPEG, "-y", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", dst],
-         check=True,
-     )
- 
-@@ -58,10 +65,52 @@
-     return piece
- 
- 
--def transcribe(wav_path: str, offset: float = 0.0):
--    """Returns (entries, words):
--    entries = phrase-level [[start, end, text], ...] (for legacy SRT)
--    words   = [{"w": word, "s": start, "e": end}, ...] word-level timings"""
-+def _monotonic(words):
-+    prev = 0.0
-+    for wd in words:
-+        if wd["s"] < prev - 0.05:
-+            wd["s"] = round(prev, 3)
-+        if wd["e"] <= wd["s"]:
-+            wd["e"] = round(wd["s"] + 0.12, 3)
-+        prev = wd["e"]
-+    return words
-+
-+
-+def transcribe_whisper(wav_path: str, offset: float = 0.0):
-+    """faster-whisper: human-grade word recognition with per-word timings."""
-+    global _WHISPER_MODEL
-+    from faster_whisper import WhisperModel
-+
-+    if _WHISPER_MODEL is None:
-+        name = os.environ.get("CLIPERY_WHISPER_MODEL", "base")
-+        _WHISPER_MODEL = WhisperModel(name, device="cpu", compute_type="int8")
-+    segments, _info = _WHISPER_MODEL.transcribe(
-+        wav_path, word_timestamps=True, vad_filter=True, beam_size=5
-+    )
-+    entries = []
-+    words = []
-+    for seg in segments:
-+        seg_text = []
-+        seg_start = None
-+        seg_end = None
-+        for w in (seg.words or []):
-+            piece = clean_word((w.word or "").strip())
-+            if piece is None or w.start is None or w.end is None:
-+                continue
-+            ws, we = w.start + offset, w.end + offset
-+            words.append({"w": piece, "s": round(ws, 3), "e": round(we, 3)})
-+            if seg_start is None:
-+                seg_start = ws
-+            seg_end = we
-+            seg_text.append(piece)
-+        if seg_text:
-+            entries.append([seg_start, seg_end, " ".join(seg_text)])
-+    print("engine=whisper", file=sys.stderr)
-+    return entries, _monotonic(words)
-+
-+
-+def transcribe_sphinx(wav_path: str, offset: float = 0.0):
-+    """PocketSphinx fallback: offline classic decoder, 20s blocks."""
-     from pocketsphinx import Decoder
- 
-     decoder = Decoder()
-@@ -100,16 +149,16 @@
-             if seg_text:
-                 entries.append([seg_start, seg_end, " ".join(seg_text)])
-             base += len(data) / float(sw * nc * fr)
--
--    # timing sanity: monotonic, minimum duration
--    prev = 0.0
--    for wd in words:
--        if wd["s"] < prev - 0.05:
--            wd["s"] = round(prev, 3)
--        if wd["e"] <= wd["s"]:
--            wd["e"] = round(wd["s"] + 0.12, 3)
--        prev = wd["e"]
--    return entries, words
-+    print("engine=pocketsphinx", file=sys.stderr)
-+    return entries, _monotonic(words)
-+
-+
-+def transcribe(wav_path: str, offset: float = 0.0):
-+    try:
-+        return transcribe_whisper(wav_path, offset)
-+    except Exception as e:
-+        print(f"whisper unavailable ({e}) — falling back to pocketsphinx", file=sys.stderr)
-+        return transcribe_sphinx(wav_path, offset)
- 
- 
- def chunk_captions(entries, max_dur=4.0, max_chars=42):
---- a/clipery/lib/subtitles.js
-+++ b/clipery/lib/subtitles.js
-@@ -135,15 +135,19 @@
- let engineCache = null;
- function subtitlesAvailable() {
-   if (engineCache !== null) return engineCache;
--  try {
--    const r = spawnSync(PY, ["-c", "import pocketsphinx"], { encoding: "utf8" });
--    engineCache = r.status === 0;
--  } catch {
--    engineCache = false;
--  }
--  if (!engineCache) {
--    console.warn("[subtitles] pocketsphinx not installed (pip install pocketsphinx) — subtitles skipped");
--  }
-+  // Big brain first: faster-whisper (pip install faster-whisper).
-+  // Tiny backup: pocketsphinx (pip install pocketsphinx). Either one works.
-+  for (const mod of ["faster_whisper", "pocketsphinx"]) {
-+    try {
-+      const r = spawnSync(PY, ["-c", `import ${mod}`], { encoding: "utf8" });
-+      if (r.status === 0) {
-+        engineCache = true;
-+        return true;
-+      }
-+    } catch {}
-+  }
-+  engineCache = false;
-+  console.warn("[subtitles] no speech engine installed (pip install faster-whisper — or pocketsphinx) — subtitles skipped");
-   return engineCache;
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 23a222c..3a68efb 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -53,6 +53,21 @@ function run(cmd, args, opts = {}) {
+   });
  }
  
++/* -------- face-follow crop: centre the 9:16 frame on the speaker -------- */
++const PY = process.env.PYTHON || "python3";
++const FACE_PY = path.join(__dirname, "facedetect.py");
++
++/** Median face-centre X (0..1) for a time window, or null (centre crop). */
++async function faceCenterX(source, start, end) {
++  try {
++    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
++    const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
++    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) return r.x;
++    if (r && r.reason === "no-cv2") console.warn("[clipEngine] face-follow off (pip install opencv-python-headless)");
++  } catch {}
++  return null;
++}
++
+ async function probe(file) {
+   const { stdout } = await run("ffprobe", [
+     "-v",
+@@ -328,9 +343,15 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
+   const targetH = 1080;
+   const accent = mode.id === "viral" ? "0xFF4D6D" : "0x8B7CFF";
+ 
++  // Face-follow: lock the portrait frame onto the speaker (centre crop fallback)
++  const faceX = await faceCenterX(source, start, end);
++  const crop = faceX
++    ? `crop=${targetW}:${targetH}:x='clip(iw*${faceX}-${targetW / 2}\\,0\\,iw-${targetW})'`
++    : `crop=${targetW}:${targetH}`;
++
+   const vf = [
+     `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
+-    `crop=${targetW}:${targetH}`,
++    crop,
+     `drawbox=x=0:y=0:w=8:h=ih:color=${accent}:t=fill`,
+     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
+     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
+diff --git a/clipery/lib/facedetect.py b/clipery/lib/facedetect.py
+new file mode 100644
+index 0000000..ee72a31
+--- /dev/null
++++ b/clipery/lib/facedetect.py
+@@ -0,0 +1,59 @@
++#!/usr/bin/env python3
++"""Face-follow helper for Clipery: find the speaker's face centre X (0..1).
++
++Usage: facedetect.py <media> <start_sec> <end_sec>
++Prints JSON: {"ok": true, "x": 0.62, "faces": 9}  — median face centre fraction,
++or {"ok": false, "reason": "..."} when there is nothing to lock onto.
++
++The crop in clipEngine then centres the 9:16 frame on that point, so the
++camera quietly follows the speaker instead of cropping dead centre.
++
++Requires: pip install opencv-python-headless
++"""
++import json
++import sys
++
++
++def main() -> None:
++    src, start, end = sys.argv[1], float(sys.argv[2]), float(sys.argv[3])
++    try:
++        import cv2
++    except Exception:
++        print(json.dumps({"ok": False, "reason": "no-cv2"}))
++        return
++
++    cap = cv2.VideoCapture(src)
++    if not cap.isOpened():
++        print(json.dumps({"ok": False, "reason": "open-failed"}))
++        return
++
++    cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
++    xs = []
++    total = max(0.2, end - start)
++    step = max(0.5, total / 12.0)  # ~12 samples per clip is plenty
++    t = start
++    while t < end:
++        cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000)
++        ok, frame = cap.read()
++        if not ok:
++            t += step
++            continue
++        small_w = 384  # small for speed, but big enough for mid-distance faces
++        small = cv2.resize(frame, (small_w, max(1, int(frame.shape[0] * small_w / frame.shape[1]))))
++        gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
++        faces = cascade.detectMultiScale(gray, scaleFactor=1.08, minNeighbors=3, minSize=(18, 18))
++        if len(faces):
++            fx, fy, fw, fh = max(faces, key=lambda r: r[2] * r[3])  # biggest face = the speaker
++            xs.append((fx + fw / 2) / small.shape[1])
++        t += step
++    cap.release()
++
++    if not xs:
++        print(json.dumps({"ok": False, "reason": "no-faces"}))
++        return
++    xs.sort()
++    print(json.dumps({"ok": True, "x": round(xs[len(xs) // 2], 4), "faces": len(xs)}))
++
++
++if __name__ == "__main__":
++    main()
