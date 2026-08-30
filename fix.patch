@@ -1,44 +1,20 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 7823db1..45d36a9 100644
 --- a/clipery/lib/clipEngine.js
 +++ b/clipery/lib/clipEngine.js
-@@ -62,9 +62,16 @@
-   try {
-     const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
-     const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
--    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) return r.x;
--    if (r && r.reason === "no-cv2") console.warn("[clipEngine] face-follow off (pip install opencv-python-headless)");
--  } catch {}
-+    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) {
-+      console.log(`[face-follow][clipEngine] speaker face at x=${r.x.toFixed(2)} (${r.faces || 0} faces)`);
-+      return r.x;
-+    }
-+    if (r && r.ok) console.log(`[face-follow][clipEngine] no clear face -> centre crop (faces=${r.faces || 0})`);
-+    else if (r && r.reason === "no-cv2") console.warn("[face-follow][clipEngine] off — run: pip install opencv-python-headless");
-+    else console.warn(`[face-follow][clipEngine] detector problem: ${(r && r.error) || "unknown"} -> centre crop`);
-+  } catch (e) {
-+    console.warn(`[face-follow][clipEngine] failed: ${e.message} -> centre crop`);
-+  }
-   return null;
- }
+@@ -346,7 +346,6 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
+   const dur = Math.max(0.5, end - start);
+   const targetW = 608;
+   const targetH = 1080;
+-  const accent = mode.id === "viral" ? "0xFF4D6D" : "0x8B7CFF";
  
---- a/clipery/lib/linkVideoEngine.js
-+++ b/clipery/lib/linkVideoEngine.js
-@@ -38,9 +38,16 @@
-   try {
-     const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
-     const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
--    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) return r.x;
--    if (r && r.reason === "no-cv2") console.warn("[linkVideoEngine] face-follow off (pip install opencv-python-headless)");
--  } catch {}
-+    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) {
-+      console.log(`[face-follow][linkVideoEngine] speaker face at x=${r.x.toFixed(2)} (${r.faces || 0} faces)`);
-+      return r.x;
-+    }
-+    if (r && r.ok) console.log(`[face-follow][linkVideoEngine] no clear face -> centre crop (faces=${r.faces || 0})`);
-+    else if (r && r.reason === "no-cv2") console.warn("[face-follow][linkVideoEngine] off — run: pip install opencv-python-headless");
-+    else console.warn(`[face-follow][linkVideoEngine] detector problem: ${(r && r.error) || "unknown"} -> centre crop`);
-+  } catch (e) {
-+    console.warn(`[face-follow][linkVideoEngine] failed: ${e.message} -> centre crop`);
-+  }
-   return null;
- }
- 
+   // Face-follow: lock the portrait frame onto the speaker (centre crop fallback)
+   const faceX = await faceCenterX(source, start, end);
+@@ -357,7 +356,6 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
+   const vf = [
+     `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
+     crop,
+-    `drawbox=x=0:y=0:w=8:h=ih:color=${accent}:t=fill`,
+     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
+     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
+   ].join(",");

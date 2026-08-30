@@ -346,7 +346,6 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
   const dur = Math.max(0.5, end - start);
   const targetW = 608;
   const targetH = 1080;
-  const accent = mode.id === "viral" ? "0xFF4D6D" : "0x8B7CFF";
 
   // Face-follow: lock the portrait frame onto the speaker (centre crop fallback)
   const faceX = await faceCenterX(source, start, end);
@@ -357,7 +356,6 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
   const vf = [
     `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
     crop,
-    `drawbox=x=0:y=0:w=8:h=ih:color=${accent}:t=fill`,
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
   ].join(",");
