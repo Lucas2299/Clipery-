@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""PocketSphinx speech transcriber for Clipery karaoke subtitles.
+"""Speech transcriber for Clipery karaoke subtitles.
+
+Engine order (smartest first):
+1) faster-whisper  — big-brain accuracy, word timings, offline.
+                     pip install faster-whisper   (model downloads once, ~150MB)
+2) pocketsphinx    — tiny offline fallback (pip install pocketsphinx)
 
 Usage: transcribe.py <input media> <output> [start_offset_sec]
 
 - Converts input to 16k mono wav itself (via ffmpeg) when needed.
-- Decodes in 20s blocks for reliability, keeping global timestamps.
 - Output .json  -> word-level timings: {"words":[{"w":"hello","s":0.1,"e":0.4}, ...]}
   (used to build TikTok-style karaoke captions: word by word, left to right)
 - Output .srt   -> legacy phrase-level SRT (kept for compatibility)
 
-Requires: pip install pocketsphinx
+Model size can be tuned with env CLIPERY_WHISPER_MODEL (tiny|base|small).
 """
 import json
 import os
@@ -17,6 +21,9 @@ import re
 import subprocess
 import sys
 import wave
+
+FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
+_WHISPER_MODEL = None
 
 
 def to_wav(src: str, dst: str) -> None:
@@ -30,7 +37,7 @@ def to_wav(src: str, dst: str) -> None:
         except Exception:
             pass
     subprocess.run(
-        ["ffmpeg", "-y", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", dst],
+        [FFMPEG, "-y", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", dst],
         check=True,
     )
 
@@ -58,10 +65,52 @@ def clean_word(piece: str):
     return piece
 
 
-def transcribe(wav_path: str, offset: float = 0.0):
-    """Returns (entries, words):
-    entries = phrase-level [[start, end, text], ...] (for legacy SRT)
-    words   = [{"w": word, "s": start, "e": end}, ...] word-level timings"""
+def _monotonic(words):
+    prev = 0.0
+    for wd in words:
+        if wd["s"] < prev - 0.05:
+            wd["s"] = round(prev, 3)
+        if wd["e"] <= wd["s"]:
+            wd["e"] = round(wd["s"] + 0.12, 3)
+        prev = wd["e"]
+    return words
+
+
+def transcribe_whisper(wav_path: str, offset: float = 0.0):
+    """faster-whisper: human-grade word recognition with per-word timings."""
+    global _WHISPER_MODEL
+    from faster_whisper import WhisperModel
+
+    if _WHISPER_MODEL is None:
+        name = os.environ.get("CLIPERY_WHISPER_MODEL", "base")
+        _WHISPER_MODEL = WhisperModel(name, device="cpu", compute_type="int8")
+    segments, _info = _WHISPER_MODEL.transcribe(
+        wav_path, word_timestamps=True, vad_filter=True, beam_size=5
+    )
+    entries = []
+    words = []
+    for seg in segments:
+        seg_text = []
+        seg_start = None
+        seg_end = None
+        for w in (seg.words or []):
+            piece = clean_word((w.word or "").strip())
+            if piece is None or w.start is None or w.end is None:
+                continue
+            ws, we = w.start + offset, w.end + offset
+            words.append({"w": piece, "s": round(ws, 3), "e": round(we, 3)})
+            if seg_start is None:
+                seg_start = ws
+            seg_end = we
+            seg_text.append(piece)
+        if seg_text:
+            entries.append([seg_start, seg_end, " ".join(seg_text)])
+    print("engine=whisper", file=sys.stderr)
+    return entries, _monotonic(words)
+
+
+def transcribe_sphinx(wav_path: str, offset: float = 0.0):
+    """PocketSphinx fallback: offline classic decoder, 20s blocks."""
     from pocketsphinx import Decoder
 
     decoder = Decoder()
@@ -100,16 +149,16 @@ def transcribe(wav_path: str, offset: float = 0.0):
             if seg_text:
                 entries.append([seg_start, seg_end, " ".join(seg_text)])
             base += len(data) / float(sw * nc * fr)
+    print("engine=pocketsphinx", file=sys.stderr)
+    return entries, _monotonic(words)
 
-    # timing sanity: monotonic, minimum duration
-    prev = 0.0
-    for wd in words:
-        if wd["s"] < prev - 0.05:
-            wd["s"] = round(prev, 3)
-        if wd["e"] <= wd["s"]:
-            wd["e"] = round(wd["s"] + 0.12, 3)
-        prev = wd["e"]
-    return entries, words
+
+def transcribe(wav_path: str, offset: float = 0.0):
+    try:
+        return transcribe_whisper(wav_path, offset)
+    except Exception as e:
+        print(f"whisper unavailable ({e}) — falling back to pocketsphinx", file=sys.stderr)
+        return transcribe_sphinx(wav_path, offset)
 
 
 def chunk_captions(entries, max_dur=4.0, max_chars=42):

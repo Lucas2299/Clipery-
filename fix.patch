@@ -1,387 +1,159 @@
-diff --git a/clipery/public/index.html b/clipery/public/index.html
-index fc470e4..5e4d863 100644
---- a/clipery/public/index.html
-+++ b/clipery/public/index.html
-@@ -72,6 +72,7 @@
-       /* NAV */
-       .nav{position:sticky;top:0;z-index:40;backdrop-filter:blur(16px);background:rgba(8,8,12,.72);border-bottom:1px solid var(--line)}
-       .nav-in{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
-+      .brand-logo{height:30px;width:auto;display:block}
-       .brand{display:inline-flex;align-items:center;gap:.55rem;font-weight:700;letter-spacing:-.03em;font-size:1.05rem}
-       .mark{
-         width:32px;height:32px;border-radius:9px;
-@@ -287,7 +288,7 @@
- 
-     <header class="nav">
-       <div class="w nav-in">
--        <a class="brand" href="/"><span class="mark" aria-hidden="true"></span>Clipery</a>
-+        <a class="brand" href="/"><img class="brand-logo" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav-links">
-           <a href="#how">How it works</a>
-           <a href="#features">Features</a>
-@@ -503,7 +504,7 @@
- 
-     <footer class="foot">
-       <div class="w foot-in">
--        <a class="brand" href="/"><span class="mark"></span>Clipery</a>
-+        <a class="brand" href="/"><img class="brand-logo" src="/logo.png" alt="Clipery" /></a>
-         <div class="foot-links">
-           <a href="/studio">Studio</a>
-           <a href="/library">Library</a>
-diff --git a/clipery/public/job.html b/clipery/public/job.html
-index 4d4961e..ccb7b36 100644
---- a/clipery/public/job.html
-+++ b/clipery/public/job.html
-@@ -14,12 +14,7 @@
- 
-     <header class="header">
-       <div class="header-inner">
--        <a class="logo" href="/">
--          <span class="logo-mark" aria-hidden="true">
--            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
--          </span>
--          Clipery
--        </a>
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/studio" data-nav>Studio</a>
-           <a href="/rank" data-nav>Rank video</a>
-diff --git a/clipery/public/library.html b/clipery/public/library.html
-index bd68567..8da4245 100644
---- a/clipery/public/library.html
-+++ b/clipery/public/library.html
-@@ -15,12 +15,7 @@
- 
-     <header class="header">
-       <div class="header-inner">
--        <a class="logo" href="/">
--          <span class="logo-mark" aria-hidden="true">
--            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
--          </span>
--          Clipery
--        </a>
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/studio" data-nav>Studio</a>
-           <a href="/rank" data-nav>Rank video</a>
-diff --git a/clipery/public/logo.png b/clipery/public/logo.png
-new file mode 100644
-index 0000000000000000000000000000000000000000..ba69d711e7827def881397fc524cb74ed4b91b43
-GIT binary patch
-literal 8212
-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
-
-literal 0
-HcmV?d00001
-
-diff --git a/clipery/public/logo.svg b/clipery/public/logo.svg
-new file mode 100644
-index 0000000..5e793c7
---- /dev/null
-+++ b/clipery/public/logo.svg
-@@ -0,0 +1,61 @@
-+<svg xmlns="http://www.w3.org/2000/svg" width="245" height="64" viewBox="0 0 245 64" role="img" aria-label="Clipery">
-+  <defs>
-+    <linearGradient id="ring" x1="0" y1="0" x2="0.9" y2="1">
-+      <stop offset="0" stop-color="#FFB03A"/>
-+      <stop offset="0.45" stop-color="#FF7A52"/>
-+      <stop offset="1" stop-color="#F02E8A"/>
-+    </linearGradient>
-+    <linearGradient id="word" x1="0" y1="0" x2="1" y2="0">
-+      <stop offset="0" stop-color="#FFB03A"/>
-+      <stop offset="0.35" stop-color="#FF8A4E"/>
-+      <stop offset="0.68" stop-color="#FF5A63"/>
-+      <stop offset="1" stop-color="#F02E8A"/>
-+    </linearGradient>
-+    <linearGradient id="play" x1="0" y1="0" x2="0" y2="1">
-+      <stop offset="0" stop-color="#FFE0BA"/>
-+      <stop offset="1" stop-color="#FF9E5C"/>
-+    </linearGradient>
-+  </defs>
+--- a/clipery/lib/transcribe.py
++++ b/clipery/lib/transcribe.py
+@@ -1,15 +1,19 @@
+ #!/usr/bin/env python3
+-"""PocketSphinx speech transcriber for Clipery karaoke subtitles.
++"""Speech transcriber for Clipery karaoke subtitles.
 +
-+  <!-- circuit traces on the left -->
-+  <g stroke="#C73568" stroke-width="2" fill="none" stroke-linecap="round">
-+    <path d="M4 18 h7 l3 3 h6"/>
-+    <path d="M3 26 h10 l4 4 h4"/>
-+    <path d="M4 33 h14"/>
-+    <path d="M3 40 h9 l3 -3 h5"/>
-+    <path d="M5 47 h6 l4 -4 h5"/>
-+  </g>
-+  <g fill="#E0487C">
-+    <circle cx="4" cy="18" r="2.2"/>
-+    <circle cx="3" cy="26" r="2.2"/>
-+    <circle cx="4" cy="33" r="2.2"/>
-+    <circle cx="3" cy="40" r="2.2"/>
-+    <circle cx="5" cy="47" r="2.2"/>
-+  </g>
-+
-+  <!-- dark disc inside the C -->
-+  <circle cx="26" cy="32" r="14.5" fill="#31102B" opacity="0.92"/>
-+
-+  <!-- traces printed on the disc -->
-+  <g stroke="#8E2450" stroke-width="1.6" fill="none" stroke-linecap="round">
-+    <path d="M20 21 l6 5"/>
-+    <path d="M21 30 l5 2"/>
-+    <path d="M16 33 h6"/>
-+    <path d="M19 43 l5 -4"/>
-+  </g>
-+  <g fill="#D13A6B">
-+    <circle cx="20" cy="21" r="1.5"/>
-+    <circle cx="21" cy="30" r="1.5"/>
-+    <circle cx="16" cy="33" r="1.5"/>
-+    <circle cx="19" cy="43" r="1.5"/>
-+  </g>
-+
-+  <!-- the big C ring -->
-+  <path d="M 49.2 44 A 21 21 0 1 1 49.2 20" fill="none" stroke="url(#ring)" stroke-width="8" stroke-linecap="round"/>
-+
-+  <!-- play button -->
-+  <path d="M27 24 L27 40 L41 32 Z" fill="url(#play)" stroke="#FFE8D0" stroke-width="1" stroke-linejoin="round"/>
-+
-+  <!-- wordmark -->
-+  <text x="68" y="43" font-family="'Arial Black','Helvetica Neue',Arial,'DejaVu Sans',sans-serif" font-weight="900" font-size="30" letter-spacing="1.5" fill="url(#word)">CLIPERY</text>
-+</svg>
-diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
-index cd0b53f..1cbda85 100644
---- a/clipery/public/pricing.html
-+++ b/clipery/public/pricing.html
-@@ -14,12 +14,7 @@
++Engine order (smartest first):
++1) faster-whisper  — big-brain accuracy, word timings, offline.
++                     pip install faster-whisper   (model downloads once, ~150MB)
++2) pocketsphinx    — tiny offline fallback (pip install pocketsphinx)
  
-     <header class="header">
-       <div class="header-inner">
--        <a class="logo" href="/">
--          <span class="logo-mark" aria-hidden="true">
--            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
--          </span>
--          Clipery
--        </a>
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/studio" data-nav>Studio</a>
-           <a href="/rank" data-nav>Rank video</a>
-diff --git a/clipery/public/rank.html b/clipery/public/rank.html
-index be97c73..d23d3b4 100644
---- a/clipery/public/rank.html
-+++ b/clipery/public/rank.html
-@@ -15,12 +15,7 @@
+ Usage: transcribe.py <input media> <output> [start_offset_sec]
  
-     <header class="header">
-       <div class="header-inner">
--        <a class="logo" href="/">
--          <span class="logo-mark" aria-hidden="true">
--            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
--          </span>
--          Clipery
--        </a>
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/studio" data-nav>Studio</a>
-           <a href="/rank" data-nav>Rank video</a>
-diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index af338f1..4cc4f34 100644
---- a/clipery/public/studio.html
-+++ b/clipery/public/studio.html
-@@ -125,12 +125,7 @@
+ - Converts input to 16k mono wav itself (via ffmpeg) when needed.
+-- Decodes in 20s blocks for reliability, keeping global timestamps.
+ - Output .json  -> word-level timings: {"words":[{"w":"hello","s":0.1,"e":0.4}, ...]}
+   (used to build TikTok-style karaoke captions: word by word, left to right)
+ - Output .srt   -> legacy phrase-level SRT (kept for compatibility)
  
-     <header class="header studio-header">
-       <div class="header-inner">
--        <a class="logo" href="/">
--          <span class="logo-mark" aria-hidden="true">
--            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
--          </span>
--          Clipery
--        </a>
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav">
-           <a href="/studio" class="active">Studio</a>
-           <a href="/library">Library</a>
-diff --git a/clipery/public/styles.css b/clipery/public/styles.css
-index 7fafc3c..cac4e6b 100644
---- a/clipery/public/styles.css
-+++ b/clipery/public/styles.css
-@@ -2712,3 +2712,10 @@ body.studio-app {
-   width: 5px; height: 5px; border-radius: 50%; background: var(--accent-3);
+-Requires: pip install pocketsphinx
++Model size can be tuned with env CLIPERY_WHISPER_MODEL (tiny|base|small).
+ """
+ import json
+ import os
+@@ -17,6 +21,9 @@
+ import subprocess
+ import sys
+ import wave
++
++FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
++_WHISPER_MODEL = None
+ 
+ 
+ def to_wav(src: str, dst: str) -> None:
+@@ -30,7 +37,7 @@
+         except Exception:
+             pass
+     subprocess.run(
+-        ["ffmpeg", "-y", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", dst],
++        [FFMPEG, "-y", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", dst],
+         check=True,
+     )
+ 
+@@ -58,10 +65,52 @@
+     return piece
+ 
+ 
+-def transcribe(wav_path: str, offset: float = 0.0):
+-    """Returns (entries, words):
+-    entries = phrase-level [[start, end, text], ...] (for legacy SRT)
+-    words   = [{"w": word, "s": start, "e": end}, ...] word-level timings"""
++def _monotonic(words):
++    prev = 0.0
++    for wd in words:
++        if wd["s"] < prev - 0.05:
++            wd["s"] = round(prev, 3)
++        if wd["e"] <= wd["s"]:
++            wd["e"] = round(wd["s"] + 0.12, 3)
++        prev = wd["e"]
++    return words
++
++
++def transcribe_whisper(wav_path: str, offset: float = 0.0):
++    """faster-whisper: human-grade word recognition with per-word timings."""
++    global _WHISPER_MODEL
++    from faster_whisper import WhisperModel
++
++    if _WHISPER_MODEL is None:
++        name = os.environ.get("CLIPERY_WHISPER_MODEL", "base")
++        _WHISPER_MODEL = WhisperModel(name, device="cpu", compute_type="int8")
++    segments, _info = _WHISPER_MODEL.transcribe(
++        wav_path, word_timestamps=True, vad_filter=True, beam_size=5
++    )
++    entries = []
++    words = []
++    for seg in segments:
++        seg_text = []
++        seg_start = None
++        seg_end = None
++        for w in (seg.words or []):
++            piece = clean_word((w.word or "").strip())
++            if piece is None or w.start is None or w.end is None:
++                continue
++            ws, we = w.start + offset, w.end + offset
++            words.append({"w": piece, "s": round(ws, 3), "e": round(we, 3)})
++            if seg_start is None:
++                seg_start = ws
++            seg_end = we
++            seg_text.append(piece)
++        if seg_text:
++            entries.append([seg_start, seg_end, " ".join(seg_text)])
++    print("engine=whisper", file=sys.stderr)
++    return entries, _monotonic(words)
++
++
++def transcribe_sphinx(wav_path: str, offset: float = 0.0):
++    """PocketSphinx fallback: offline classic decoder, 20s blocks."""
+     from pocketsphinx import Decoder
+ 
+     decoder = Decoder()
+@@ -100,16 +149,16 @@
+             if seg_text:
+                 entries.append([seg_start, seg_end, " ".join(seg_text)])
+             base += len(data) / float(sw * nc * fr)
+-
+-    # timing sanity: monotonic, minimum duration
+-    prev = 0.0
+-    for wd in words:
+-        if wd["s"] < prev - 0.05:
+-            wd["s"] = round(prev, 3)
+-        if wd["e"] <= wd["s"]:
+-            wd["e"] = round(wd["s"] + 0.12, 3)
+-        prev = wd["e"]
+-    return entries, words
++    print("engine=pocketsphinx", file=sys.stderr)
++    return entries, _monotonic(words)
++
++
++def transcribe(wav_path: str, offset: float = 0.0):
++    try:
++        return transcribe_whisper(wav_path, offset)
++    except Exception as e:
++        print(f"whisper unavailable ({e}) — falling back to pocketsphinx", file=sys.stderr)
++        return transcribe_sphinx(wav_path, offset)
+ 
+ 
+ def chunk_captions(entries, max_dur=4.0, max_chars=42):
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -135,15 +135,19 @@
+ let engineCache = null;
+ function subtitlesAvailable() {
+   if (engineCache !== null) return engineCache;
+-  try {
+-    const r = spawnSync(PY, ["-c", "import pocketsphinx"], { encoding: "utf8" });
+-    engineCache = r.status === 0;
+-  } catch {
+-    engineCache = false;
+-  }
+-  if (!engineCache) {
+-    console.warn("[subtitles] pocketsphinx not installed (pip install pocketsphinx) — subtitles skipped");
+-  }
++  // Big brain first: faster-whisper (pip install faster-whisper).
++  // Tiny backup: pocketsphinx (pip install pocketsphinx). Either one works.
++  for (const mod of ["faster_whisper", "pocketsphinx"]) {
++    try {
++      const r = spawnSync(PY, ["-c", `import ${mod}`], { encoding: "utf8" });
++      if (r.status === 0) {
++        engineCache = true;
++        return true;
++      }
++    } catch {}
++  }
++  engineCache = false;
++  console.warn("[subtitles] no speech engine installed (pip install faster-whisper — or pocketsphinx) — subtitles skipped");
+   return engineCache;
  }
- .clip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.9rem; }
-+
-+/* brand logo image in the top bar */
-+.logo-img {
-+  height: 30px;
-+  width: auto;
-+  display: block;
-+}
-diff --git a/clipery/public/waitlist.html b/clipery/public/waitlist.html
-index 88a27e5..0fef211 100644
---- a/clipery/public/waitlist.html
-+++ b/clipery/public/waitlist.html
-@@ -14,12 +14,7 @@
  
-     <header class="header">
-       <div class="header-inner">
--        <a class="logo" href="/">
--          <span class="logo-mark" aria-hidden="true">
--            <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="white"/><path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="white" fill-opacity="0.9"/></svg>
--          </span>
--          Clipery
--        </a>
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/studio" data-nav>Studio</a>
-           <a href="/rank" data-nav>Rank video</a>

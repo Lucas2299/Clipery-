@@ -135,15 +135,19 @@ function normalizeSubStyle(input = {}) {
 let engineCache = null;
 function subtitlesAvailable() {
   if (engineCache !== null) return engineCache;
-  try {
-    const r = spawnSync(PY, ["-c", "import pocketsphinx"], { encoding: "utf8" });
-    engineCache = r.status === 0;
-  } catch {
-    engineCache = false;
+  // Big brain first: faster-whisper (pip install faster-whisper).
+  // Tiny backup: pocketsphinx (pip install pocketsphinx). Either one works.
+  for (const mod of ["faster_whisper", "pocketsphinx"]) {
+    try {
+      const r = spawnSync(PY, ["-c", `import ${mod}`], { encoding: "utf8" });
+      if (r.status === 0) {
+        engineCache = true;
+        return true;
+      }
+    } catch {}
   }
-  if (!engineCache) {
-    console.warn("[subtitles] pocketsphinx not installed (pip install pocketsphinx) — subtitles skipped");
-  }
+  engineCache = false;
+  console.warn("[subtitles] no speech engine installed (pip install faster-whisper — or pocketsphinx) — subtitles skipped");
   return engineCache;
 }
 
