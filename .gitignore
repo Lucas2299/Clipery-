@@ -4,7 +4,3 @@ clipery/public/clips/*
 !clipery/public/clips/.gitkeep
 clipery/tmp/*
 !clipery/tmp/.gitkeep
-
-# accounts (local only — never commit password hashes or sessions)
-clipery/data/users.json
-clipery/data/sessions.json

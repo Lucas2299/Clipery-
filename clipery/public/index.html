@@ -295,9 +295,9 @@
           <a href="#pricing">Pricing</a>
           <a href="https://openart.ai/suite/create-image" title="Image Generator — generate stunning images from text prompts">Images</a>
         </nav>
-        <div class="nav-cta" id="nav-cta">
-          <a class="btn btn-ghost" href="/login">Log in</a>
-          <a class="btn btn-primary" href="/register">Start free</a>
+        <div class="nav-cta">
+          <a class="btn btn-ghost" href="/waitlist">Waitlist</a>
+          <a class="btn btn-primary" href="/studio">Start free</a>
         </div>
       </div>
     </header>
@@ -311,7 +311,7 @@
           cuts them into ranked shorts, and stitches countdown ranking videos from up to 5 sources.
         </p>
         <div class="hero-cta">
-          <a class="btn btn-primary btn-lg" href="/register">Start clipping free</a>
+          <a class="btn btn-primary btn-lg" href="/studio">Start clipping free</a>
           <a class="btn btn-ghost btn-lg" href="#pricing">View pricing</a>
         </div>
       </section>
@@ -727,25 +727,6 @@
         window.addEventListener("resize", function () { resize(); seedParticles(); seedFrames(); if (reduced) draw(); });
         boot();
       })();
-    </script>
-    <script>
-      // Logged in? Swap the landing CTAs for a straight shot into the Studio.
-      fetch("/api/auth/me")
-        .then(function (r) { return r.json(); })
-        .then(function (d) {
-          if (!d || !d.user) return;
-          var cta = document.getElementById("nav-cta");
-          if (cta) {
-            cta.innerHTML =
-              '<a class="btn btn-ghost" href="/library">Library</a>' +
-              '<a class="btn btn-primary" href="/studio">Open Studio</a>';
-          }
-          document.querySelectorAll('a[href="/register"]').forEach(function (a) {
-            a.setAttribute("href", "/studio");
-            if (/start/i.test(a.textContent)) a.textContent = "Open Studio";
-          });
-        })
-        .catch(function () {});
     </script>
   </body>
 </html>

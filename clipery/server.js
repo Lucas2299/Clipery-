@@ -19,7 +19,6 @@ const {
   downloadUrl,
 } = require("./lib/linkVideoEngine");
 const { normalizeSubStyle } = require("./lib/subtitles");
-const auth = require("./lib/auth");
 
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
@@ -74,44 +73,7 @@ const ROUTES = {
   "/waitlist.html": "waitlist.html",
   "/job": "job.html",
   "/job.html": "job.html",
-  "/login": "login.html",
-  "/login.html": "login.html",
-  "/register": "login.html",
-  "/register.html": "login.html",
 };
-
-// Pages that require an account. Everything else stays public.
-const PROTECTED_PAGES = [
-  "/studio",
-  "/studio.html",
-  "/library",
-  "/library.html",
-  "/rank",
-  "/rank.html",
-  "/job",
-  "/job.html",
-];
-const PROTECTED_API = [
-  "/api/clip/upload",
-  "/api/clip/from-url",
-  "/api/clip/sample",
-  "/api/rank/video/links",
-  "/api/rank/video/upload",
-  "/api/rank/links",
-  "/api/jobs",
-];
-
-function isProtectedPage(pathname) {
-  if (PROTECTED_PAGES.includes(pathname)) return true;
-  if (/^\/job\/[a-f0-9]+$/i.test(pathname)) return true;
-  if (/^\/board\/[a-f0-9]+$/i.test(pathname)) return true;
-  return false;
-}
-function isProtectedApi(pathname, method) {
-  if (pathname === "/api/rank/links" && method === "GET") return true;
-  if (pathname === "/api/jobs" && method === "GET") return true;
-  return PROTECTED_API.includes(pathname) && method === "POST";
-}
 
 let busy = false;
 const queue = [];
@@ -237,24 +199,9 @@ function serveFile(req, res, fullPath) {
   });
 }
 
-function serveStatic(req, res, pathname, search) {
+function serveStatic(req, res, pathname) {
   // strip query already done by URL
   let clean = pathname.split("?")[0];
-
-  // Studio & co. are members-only — bounce guests to the login page and
-  // remember where they were headed so we can send them back after login.
-  if (isProtectedPage(clean) && !auth.currentUser(req)) {
-    const next = encodeURIComponent(clean + (search || ""));
-    res.writeHead(302, { Location: `/login?next=${next}`, "Cache-Control": "no-store" });
-    res.end();
-    return;
-  }
-  // Already signed in? The login page has nothing to offer.
-  if ((clean === "/login" || clean === "/register") && auth.currentUser(req)) {
-    res.writeHead(302, { Location: "/studio", "Cache-Control": "no-store" });
-    res.end();
-    return;
-  }
   // Studio is the hub — Rank video lives under Studio
   if (clean === "/rank" || clean === "/rank.html") {
     res.writeHead(302, { Location: "/studio?tool=rank", "Cache-Control": "no-store" });
@@ -428,48 +375,6 @@ const server = http.createServer(async (req, res) => {
   }
 
   try {
-    /* ------------------------------ accounts ------------------------------ */
-    if (pathname === "/api/auth/register" && req.method === "POST") {
-      let body = {};
-      try {
-        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
-      } catch {
-        return send(res, 400, { ok: false, error: "Invalid request." });
-      }
-      const result = auth.registerUser(body);
-      if (!result.ok) return send(res, result.status || 400, { ok: false, error: result.error });
-      const { cookie } = auth.createSession(result.user.id);
-      return send(res, 201, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
-    }
-
-    if (pathname === "/api/auth/login" && req.method === "POST") {
-      let body = {};
-      try {
-        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
-      } catch {
-        return send(res, 400, { ok: false, error: "Invalid request." });
-      }
-      const result = auth.loginUser(body);
-      if (!result.ok) return send(res, result.status || 401, { ok: false, error: result.error });
-      const { cookie } = auth.createSession(result.user.id);
-      return send(res, 200, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
-    }
-
-    if (pathname === "/api/auth/logout" && req.method === "POST") {
-      auth.destroySession(auth.parseCookies(req)[auth.COOKIE]);
-      return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie() });
-    }
-
-    if (pathname === "/api/auth/me" && req.method === "GET") {
-      const user = auth.currentUser(req);
-      return send(res, 200, { ok: true, user: auth.publicUser(user) });
-    }
-
-    // Locked API: no account, no clipping.
-    if (isProtectedApi(pathname, req.method) && !auth.currentUser(req)) {
-      return send(res, 401, { ok: false, error: "Please log in to use the Studio.", login: "/login" });
-    }
-
     // Health
     if (pathname === "/api/health" && req.method === "GET") {
       return send(res, 200, {
@@ -974,7 +879,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    serveStatic(req, res, pathname, url.search);
+    serveStatic(req, res, pathname);
   } catch (e) {
     console.error(e);
     send(res, 500, { ok: false, error: e.message || "Server error" });
