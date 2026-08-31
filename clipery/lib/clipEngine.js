@@ -603,8 +603,13 @@ async function processVideo(sourcePath, options = {}) {
     if (!meta.duration || meta.duration < 8) {
       throw new Error("Video is too short. Use at least ~15 seconds.");
     }
-    if (meta.duration > 20 * 60) {
-      throw new Error("Demo limit is 20 minutes. Trim your video and retry.");
+    // Length cap comes from the account's plan (Free is 20 minutes).
+    const maxMinutes = Number(options.maxMinutes) || 20;
+    if (meta.duration > maxMinutes * 60) {
+      const mins = Math.ceil(meta.duration / 60);
+      throw new Error(
+        `Your ${options.planLabel || "current"} plan allows videos up to ${maxMinutes} minutes - this one is ${mins} minutes. Trim it or upgrade your plan.`
+      );
     }
 
     job.duration = +meta.duration.toFixed(2);
@@ -677,7 +682,9 @@ async function processVideo(sourcePath, options = {}) {
 
     // The clips we will actually ship (score-ranked, non-overlapping, spread
     // across the whole source) - also used for the post-order preview.
-    const previewTop = pickDiverse(scored, Math.min(mode.maxClips, scored.length), meta.duration);
+    // How many clips this account gets out of one source video
+    const clipBudget = Math.max(1, Math.min(mode.maxClips, Number(options.maxClips) || mode.maxClips));
+    const previewTop = pickDiverse(scored, Math.min(clipBudget, scored.length), meta.duration);
 
     // Full viral leaderboard (all analyzed moments)
     job.rankings = scored.map((c, i) => ({
@@ -710,7 +717,7 @@ async function processVideo(sourcePath, options = {}) {
           : `AI analyzed ${scored.length} moments. Best clip scored ${scored[0]?.score || 0} - still worth testing.`,
     };
 
-    const topN = Math.min(mode.maxClips, scored.length);
+    const topN = Math.min(clipBudget, scored.length);
     // Best scores first, but non-overlapping and spread across the source so
     // the clip set represents the whole video instead of its opening minutes.
     const top = previewTop;

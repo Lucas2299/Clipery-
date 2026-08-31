@@ -300,12 +300,44 @@
     nav.appendChild(wrap);
   }
 
+  /** Tell the member what their plan allows, right above the upload box. */
+  function renderPlanNote(user) {
+    if (!user) return;
+    var host = document.querySelector(".studio-page-head") || document.querySelector(".studio-shell");
+    if (!host || document.getElementById("plan-note")) return;
+
+    var note = document.createElement("p");
+    note.id = "plan-note";
+    note.style.cssText =
+      "margin:-.3rem 0 1.1rem;font-size:.85rem;color:#9894a6;background:rgba(255,255,255,.04);" +
+      "border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:.6rem .85rem";
+
+    var left = user.videosLeft;
+    if (left === 0) {
+      note.style.borderColor = "rgba(255,77,109,.45)";
+      note.style.color = "#ffb3c1";
+      note.innerHTML =
+        "<b style='color:#fff'>" + escapeHtml(user.planLabel) + " plan:</b> no videos left this month. " +
+        "<a href='/pricing' style='color:#ff8a4c;font-weight:700;text-decoration:none'>See plans</a>";
+    } else {
+      note.innerHTML =
+        "<b style='color:#f4f1ea'>" + escapeHtml(user.planLabel) + " plan:</b> " +
+        (left === null ? "unlimited videos" : left + " video" + (left === 1 ? "" : "s") + " left this month") +
+        " &middot; up to " + user.maxMinutes + " min per video" +
+        " &middot; " + user.maxClipsPerVideo + " clips per video";
+    }
+    host.parentNode.insertBefore(note, host.nextSibling);
+  }
+
   // Boot common chrome
   document.addEventListener("DOMContentLoaded", function () {
     setActiveNav();
     yearStamp();
     if (!/^\/login|^\/register/.test(location.pathname)) {
-      loadUser().then(renderAccountChip);
+      loadUser().then(function (user) {
+        renderAccountChip(user);
+        renderPlanNote(user);
+      });
     }
   });
 

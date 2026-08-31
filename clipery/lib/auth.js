@@ -232,10 +232,13 @@ const clearCookie = () => sessionCookie("", 0);
  * The owner can change a plan or hand out bonus videos from the dashboard.
  */
 const PLANS = {
-  free: { id: "free", label: "Free", videos: 5 },
-  plus: { id: "plus", label: "Plus", videos: 50 },
-  pro: { id: "pro", label: "Pro", videos: 200 },
-  unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity },
+  // videos     - long-form sources you may run per month
+  // maxMinutes - how long each source video may be
+  // maxClips   - how many clips we cut out of ONE source video
+  free: { id: "free", label: "Free", videos: 3, maxMinutes: 20, maxClips: 3 },
+  plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
+  pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
+  unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
 };
 
 const currentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM
@@ -305,6 +308,8 @@ function listUsers() {
       role: isAdmin(u) ? "owner" : "member",
       bonusVideos: Number(u.bonusVideos) || 0,
       planLabel: planOf(u).label,
+      maxMinutes: planOf(u).maxMinutes,
+      maxClips: planOf(u).maxClips,
       used: usageOf(u).videos,
       limit: limit === Infinity ? null : limit,
       remaining: remainingVideos(u) === Infinity ? null : remainingVideos(u),
