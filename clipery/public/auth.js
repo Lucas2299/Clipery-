@@ -55,6 +55,31 @@
     });
   }
 
+  /* Social buttons: only show the providers this server actually has keys for,
+     and carry the ?next= target through the round-trip. */
+  (function socialSetup() {
+    var box = document.getElementById("social");
+    if (!box) return;
+    fetch("/api/auth/providers")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var p = (d && d.providers) || {};
+        var google = document.getElementById("btn-google");
+        var apple = document.getElementById("btn-apple");
+        var next = encodeURIComponent(nextUrl());
+        if (p.google) google.href = "/api/auth/google?next=" + next; else google.remove();
+        if (p.apple) apple.href = "/api/auth/apple?next=" + next; else apple.remove();
+        if (p.google || p.apple) box.classList.add("on");
+      })
+      .catch(function () {});
+  })();
+
+  // A failed social round-trip comes back as /login?error=…
+  (function showOauthError() {
+    var err = new URLSearchParams(location.search).get("error");
+    if (err) say(err);
+  })();
+
   tabLogin.addEventListener("click", function () { setMode("login"); });
   tabRegister.addEventListener("click", function () { setMode("register"); });
   bindSwitch();

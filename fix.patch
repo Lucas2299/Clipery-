@@ -1,740 +1,510 @@
-diff --git a/.gitignore b/.gitignore
-index b3b5f4b..df1554b 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -4,3 +4,7 @@ clipery/public/clips/*
- !clipery/public/clips/.gitkeep
- clipery/tmp/*
- !clipery/tmp/.gitkeep
+diff --git a/clipery/README.md b/clipery/README.md
+index 90caceb..c27210a 100644
+--- a/clipery/README.md
++++ b/clipery/README.md
+@@ -50,3 +50,31 @@ Open http://localhost:3000
+ - `GET/POST /api/rank/links`
+ - `GET /api/rank/links/:id`
+ - `GET/POST /api/waitlist`
 +
-+# accounts (local only — never commit password hashes or sessions)
-+clipery/data/users.json
-+clipery/data/sessions.json
++## Sign in with Google / Apple (optional)
++
++Email + password works out of the box. To switch on the social buttons, set
++these environment variables before `npm start` — any provider you leave unset
++is simply hidden on the login page.
++
++```bash
++# Google — https://console.cloud.google.com/apis/credentials
++# Create an "OAuth client ID" (Web application) and add this redirect URI:
++#   https://YOUR-DOMAIN/api/auth/google/callback
++export GOOGLE_CLIENT_ID="....apps.googleusercontent.com"
++export GOOGLE_CLIENT_SECRET="...."
++
++# Apple — https://developer.apple.com/account/resources/identifiers
++# Needs a Services ID + a Sign in with Apple key (.p8). Return URL:
++#   https://YOUR-DOMAIN/api/auth/apple/callback
++export APPLE_CLIENT_ID="com.yourcompany.clipery.web"   # the Services ID
++export APPLE_TEAM_ID="ABCDE12345"
++export APPLE_KEY_ID="XYZ9876543"
++export APPLE_PRIVATE_KEY_FILE="/path/to/AuthKey_XYZ9876543.p8"
++
++# Only needed behind a proxy/CDN so the redirect URI is built correctly
++export BASE_URL="https://YOUR-DOMAIN"
++```
++
++Apple requires HTTPS for the return URL, so Apple sign-in cannot be tested on
++plain `http://localhost` — Google can.
 diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
-new file mode 100644
-index 0000000..166f899
---- /dev/null
+index 166f899..27eeddf 100644
+--- a/clipery/lib/auth.js
 +++ b/clipery/lib/auth.js
-@@ -0,0 +1,192 @@
+@@ -81,7 +81,14 @@ const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(e))
+ /** What the browser is allowed to know about an account. */
+ function publicUser(u) {
+   if (!u) return null;
+-  return { id: u.id, email: u.email, name: u.name || "", createdAt: u.createdAt, plan: u.plan || "free" };
++  return {
++    id: u.id,
++    email: u.email,
++    name: u.name || "",
++    createdAt: u.createdAt,
++    plan: u.plan || "free",
++    providers: u.providers || (u.hash ? ["password"] : []),
++  };
+ }
+ 
+ function parseCookies(req) {
+@@ -137,8 +144,46 @@ function registerUser({ email, password, name }) {
+   return { ok: true, user };
+ }
+ 
 +/**
-+ * Clipery accounts — register / login / sessions.
-+ *
-+ * Zero dependencies on purpose (the whole project runs on plain Node):
-+ *  - users live in data/users.json
-+ *  - passwords are scrypt hashes with a per-user random salt (never plain text)
-+ *  - sessions live in data/sessions.json and are carried by an HttpOnly cookie
++ * Log in (or transparently sign up) via Google / Apple.
++ * Matching is by email, so signing in with Google to an address that already
++ * has a password account simply logs into that same account.
 + */
-+const fs = require("fs");
-+const path = require("path");
-+const crypto = require("crypto");
-+
-+const ROOT = path.join(__dirname, "..");
-+const DATA_DIR = path.join(ROOT, "data");
-+const USERS_FILE = path.join(DATA_DIR, "users.json");
-+const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
-+
-+const COOKIE = "clipery_sid";
-+const SESSION_DAYS = 30;
-+
-+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-+for (const [file, seed] of [
-+  [USERS_FILE, { users: [] }],
-+  [SESSIONS_FILE, { sessions: [] }],
-+]) {
-+  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(seed, null, 2));
-+}
-+
-+/* ---------------------------------- store --------------------------------- */
-+
-+function readJson(file, fallback) {
-+  try {
-+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
-+    return data && typeof data === "object" ? data : fallback;
-+  } catch {
-+    return fallback;
-+  }
-+}
-+function writeJson(file, data) {
-+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-+}
-+function readUsers() {
-+  const d = readJson(USERS_FILE, { users: [] });
-+  return Array.isArray(d.users) ? d.users : [];
-+}
-+function writeUsers(users) {
-+  writeJson(USERS_FILE, { users });
-+}
-+function readSessions() {
-+  const d = readJson(SESSIONS_FILE, { sessions: [] });
-+  const now = Date.now();
-+  const live = (Array.isArray(d.sessions) ? d.sessions : []).filter((s) => s.expires > now);
-+  if (live.length !== (d.sessions || []).length) writeJson(SESSIONS_FILE, { sessions: live });
-+  return live;
-+}
-+function writeSessions(sessions) {
-+  writeJson(SESSIONS_FILE, { sessions });
-+}
-+
-+/* -------------------------------- passwords -------------------------------- */
-+
-+function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
-+  const hash = crypto.scryptSync(String(password), salt, 64).toString("hex");
-+  return { salt, hash };
-+}
-+function verifyPassword(password, salt, hash) {
-+  try {
-+    const candidate = crypto.scryptSync(String(password), salt, 64);
-+    const known = Buffer.from(String(hash), "hex");
-+    return known.length === candidate.length && crypto.timingSafeEqual(known, candidate);
-+  } catch {
-+    return false;
-+  }
-+}
-+
-+/* --------------------------------- helpers --------------------------------- */
-+
-+const normalizeEmail = (e) => String(e || "").trim().toLowerCase();
-+const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(e));
-+
-+/** What the browser is allowed to know about an account. */
-+function publicUser(u) {
-+  if (!u) return null;
-+  return { id: u.id, email: u.email, name: u.name || "", createdAt: u.createdAt, plan: u.plan || "free" };
-+}
-+
-+function parseCookies(req) {
-+  const out = {};
-+  const raw = req.headers.cookie || "";
-+  for (const part of raw.split(";")) {
-+    const i = part.indexOf("=");
-+    if (i < 0) continue;
-+    out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
-+  }
-+  return out;
-+}
-+
-+function sessionCookie(token, maxAgeSec) {
-+  const bits = [
-+    `${COOKIE}=${token}`,
-+    "Path=/",
-+    "HttpOnly",
-+    "SameSite=Lax",
-+    `Max-Age=${maxAgeSec}`,
-+  ];
-+  return bits.join("; ");
-+}
-+
-+/* --------------------------------- accounts -------------------------------- */
-+
-+function findUserByEmail(email) {
-+  const target = normalizeEmail(email);
-+  return readUsers().find((u) => normalizeEmail(u.email) === target) || null;
-+}
-+
-+function registerUser({ email, password, name }) {
++function upsertSocialUser({ email, name, provider }) {
 +  const mail = normalizeEmail(email);
-+  if (!isValidEmail(mail)) return { ok: false, status: 400, error: "Enter a valid email address." };
-+  if (String(password || "").length < 8)
-+    return { ok: false, status: 400, error: "Password must be at least 8 characters." };
-+  if (findUserByEmail(mail))
-+    return { ok: false, status: 409, error: "That email already has an account. Log in instead." };
++  if (!isValidEmail(mail)) return { ok: false, status: 400, error: "That account has no usable email." };
 +
-+  const { salt, hash } = hashPassword(password);
++  const users = readUsers();
++  const existing = users.find((u) => normalizeEmail(u.email) === mail);
++  if (existing) {
++    const known = existing.providers || (existing.hash ? ["password"] : []);
++    existing.providers = Array.from(new Set([...known, provider]));
++    if (!existing.name && name) existing.name = String(name).slice(0, 60);
++    writeUsers(users);
++    return { ok: true, user: existing, created: false };
++  }
++
 +  const user = {
 +    id: crypto.randomBytes(8).toString("hex"),
 +    email: mail,
 +    name: String(name || "").trim().slice(0, 60),
-+    salt,
-+    hash,
++    salt: "",
++    hash: "", // social-only account: no password to guess
++    providers: [provider],
 +    plan: "free",
 +    createdAt: new Date().toISOString(),
 +  };
-+  const users = readUsers();
 +  users.push(user);
 +  writeUsers(users);
-+  return { ok: true, user };
++  return { ok: true, user, created: true };
 +}
 +
-+function loginUser({ email, password }) {
-+  const user = findUserByEmail(email);
-+  // Same message either way so nobody can probe which emails exist.
-+  if (!user || !verifyPassword(password, user.salt, user.hash))
-+    return { ok: false, status: 401, error: "Wrong email or password." };
-+  return { ok: true, user };
+ function loginUser({ email, password }) {
+   const user = findUserByEmail(email);
++  if (user && !user.hash) {
++    const via = (user.providers || []).includes("apple") ? "Apple" : "Google";
++    return { ok: false, status: 401, error: `This account uses Sign in with ${via}.` };
++  }
+   // Same message either way so nobody can probe which emails exist.
+   if (!user || !verifyPassword(password, user.salt, user.hash))
+     return { ok: false, status: 401, error: "Wrong email or password." };
+@@ -182,6 +227,7 @@ module.exports = {
+   COOKIE,
+   registerUser,
+   loginUser,
++  upsertSocialUser,
+   createSession,
+   destroySession,
+   currentUser,
+diff --git a/clipery/lib/oauth.js b/clipery/lib/oauth.js
+new file mode 100644
+index 0000000..c5f87b3
+--- /dev/null
++++ b/clipery/lib/oauth.js
+@@ -0,0 +1,206 @@
++/**
++ * Clipery social login — Sign in with Google + Sign in with Apple.
++ *
++ * Still zero dependencies: Node 18's global fetch does the token exchange and
++ * crypto signs Apple's ES256 client secret.
++ *
++ * Configure with environment variables (see README). Any provider whose keys
++ * are missing is simply hidden from the login page — the site keeps working
++ * with email + password only.
++ *
++ *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
++ *   APPLE_CLIENT_ID (Services ID), APPLE_TEAM_ID, APPLE_KEY_ID,
++ *   APPLE_PRIVATE_KEY (contents of the .p8) or APPLE_PRIVATE_KEY_FILE (path)
++ *   BASE_URL (e.g. https://clipery.com) — optional, otherwise taken from the request
++ */
++const crypto = require("crypto");
++const fs = require("fs");
++
++const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
++const GOOGLE_TOKEN = "https://oauth2.googleapis.com/token";
++const APPLE_AUTH = "https://appleid.apple.com/auth/authorize";
++const APPLE_TOKEN = "https://appleid.apple.com/auth/token";
++
++const STATE_COOKIE = "clipery_oauth";
++
++/* --------------------------------- config --------------------------------- */
++
++function applePrivateKey() {
++  if (process.env.APPLE_PRIVATE_KEY) return process.env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n");
++  const file = process.env.APPLE_PRIVATE_KEY_FILE;
++  if (file && fs.existsSync(file)) return fs.readFileSync(file, "utf8");
++  return "";
 +}
 +
-+/* --------------------------------- sessions -------------------------------- */
++function googleConfigured() {
++  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
++}
++function appleConfigured() {
++  return Boolean(
++    process.env.APPLE_CLIENT_ID &&
++      process.env.APPLE_TEAM_ID &&
++      process.env.APPLE_KEY_ID &&
++      applePrivateKey()
++  );
++}
++/** Which buttons the login page should show. */
++function providers() {
++  return { google: googleConfigured(), apple: appleConfigured() };
++}
 +
-+function createSession(userId) {
-+  const token = crypto.randomBytes(32).toString("hex");
-+  const maxAgeSec = SESSION_DAYS * 24 * 60 * 60;
-+  const sessions = readSessions();
-+  sessions.push({
-+    token,
-+    userId,
-+    createdAt: new Date().toISOString(),
-+    expires: Date.now() + maxAgeSec * 1000,
++/** Public origin of this install (honours proxies, falls back to the Host header). */
++function baseUrl(req) {
++  if (process.env.BASE_URL) return String(process.env.BASE_URL).replace(/\/+$/, "");
++  const proto = String(req.headers["x-forwarded-proto"] || "").split(",")[0] || "http";
++  const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
++  return `${proto}://${host}`;
++}
++const redirectUri = (req, provider) => `${baseUrl(req)}/api/auth/${provider}/callback`;
++
++/* ---------------------------------- jwt ----------------------------------- */
++
++const b64url = (buf) =>
++  Buffer.from(buf).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
++
++/** Read a JWT payload. Safe here: the token comes straight from the provider's
++ *  token endpoint over TLS, so there is no untrusted hop to forge it. */
++function decodeJwt(token) {
++  try {
++    const part = String(token).split(".")[1];
++    return JSON.parse(Buffer.from(part.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
++  } catch {
++    return null;
++  }
++}
++
++/** Apple wants a short-lived ES256 JWT instead of a static client secret. */
++function appleClientSecret() {
++  const now = Math.floor(Date.now() / 1000);
++  const header = { alg: "ES256", kid: process.env.APPLE_KEY_ID, typ: "JWT" };
++  const payload = {
++    iss: process.env.APPLE_TEAM_ID,
++    iat: now,
++    exp: now + 60 * 30,
++    aud: "https://appleid.apple.com",
++    sub: process.env.APPLE_CLIENT_ID,
++  };
++  const data = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
++  const signature = crypto
++    .createSign("SHA256")
++    .update(data)
++    .sign({ key: applePrivateKey(), dsaEncoding: "ieee-p1363" });
++  return `${data}.${b64url(signature)}`;
++}
++
++/* ------------------------------ state cookie ------------------------------ */
++
++/** CSRF token + the page the visitor wanted, parked in a short-lived cookie. */
++function makeState(next) {
++  const token = crypto.randomBytes(16).toString("hex");
++  const safeNext = typeof next === "string" && /^\/[^/]/.test(next) ? next : "/studio";
++  const value = `${token}|${Buffer.from(safeNext).toString("base64")}`;
++  const cookie = `${STATE_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`;
++  return { token, cookie, next: safeNext };
++}
++function readState(cookieValue, stateFromProvider) {
++  if (!cookieValue) return { ok: false, next: "/studio" };
++  const [token, encodedNext] = String(cookieValue).split("|");
++  const next = encodedNext ? Buffer.from(encodedNext, "base64").toString("utf8") : "/studio";
++  if (!token || token !== stateFromProvider) return { ok: false, next };
++  return { ok: true, next };
++}
++const clearState = () => `${STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
++
++/* --------------------------------- google --------------------------------- */
++
++function googleAuthUrl(req, state) {
++  const params = new URLSearchParams({
++    client_id: process.env.GOOGLE_CLIENT_ID,
++    redirect_uri: redirectUri(req, "google"),
++    response_type: "code",
++    scope: "openid email profile",
++    state,
++    prompt: "select_account",
 +  });
-+  writeSessions(sessions);
-+  return { token, cookie: sessionCookie(token, maxAgeSec) };
++  return `${GOOGLE_AUTH}?${params}`;
 +}
 +
-+function destroySession(token) {
-+  if (!token) return;
-+  writeSessions(readSessions().filter((s) => s.token !== token));
++async function googleProfile(req, code) {
++  const res = await fetch(GOOGLE_TOKEN, {
++    method: "POST",
++    headers: { "Content-Type": "application/x-www-form-urlencoded" },
++    body: new URLSearchParams({
++      code,
++      client_id: process.env.GOOGLE_CLIENT_ID,
++      client_secret: process.env.GOOGLE_CLIENT_SECRET,
++      redirect_uri: redirectUri(req, "google"),
++      grant_type: "authorization_code",
++    }),
++  });
++  const data = await res.json().catch(() => ({}));
++  if (!res.ok || !data.id_token) throw new Error(data.error_description || "Google sign-in failed.");
++  const claims = decodeJwt(data.id_token);
++  if (!claims || !claims.email) throw new Error("Google did not share an email address.");
++  if (claims.email_verified === false) throw new Error("Please verify your Google email first.");
++  return { email: claims.email, name: claims.name || claims.given_name || "", provider: "google" };
 +}
 +
-+/** The logged-in user for this request, or null. */
-+function currentUser(req) {
-+  const token = parseCookies(req)[COOKIE];
-+  if (!token) return null;
-+  const session = readSessions().find((s) => s.token === token);
-+  if (!session) return null;
-+  const user = readUsers().find((u) => u.id === session.userId);
-+  return user || null;
++/* ---------------------------------- apple --------------------------------- */
++
++function appleAuthUrl(req, state) {
++  const params = new URLSearchParams({
++    client_id: process.env.APPLE_CLIENT_ID,
++    redirect_uri: redirectUri(req, "apple"),
++    response_type: "code id_token",
++    scope: "name email",
++    response_mode: "form_post", // Apple posts the result back to us
++    state,
++  });
++  return `${APPLE_AUTH}?${params}`;
 +}
 +
-+const clearCookie = () => sessionCookie("", 0);
++async function appleProfile(req, code, idTokenFromForm, userJson) {
++  let claims = idTokenFromForm ? decodeJwt(idTokenFromForm) : null;
++  if (!claims && code) {
++    const res = await fetch(APPLE_TOKEN, {
++      method: "POST",
++      headers: { "Content-Type": "application/x-www-form-urlencoded" },
++      body: new URLSearchParams({
++        code,
++        client_id: process.env.APPLE_CLIENT_ID,
++        client_secret: appleClientSecret(),
++        redirect_uri: redirectUri(req, "apple"),
++        grant_type: "authorization_code",
++      }),
++    });
++    const data = await res.json().catch(() => ({}));
++    if (!res.ok || !data.id_token) throw new Error(data.error_description || data.error || "Apple sign-in failed.");
++    claims = decodeJwt(data.id_token);
++  }
++  if (!claims || !claims.email) throw new Error("Apple did not share an email address.");
++
++  // Apple sends the display name once, on the very first authorisation only.
++  let name = "";
++  try {
++    const parsed = typeof userJson === "string" ? JSON.parse(userJson) : userJson;
++    if (parsed && parsed.name) name = [parsed.name.firstName, parsed.name.lastName].filter(Boolean).join(" ");
++  } catch {}
++
++  return { email: claims.email, name, provider: "apple" };
++}
 +
 +module.exports = {
-+  COOKIE,
-+  registerUser,
-+  loginUser,
-+  createSession,
-+  destroySession,
-+  currentUser,
-+  publicUser,
-+  parseCookies,
-+  clearCookie,
-+  isValidEmail,
++  STATE_COOKIE,
++  providers,
++  googleConfigured,
++  appleConfigured,
++  googleAuthUrl,
++  googleProfile,
++  appleAuthUrl,
++  appleProfile,
++  makeState,
++  readState,
++  clearState,
++  baseUrl,
++  redirectUri,
 +};
 diff --git a/clipery/public/auth.js b/clipery/public/auth.js
-new file mode 100644
-index 0000000..893f51b
---- /dev/null
+index 893f51b..31da805 100644
+--- a/clipery/public/auth.js
 +++ b/clipery/public/auth.js
-@@ -0,0 +1,101 @@
-+/* Clipery — login / register page */
-+(function () {
-+  var form = document.getElementById("auth-form");
-+  var msg = document.getElementById("auth-msg");
-+  var submit = document.getElementById("auth-submit");
-+  var tabLogin = document.getElementById("tab-login");
-+  var tabRegister = document.getElementById("tab-register");
-+  var fieldName = document.getElementById("field-name");
-+  var pwHint = document.getElementById("pw-hint");
-+  var title = document.getElementById("auth-title");
-+  var sub = document.getElementById("auth-sub");
-+  var foot = document.getElementById("auth-foot");
-+  var password = document.getElementById("password");
-+
-+  var mode = "login";
-+
-+  function nextUrl() {
-+    var params = new URLSearchParams(location.search);
-+    var next = params.get("next") || "/studio";
-+    // only allow same-site paths
-+    return next.charAt(0) === "/" && next.charAt(1) !== "/" ? next : "/studio";
-+  }
-+
-+  function say(text, kind) {
-+    msg.textContent = text || "";
-+    msg.className = "auth-msg" + (text ? " " + (kind || "err") : "");
-+  }
-+
-+  function setMode(next) {
-+    mode = next;
-+    var reg = mode === "register";
-+    tabLogin.classList.toggle("on", !reg);
-+    tabRegister.classList.toggle("on", reg);
-+    fieldName.hidden = !reg;
-+    pwHint.hidden = !reg;
-+    title.textContent = reg ? "Create your account" : "Welcome back";
-+    sub.textContent = reg
-+      ? "Free to start — no card needed. You get the Studio right after."
-+      : "Log in to open the Studio and your clip library.";
-+    submit.textContent = reg ? "Create account" : "Log in";
-+    password.setAttribute("autocomplete", reg ? "new-password" : "current-password");
-+    foot.innerHTML = reg
-+      ? 'Already have an account? <a href="#" id="switch-link">Log in</a>'
-+      : 'No account yet? <a href="#" id="switch-link">Create one free</a>';
-+    bindSwitch();
-+    say("");
-+  }
-+
-+  function bindSwitch() {
-+    var link = document.getElementById("switch-link");
-+    if (!link) return;
-+    link.addEventListener("click", function (e) {
-+      e.preventDefault();
-+      setMode(mode === "login" ? "register" : "login");
-+    });
-+  }
-+
-+  tabLogin.addEventListener("click", function () { setMode("login"); });
-+  tabRegister.addEventListener("click", function () { setMode("register"); });
-+  bindSwitch();
-+
-+  // ?mode=register (or landing straight on /register) opens the signup tab
-+  if (/register/i.test(location.pathname) || /mode=register/i.test(location.search)) {
-+    setMode("register");
-+  }
-+
-+  form.addEventListener("submit", async function (e) {
-+    e.preventDefault();
-+    var email = document.getElementById("email").value.trim();
-+    var pass = password.value;
-+    var name = document.getElementById("name").value.trim();
-+
-+    if (!email || !pass) return say("Email and password are required.");
-+    if (mode === "register" && pass.length < 8) return say("Password must be at least 8 characters.");
-+
-+    submit.disabled = true;
-+    submit.textContent = mode === "register" ? "Creating…" : "Logging in…";
-+    say("");
-+
-+    try {
-+      var res = await fetch(mode === "register" ? "/api/auth/register" : "/api/auth/login", {
-+        method: "POST",
-+        headers: { "Content-Type": "application/json" },
-+        body: JSON.stringify({ email: email, password: pass, name: name }),
-+      });
-+      var data = await res.json().catch(function () { return {}; });
-+      if (!res.ok || !data.ok) {
-+        say(data.error || "Something went wrong. Try again.");
-+        submit.disabled = false;
-+        submit.textContent = mode === "register" ? "Create account" : "Log in";
-+        return;
-+      }
-+      say(mode === "register" ? "Account created — opening Studio…" : "Logged in — opening Studio…", "ok");
-+      location.href = nextUrl();
-+    } catch (err) {
-+      say("Network error. Check your connection and try again.");
-+      submit.disabled = false;
-+      submit.textContent = mode === "register" ? "Create account" : "Log in";
-+    }
-+  });
-+})();
-diff --git a/clipery/public/favicon.svg b/clipery/public/favicon.svg
-new file mode 100644
-index 0000000..7710d44
---- /dev/null
-+++ b/clipery/public/favicon.svg
-@@ -0,0 +1,13 @@
-+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-+  <defs>
-+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-+      <stop offset="0" stop-color="#ff4d6d" />
-+      <stop offset="1" stop-color="#ff8a4c" />
-+    </linearGradient>
-+  </defs>
-+  <rect width="64" height="64" rx="16" fill="url(#g)" />
-+  <g transform="translate(10 10) scale(1.8333)">
-+    <path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="#ffffff" />
-+    <path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="#ffffff" fill-opacity="0.9" />
-+  </g>
-+</svg>
-diff --git a/clipery/public/index.html b/clipery/public/index.html
-index 5e4d863..363b8ec 100644
---- a/clipery/public/index.html
-+++ b/clipery/public/index.html
-@@ -295,9 +295,9 @@
-           <a href="#pricing">Pricing</a>
-           <a href="https://openart.ai/suite/create-image" title="Image Generator — generate stunning images from text prompts">Images</a>
-         </nav>
--        <div class="nav-cta">
--          <a class="btn btn-ghost" href="/waitlist">Waitlist</a>
--          <a class="btn btn-primary" href="/studio">Start free</a>
-+        <div class="nav-cta" id="nav-cta">
-+          <a class="btn btn-ghost" href="/login">Log in</a>
-+          <a class="btn btn-primary" href="/register">Start free</a>
-         </div>
-       </div>
-     </header>
-@@ -311,7 +311,7 @@
-           cuts them into ranked shorts, and stitches countdown ranking videos from up to 5 sources.
-         </p>
-         <div class="hero-cta">
--          <a class="btn btn-primary btn-lg" href="/studio">Start clipping free</a>
-+          <a class="btn btn-primary btn-lg" href="/register">Start clipping free</a>
-           <a class="btn btn-ghost btn-lg" href="#pricing">View pricing</a>
-         </div>
-       </section>
-@@ -728,5 +728,24 @@
-         boot();
-       })();
-     </script>
-+    <script>
-+      // Logged in? Swap the landing CTAs for a straight shot into the Studio.
-+      fetch("/api/auth/me")
-+        .then(function (r) { return r.json(); })
-+        .then(function (d) {
-+          if (!d || !d.user) return;
-+          var cta = document.getElementById("nav-cta");
-+          if (cta) {
-+            cta.innerHTML =
-+              '<a class="btn btn-ghost" href="/library">Library</a>' +
-+              '<a class="btn btn-primary" href="/studio">Open Studio</a>';
-+          }
-+          document.querySelectorAll('a[href="/register"]').forEach(function (a) {
-+            a.setAttribute("href", "/studio");
-+            if (/start/i.test(a.textContent)) a.textContent = "Open Studio";
-+          });
-+        })
-+        .catch(function () {});
-+    </script>
-   </body>
- </html>
-diff --git a/clipery/public/login.html b/clipery/public/login.html
-new file mode 100644
-index 0000000..7193079
---- /dev/null
-+++ b/clipery/public/login.html
-@@ -0,0 +1,122 @@
-+<!DOCTYPE html>
-+<html lang="en">
-+  <head>
-+    <meta charset="utf-8" />
-+    <meta name="viewport" content="width=device-width, initial-scale=1" />
-+    <title>Log in · Clipery</title>
-+    <meta name="theme-color" content="#07070b" />
-+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-+    <link rel="stylesheet" href="/styles.css" />
-+    <style>
-+      .auth-wrap {
-+        min-height: calc(100vh - 90px);
-+        display: flex;
-+        align-items: center;
-+        justify-content: center;
-+        padding: 2.5rem 1.1rem 4rem;
-+      }
-+      .auth-card {
-+        width: 100%;
-+        max-width: 430px;
-+        background: rgba(14, 14, 20, 0.92);
-+        border: 1px solid rgba(255, 255, 255, 0.09);
-+        border-radius: 20px;
-+        padding: 2rem 1.8rem 1.9rem;
-+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
-+      }
-+      .auth-card h1 { font-size: 1.55rem; margin: 0 0 0.35rem; }
-+      .auth-sub { color: #9894a6; font-size: 0.92rem; margin: 0 0 1.4rem; }
-+      .auth-tabs { display: flex; gap: 0.5rem; margin: 0 0 1.35rem; }
-+      .auth-tab {
-+        flex: 1; padding: 0.6rem 0.5rem; border-radius: 999px; cursor: pointer;
-+        font-family: inherit; font-weight: 700; font-size: 0.9rem;
-+        border: 1px solid rgba(255, 255, 255, 0.16); background: transparent; color: #f4f1ea;
-+        transition: all 0.15s;
-+      }
-+      .auth-tab.on {
-+        background: linear-gradient(135deg, #ff4d6d, #ff8a4c);
-+        border-color: transparent; color: #fff;
-+        box-shadow: 0 8px 22px rgba(255, 77, 109, 0.32);
-+      }
-+      .auth-field { margin: 0 0 0.95rem; }
-+      .auth-field label {
-+        display: block; font-size: 0.82rem; font-weight: 700;
-+        color: #c9c5d8; margin: 0 0 0.35rem;
-+      }
-+      .auth-field input {
-+        width: 100%; padding: 0.78rem 0.9rem; border-radius: 12px;
-+        border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(0, 0, 0, 0.4);
-+        color: #f4f1ea; font-family: inherit; font-size: 0.95rem;
-+      }
-+      .auth-field input:focus { outline: none; border-color: #ff4d6d; }
-+      .auth-hint { font-size: 0.76rem; color: #66627a; margin: 0.35rem 0 0; }
-+      .auth-submit { width: 100%; margin-top: 0.4rem; justify-content: center; }
-+      .auth-msg {
-+        display: none; margin: 0 0 1rem; padding: 0.7rem 0.85rem; border-radius: 12px;
-+        font-size: 0.87rem; line-height: 1.45;
-+      }
-+      .auth-msg.err { display: block; background: rgba(255, 77, 109, 0.12); border: 1px solid rgba(255, 77, 109, 0.4); color: #ffb3c1; }
-+      .auth-msg.ok { display: block; background: rgba(200, 245, 66, 0.1); border: 1px solid rgba(200, 245, 66, 0.35); color: #dcf98d; }
-+      .auth-foot { margin: 1.15rem 0 0; text-align: center; font-size: 0.86rem; color: #9894a6; }
-+      .auth-foot a { color: #ff8a4c; text-decoration: none; font-weight: 700; }
-+      .auth-note {
-+        margin: 1.3rem 0 0; padding-top: 1.1rem; border-top: 1px solid rgba(255, 255, 255, 0.07);
-+        font-size: 0.78rem; color: #66627a; text-align: center;
-+      }
-+    </style>
-+  </head>
-+  <body>
-+    <header class="header">
-+      <div class="header-inner">
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-+        <nav class="nav" aria-label="Primary">
-+          <a href="/pricing" data-nav>Pricing</a>
-+          <a href="/waitlist" data-nav>Waitlist</a>
-+        </nav>
-+      </div>
-+    </header>
-+
-+    <main class="auth-wrap">
-+      <div class="auth-card">
-+        <div class="auth-tabs">
-+          <button type="button" class="auth-tab on" id="tab-login">Log in</button>
-+          <button type="button" class="auth-tab" id="tab-register">Create account</button>
-+        </div>
-+
-+        <h1 id="auth-title">Welcome back</h1>
-+        <p class="auth-sub" id="auth-sub">Log in to open the Studio and your clip library.</p>
-+
-+        <div class="auth-msg" id="auth-msg" role="alert"></div>
-+
-+        <form id="auth-form" novalidate>
-+          <div class="auth-field" id="field-name" hidden>
-+            <label for="name">Name</label>
-+            <input type="text" id="name" name="name" autocomplete="name" placeholder="Your name" />
-+          </div>
-+
-+          <div class="auth-field">
-+            <label for="email">Email</label>
-+            <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required />
-+          </div>
-+
-+          <div class="auth-field">
-+            <label for="password">Password</label>
-+            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required />
-+            <p class="auth-hint" id="pw-hint" hidden>At least 8 characters.</p>
-+          </div>
-+
-+          <button type="submit" class="btn btn-primary auth-submit" id="auth-submit">Log in</button>
-+        </form>
-+
-+        <p class="auth-foot" id="auth-foot">
-+          No account yet? <a href="#" id="switch-link">Create one free</a>
-+        </p>
-+
-+        <p class="auth-note">Studio, Rank video and Library are for members only.</p>
-+      </div>
-+    </main>
-+
-+    <script src="/shared.js"></script>
-+    <script src="/auth.js"></script>
-+  </body>
-+</html>
-diff --git a/clipery/public/shared.js b/clipery/public/shared.js
-index 294c53b..f29c4c4 100644
---- a/clipery/public/shared.js
-+++ b/clipery/public/shared.js
-@@ -237,10 +237,69 @@
-     return { stop };
+@@ -55,6 +55,31 @@
+     });
    }
  
-+  /* ------------------------------ account chip ------------------------------ */
-+  var currentUser = null;
++  /* Social buttons: only show the providers this server actually has keys for,
++     and carry the ?next= target through the round-trip. */
++  (function socialSetup() {
++    var box = document.getElementById("social");
++    if (!box) return;
++    fetch("/api/auth/providers")
++      .then(function (r) { return r.json(); })
++      .then(function (d) {
++        var p = (d && d.providers) || {};
++        var google = document.getElementById("btn-google");
++        var apple = document.getElementById("btn-apple");
++        var next = encodeURIComponent(nextUrl());
++        if (p.google) google.href = "/api/auth/google?next=" + next; else google.remove();
++        if (p.apple) apple.href = "/api/auth/apple?next=" + next; else apple.remove();
++        if (p.google || p.apple) box.classList.add("on");
++      })
++      .catch(function () {});
++  })();
 +
-+  async function loadUser() {
-+    try {
-+      var res = await fetch("/api/auth/me", { headers: { Accept: "application/json" } });
-+      var data = await res.json();
-+      currentUser = (data && data.user) || null;
-+    } catch {
-+      currentUser = null;
-+    }
-+    return currentUser;
-+  }
++  // A failed social round-trip comes back as /login?error=…
++  (function showOauthError() {
++    var err = new URLSearchParams(location.search).get("error");
++    if (err) say(err);
++  })();
 +
-+  async function logout() {
-+    try {
-+      await fetch("/api/auth/logout", { method: "POST" });
-+    } catch {}
-+    location.href = "/";
-+  }
-+
-+  /** Drop a "you are logged in as…" chip (or Log in button) into the nav. */
-+  function renderAccountChip(user) {
-+    var nav = document.querySelector(".nav") || document.querySelector(".nav-links");
-+    if (!nav || nav.querySelector("[data-account]")) return;
-+
-+    var wrap = document.createElement("span");
-+    wrap.setAttribute("data-account", "");
-+    wrap.style.cssText = "display:inline-flex;align-items:center;gap:0.55rem;margin-left:0.4rem";
-+
-+    if (user) {
-+      var who = document.createElement("span");
-+      who.textContent = user.name || user.email;
-+      who.title = user.email;
-+      who.style.cssText =
-+        "font-size:0.82rem;font-weight:700;color:#c9c5d8;max-width:150px;overflow:hidden;" +
-+        "text-overflow:ellipsis;white-space:nowrap";
-+      var out = document.createElement("button");
-+      out.type = "button";
-+      out.textContent = "Log out";
-+      out.style.cssText =
-+        "font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;color:#f4f1ea;" +
-+        "background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:999px;padding:0.35rem 0.8rem";
-+      out.addEventListener("click", logout);
-+      wrap.appendChild(who);
-+      wrap.appendChild(out);
-+    } else {
-+      var login = document.createElement("a");
-+      login.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
-+      login.textContent = "Log in";
-+      login.className = "btn btn-primary btn-sm";
-+      wrap.appendChild(login);
-+    }
-+    nav.appendChild(wrap);
-+  }
-+
-   // Boot common chrome
-   document.addEventListener("DOMContentLoaded", function () {
-     setActiveNav();
-     yearStamp();
-+    if (!/^\/login|^\/register/.test(location.pathname)) {
-+      loadUser().then(renderAccountChip);
-+    }
-   });
+   tabLogin.addEventListener("click", function () { setMode("login"); });
+   tabRegister.addEventListener("click", function () { setMode("register"); });
+   bindSwitch();
+diff --git a/clipery/public/login.html b/clipery/public/login.html
+index 7193079..4633050 100644
+--- a/clipery/public/login.html
++++ b/clipery/public/login.html
+@@ -59,6 +59,26 @@
+       .auth-msg.ok { display: block; background: rgba(200, 245, 66, 0.1); border: 1px solid rgba(200, 245, 66, 0.35); color: #dcf98d; }
+       .auth-foot { margin: 1.15rem 0 0; text-align: center; font-size: 0.86rem; color: #9894a6; }
+       .auth-foot a { color: #ff8a4c; text-decoration: none; font-weight: 700; }
++      .social { display: none; margin: 0 0 1.25rem; }
++      .social.on { display: block; }
++      .social-btn {
++        width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
++        padding: 0.75rem 1rem; margin: 0 0 0.6rem; border-radius: 12px; cursor: pointer;
++        font-family: inherit; font-size: 0.93rem; font-weight: 700; text-decoration: none;
++        border: 1px solid rgba(255, 255, 255, 0.16); transition: all 0.15s;
++      }
++      .social-btn:hover { transform: translateY(-1px); }
++      .social-google { background: #fff; color: #1f1f1f; border-color: #fff; }
++      .social-apple { background: #000; color: #fff; border-color: rgba(255, 255, 255, 0.35); }
++      .social-btn svg { width: 18px; height: 18px; flex: none; }
++      .or-line {
++        display: flex; align-items: center; gap: 0.75rem;
++        margin: 0 0 1.15rem; color: #66627a; font-size: 0.76rem;
++        text-transform: uppercase; letter-spacing: 0.08em;
++      }
++      .or-line::before, .or-line::after {
++        content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);
++      }
+       .auth-note {
+         margin: 1.3rem 0 0; padding-top: 1.1rem; border-top: 1px solid rgba(255, 255, 255, 0.07);
+         font-size: 0.78rem; color: #66627a; text-align: center;
+@@ -88,6 +108,25 @@
  
-   global.CF = {
-@@ -255,5 +314,8 @@
-     renderClipCard,
-     renderRankTable,
-     createPoller,
-+    loadUser,
-+    logout,
-+    getUser: function () { return currentUser; },
-   };
- })(window);
+         <div class="auth-msg" id="auth-msg" role="alert"></div>
+ 
++        <div class="social" id="social">
++          <a class="social-btn social-google" id="btn-google" href="/api/auth/google">
++            <svg viewBox="0 0 48 48" aria-hidden="true">
++              <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.2 17.6 9.5 24 9.5z"/>
++              <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.1 5.4-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.4z"/>
++              <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-7.8-6.1C1 16.4 0 20.1 0 24s1 7.6 2.6 10.8l7.8-6.1z"/>
++              <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.3-4.6 2.1-8.8 2.1-6.4 0-11.7-3.7-13.6-8.9l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/>
++            </svg>
++            Continue with Google
++          </a>
++          <a class="social-btn social-apple" id="btn-apple" href="/api/auth/apple">
++            <svg viewBox="0 0 384 512" aria-hidden="true" fill="currentColor">
++              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
++            </svg>
++            Continue with Apple
++          </a>
++          <div class="or-line">or</div>
++        </div>
++
+         <form id="auth-form" novalidate>
+           <div class="auth-field" id="field-name" hidden>
+             <label for="name">Name</label>
 diff --git a/clipery/server.js b/clipery/server.js
-index d5a1e57..c1800a6 100644
+index c1800a6..c2428ae 100644
 --- a/clipery/server.js
 +++ b/clipery/server.js
-@@ -19,6 +19,7 @@ const {
-   downloadUrl,
+@@ -20,6 +20,7 @@ const {
  } = require("./lib/linkVideoEngine");
  const { normalizeSubStyle } = require("./lib/subtitles");
-+const auth = require("./lib/auth");
+ const auth = require("./lib/auth");
++const oauth = require("./lib/oauth");
  
  const PORT = process.env.PORT || 3000;
  const ROOT = __dirname;
-@@ -73,8 +74,45 @@ const ROUTES = {
-   "/waitlist.html": "waitlist.html",
-   "/job": "job.html",
-   "/job.html": "job.html",
-+  "/login": "login.html",
-+  "/login.html": "login.html",
-+  "/register": "login.html",
-+  "/register.html": "login.html",
- };
- 
-+// Pages that require an account. Everything else stays public.
-+const PROTECTED_PAGES = [
-+  "/studio",
-+  "/studio.html",
-+  "/library",
-+  "/library.html",
-+  "/rank",
-+  "/rank.html",
-+  "/job",
-+  "/job.html",
-+];
-+const PROTECTED_API = [
-+  "/api/clip/upload",
-+  "/api/clip/from-url",
-+  "/api/clip/sample",
-+  "/api/rank/video/links",
-+  "/api/rank/video/upload",
-+  "/api/rank/links",
-+  "/api/jobs",
-+];
-+
-+function isProtectedPage(pathname) {
-+  if (PROTECTED_PAGES.includes(pathname)) return true;
-+  if (/^\/job\/[a-f0-9]+$/i.test(pathname)) return true;
-+  if (/^\/board\/[a-f0-9]+$/i.test(pathname)) return true;
-+  return false;
-+}
-+function isProtectedApi(pathname, method) {
-+  if (pathname === "/api/rank/links" && method === "GET") return true;
-+  if (pathname === "/api/jobs" && method === "GET") return true;
-+  return PROTECTED_API.includes(pathname) && method === "POST";
-+}
-+
- let busy = false;
- const queue = [];
- 
-@@ -199,9 +237,24 @@ function serveFile(req, res, fullPath) {
-   });
- }
- 
--function serveStatic(req, res, pathname) {
-+function serveStatic(req, res, pathname, search) {
-   // strip query already done by URL
-   let clean = pathname.split("?")[0];
-+
-+  // Studio & co. are members-only — bounce guests to the login page and
-+  // remember where they were headed so we can send them back after login.
-+  if (isProtectedPage(clean) && !auth.currentUser(req)) {
-+    const next = encodeURIComponent(clean + (search || ""));
-+    res.writeHead(302, { Location: `/login?next=${next}`, "Cache-Control": "no-store" });
-+    res.end();
-+    return;
-+  }
-+  // Already signed in? The login page has nothing to offer.
-+  if ((clean === "/login" || clean === "/register") && auth.currentUser(req)) {
-+    res.writeHead(302, { Location: "/studio", "Cache-Control": "no-store" });
-+    res.end();
-+    return;
-+  }
-   // Studio is the hub — Rank video lives under Studio
-   if (clean === "/rank" || clean === "/rank.html") {
-     res.writeHead(302, { Location: "/studio?tool=rank", "Cache-Control": "no-store" });
-@@ -375,6 +428,48 @@ const server = http.createServer(async (req, res) => {
-   }
+@@ -429,6 +430,81 @@ const server = http.createServer(async (req, res) => {
  
    try {
-+    /* ------------------------------ accounts ------------------------------ */
-+    if (pathname === "/api/auth/register" && req.method === "POST") {
-+      let body = {};
-+      try {
-+        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
-+      } catch {
-+        return send(res, 400, { ok: false, error: "Invalid request." });
+     /* ------------------------------ accounts ------------------------------ */
++    // Which social buttons to show (a provider without keys stays hidden)
++    if (pathname === "/api/auth/providers" && req.method === "GET") {
++      return send(res, 200, { ok: true, providers: oauth.providers() });
++    }
++
++    // Kick off Google / Apple sign-in
++    if ((pathname === "/api/auth/google" || pathname === "/api/auth/apple") && req.method === "GET") {
++      const provider = pathname.endsWith("google") ? "google" : "apple";
++      const on = provider === "google" ? oauth.googleConfigured() : oauth.appleConfigured();
++      if (!on) {
++        return send(res, 503, {
++          ok: false,
++          error: `Sign in with ${provider === "google" ? "Google" : "Apple"} is not configured on this server.`,
++        });
 +      }
-+      const result = auth.registerUser(body);
-+      if (!result.ok) return send(res, result.status || 400, { ok: false, error: result.error });
-+      const { cookie } = auth.createSession(result.user.id);
-+      return send(res, 201, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
++      const state = oauth.makeState(url.searchParams.get("next"));
++      const target =
++        provider === "google"
++          ? oauth.googleAuthUrl(req, state.token)
++          : oauth.appleAuthUrl(req, state.token);
++      res.writeHead(302, { Location: target, "Set-Cookie": state.cookie, "Cache-Control": "no-store" });
++      return res.end();
 +    }
 +
-+    if (pathname === "/api/auth/login" && req.method === "POST") {
-+      let body = {};
-+      try {
-+        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
-+      } catch {
-+        return send(res, 400, { ok: false, error: "Invalid request." });
++    // Come back from the provider (Google redirects with GET, Apple posts a form)
++    if (
++      (pathname === "/api/auth/google/callback" && req.method === "GET") ||
++      (pathname === "/api/auth/apple/callback" && (req.method === "POST" || req.method === "GET"))
++    ) {
++      const provider = pathname.includes("google") ? "google" : "apple";
++      let params = url.searchParams;
++      let appleUserJson = null;
++      if (req.method === "POST") {
++        const raw = (await parseBody(req, 256 * 1024)).toString("utf8");
++        params = new URLSearchParams(raw);
++        appleUserJson = params.get("user");
 +      }
-+      const result = auth.loginUser(body);
-+      if (!result.ok) return send(res, result.status || 401, { ok: false, error: result.error });
-+      const { cookie } = auth.createSession(result.user.id);
-+      return send(res, 200, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
++
++      const fail = (message) => {
++        res.writeHead(302, {
++          Location: `/login?error=${encodeURIComponent(message)}`,
++          "Set-Cookie": oauth.clearState(),
++          "Cache-Control": "no-store",
++        });
++        res.end();
++      };
++
++      if (params.get("error")) return fail("Sign-in was cancelled.");
++
++      const cookies = auth.parseCookies(req);
++      const state = oauth.readState(cookies[oauth.STATE_COOKIE], params.get("state"));
++      if (!state.ok) return fail("Sign-in expired. Please try again.");
++
++      try {
++        const profile =
++          provider === "google"
++            ? await oauth.googleProfile(req, params.get("code"))
++            : await oauth.appleProfile(req, params.get("code"), params.get("id_token"), appleUserJson);
++
++        const result = auth.upsertSocialUser(profile);
++        if (!result.ok) return fail(result.error || "Sign-in failed.");
++
++        const { cookie } = auth.createSession(result.user.id);
++        res.writeHead(302, {
++          Location: state.next || "/studio",
++          "Set-Cookie": [cookie, oauth.clearState()],
++          "Cache-Control": "no-store",
++        });
++        return res.end();
++      } catch (e) {
++        console.error(`[oauth:${provider}]`, e.message);
++        return fail(e.message || "Sign-in failed.");
++      }
 +    }
 +
-+    if (pathname === "/api/auth/logout" && req.method === "POST") {
-+      auth.destroySession(auth.parseCookies(req)[auth.COOKIE]);
-+      return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie() });
-+    }
-+
-+    if (pathname === "/api/auth/me" && req.method === "GET") {
-+      const user = auth.currentUser(req);
-+      return send(res, 200, { ok: true, user: auth.publicUser(user) });
-+    }
-+
-+    // Locked API: no account, no clipping.
-+    if (isProtectedApi(pathname, req.method) && !auth.currentUser(req)) {
-+      return send(res, 401, { ok: false, error: "Please log in to use the Studio.", login: "/login" });
-+    }
-+
-     // Health
-     if (pathname === "/api/health" && req.method === "GET") {
-       return send(res, 200, {
-@@ -879,7 +974,7 @@ const server = http.createServer(async (req, res) => {
-       });
-     }
- 
--    serveStatic(req, res, pathname);
-+    serveStatic(req, res, pathname, url.search);
-   } catch (e) {
-     console.error(e);
-     send(res, 500, { ok: false, error: e.message || "Server error" });
+     if (pathname === "/api/auth/register" && req.method === "POST") {
+       let body = {};
+       try {
