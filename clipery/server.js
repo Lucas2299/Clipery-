@@ -98,6 +98,8 @@ const ROUTES = {
   "/waitlist.html": "waitlist.html",
   "/job": "job.html",
   "/job.html": "job.html",
+  "/admin": "admin.html",
+  "/admin.html": "admin.html",
   "/login": "login.html",
   "/login.html": "login.html",
   "/register": "login.html",
@@ -128,6 +130,8 @@ const PROTECTED_API = [
 // Guarded by FILE, not by URL spelling: whatever path a request uses, if it
 // ends up serving one of these it must belong to a logged-in account.
 const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html"]);
+// The dashboard is owner-only, a stricter club than the members pages.
+const OWNER_FILES = new Set(["admin.html"]);
 const CLIPS_DIR = path.join(PUBLIC, "clips");
 
 /** Collapse "//studio", "/./studio.html", "%2e", backslashes, trailing "/" ... */
@@ -240,7 +244,18 @@ function serveFile(req, res, fullPath) {
   // Matching on the resolved FILE name means no URL spelling gets around it
   // (including Windows' case-insensitive "/STUDIO.HTML").
   const base = path.basename(fullPath).toLowerCase();
-  const membersOnly = PROTECTED_FILES.has(base);
+  const membersOnly = PROTECTED_FILES.has(base) || OWNER_FILES.has(base);
+  if (OWNER_FILES.has(base) && !auth.isAdmin(auth.currentUser(req))) {
+    const me = auth.currentUser(req);
+    console.log(`[gate] ${me ? me.email : "guest"} blocked from the owner dashboard`);
+    const next = encodeURIComponent(req.url || "/admin");
+    res.writeHead(302, {
+      Location: me ? "/studio" : `/login?next=${next}`,
+      "Cache-Control": "no-store",
+    });
+    res.end();
+    return;
+  }
   if (membersOnly && !auth.currentUser(req)) {
     console.log(`[gate] guest blocked from ${req.url} - sent to /login`);
     const next = encodeURIComponent(req.url || "/studio");
@@ -314,7 +329,9 @@ function canSeeClipFile(req, fullPath) {
   const me = auth.currentUser(req);
   if (!me) return false;
   const job = readJob(jobId);
-  return Boolean(job && job.userId === me.id);
+  if (!job) return false;
+  // The owner can watch anything - that is the point of the dashboard.
+  return job.userId === me.id || auth.isAdmin(me);
 }
 
 function serveStatic(req, res, pathname, search) {
@@ -360,6 +377,30 @@ function serveStatic(req, res, pathname, search) {
     return;
   }
   serveFile(req, res, full);
+}
+
+
+/**
+ * Take one video off the account's monthly allowance. Replies 402 with a clear
+ * message when the plan is used up, so the Studio can tell them what to do.
+ */
+function chargeVideo(req, res) {
+  const me = auth.currentUser(req);
+  if (!me) {
+    send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
+    return null;
+  }
+  const charged = auth.consumeVideo(me.id);
+  if (!charged.ok) {
+    send(res, charged.status || 402, {
+      ok: false,
+      error: charged.error,
+      upgrade: true,
+      plan: auth.planOf(me).id,
+    });
+    return null;
+  }
+  return me;
 }
 
 function seedJob(jobId, extra = {}) {
@@ -618,7 +659,78 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname === "/api/auth/me" && req.method === "GET") {
       const user = auth.currentUser(req);
-      return send(res, 200, { ok: true, user: auth.publicUser(user) });
+      if (!user) return send(res, 200, { ok: true, user: null });
+      const left = auth.remainingVideos(user);
+      return send(res, 200, {
+        ok: true,
+        user: {
+          ...auth.publicUser(user),
+          isOwner: auth.isAdmin(user),
+          planLabel: auth.planOf(user).label,
+          videosLeft: left === Infinity ? null : left,
+        },
+      });
+    }
+
+    /* ---------------------------- owner dashboard ---------------------------- */
+    if (pathname.startsWith("/api/admin/")) {
+      const boss = auth.currentUser(req);
+      if (!auth.isAdmin(boss)) {
+        return send(res, 403, { ok: false, error: "Owner only." });
+      }
+
+      // Everyone, with plan + usage
+      if (pathname === "/api/admin/users" && req.method === "GET") {
+        return send(res, 200, { ok: true, users: auth.listUsers(), plans: Object.values(auth.PLANS).map((p) => ({ id: p.id, label: p.label, videos: p.videos === Infinity ? null : p.videos })) });
+      }
+
+      // Every job on the install, newest first, with its owner
+      if (pathname === "/api/admin/jobs" && req.method === "GET") {
+        const people = new Map(auth.listUsers().map((u) => [u.id, u]));
+        const jobs = listJobs(200).map((j) => {
+          const owner = people.get(j.userId);
+          return {
+            id: j.id,
+            status: j.status,
+            stage: j.stage,
+            progress: j.progress,
+            mode: j.mode,
+            sourceName: j.sourceName,
+            createdAt: j.createdAt,
+            duration: j.duration,
+            error: j.error,
+            clipCount: (j.clips || []).length,
+            clips: (j.clips || []).map((c) => ({ url: c.url, score: c.score, title: c.title })),
+            compilation: j.compilation && j.compilation.url ? j.compilation.url : null,
+            ownerId: j.userId || null,
+            ownerEmail: owner ? owner.email : j.userId ? "(deleted account)" : "(no owner)",
+          };
+        });
+        return send(res, 200, { ok: true, jobs });
+      }
+
+      // Move somebody to another plan
+      if (pathname === "/api/admin/plan" && req.method === "POST") {
+        const body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
+        const r = auth.setPlan(body.userId, body.plan);
+        return send(res, r.ok ? 200 : r.status || 400, r);
+      }
+
+      // Hand out extra videos on top of the plan
+      if (pathname === "/api/admin/bonus" && req.method === "POST") {
+        const body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
+        const r = auth.addBonusVideos(body.userId, body.videos);
+        return send(res, r.ok ? 200 : r.status || 400, r);
+      }
+
+      // Clear this month's usage
+      if (pathname === "/api/admin/reset-usage" && req.method === "POST") {
+        const body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
+        const r = auth.resetUsage(body.userId);
+        return send(res, r.ok ? 200 : r.status || 400, r);
+      }
+
+      return send(res, 404, { ok: false, error: "Unknown admin endpoint." });
     }
 
     // Locked API: no account, no clipping.
@@ -750,7 +862,8 @@ const server = http.createServer(async (req, res) => {
         return send(res, 410, { ok: false, error: "Demo videos removed. Upload your own video." });
       }
       const jobId = crypto.randomBytes(6).toString("hex");
-      const owner = auth.currentUser(req);
+      const owner = chargeVideo(req, res);
+      if (!owner) return;
       const dest = path.join(UPLOADS, `${jobId}-sample.mp4`);
       fs.copyFileSync(sample, dest);
       seedJob(jobId, { userId: owner && owner.id,
@@ -827,7 +940,8 @@ const server = http.createServer(async (req, res) => {
       });
 
       const jobId = crypto.randomBytes(6).toString("hex");
-      const owner = auth.currentUser(req);
+      const owner = chargeVideo(req, res);
+      if (!owner) return;
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
       seedJob(jobId, { userId: owner && owner.id, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
@@ -865,7 +979,8 @@ const server = http.createServer(async (req, res) => {
       const hookOpts = readHook((n) => body[n]);
       const trends = readTrends((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
-      const owner = auth.currentUser(req);
+      const owner = chargeVideo(req, res);
+      if (!owner) return;
       seedJob(jobId, { userId: owner && owner.id,
         mode,
         sourceName: videoUrl.slice(0, 80),
@@ -902,7 +1017,7 @@ const server = http.createServer(async (req, res) => {
       }
       const job = readJob(id);
       const me = auth.currentUser(req);
-      if (!job || !me || job.userId !== me.id) {
+      if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) {
         return send(res, 404, { ok: false, error: "Job not found" });
       }
       return send(res, 200, { ok: true, job });
@@ -1017,7 +1132,8 @@ const server = http.createServer(async (req, res) => {
       const hookOpts = readHook((n) => body[n]);
       const trends = readTrends((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
-      const owner = auth.currentUser(req);
+      const owner = chargeVideo(req, res);
+      if (!owner) return;
       seedJob(jobId, { userId: owner && owner.id,
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
@@ -1080,7 +1196,8 @@ const server = http.createServer(async (req, res) => {
         return send(res, 400, { ok: false, error: "Maximum 5 videos." });
       }
       const jobId = crypto.randomBytes(6).toString("hex");
-      const owner = auth.currentUser(req);
+      const owner = chargeVideo(req, res);
+      if (!owner) return;
       const sources = [];
       for (let i = 0; i < files.length; i++) {
         const f = files[i];

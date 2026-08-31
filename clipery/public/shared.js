@@ -267,6 +267,13 @@
     wrap.setAttribute("data-account", "");
     wrap.style.cssText = "display:inline-flex;align-items:center;gap:0.55rem;margin-left:0.4rem";
 
+    if (user && user.isOwner) {
+      var dash = document.createElement("a");
+      dash.href = "/admin";
+      dash.textContent = "Dashboard";
+      dash.style.cssText = "font-size:0.82rem;font-weight:800;color:#ff8a4c;text-decoration:none";
+      wrap.appendChild(dash);
+    }
     if (user) {
       var who = document.createElement("span");
       who.textContent = user.name || user.email;
