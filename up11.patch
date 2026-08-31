@@ -1,0 +1,510 @@
+diff --git a/clipery/README.md b/clipery/README.md
+index 90caceb..c27210a 100644
+--- a/clipery/README.md
++++ b/clipery/README.md
+@@ -50,3 +50,31 @@ Open http://localhost:3000
+ - `GET/POST /api/rank/links`
+ - `GET /api/rank/links/:id`
+ - `GET/POST /api/waitlist`
++
++## Sign in with Google / Apple (optional)
++
++Email + password works out of the box. To switch on the social buttons, set
++these environment variables before `npm start` — any provider you leave unset
++is simply hidden on the login page.
++
++```bash
++# Google — https://console.cloud.google.com/apis/credentials
++# Create an "OAuth client ID" (Web application) and add this redirect URI:
++#   https://YOUR-DOMAIN/api/auth/google/callback
++export GOOGLE_CLIENT_ID="....apps.googleusercontent.com"
++export GOOGLE_CLIENT_SECRET="...."
++
++# Apple — https://developer.apple.com/account/resources/identifiers
++# Needs a Services ID + a Sign in with Apple key (.p8). Return URL:
++#   https://YOUR-DOMAIN/api/auth/apple/callback
++export APPLE_CLIENT_ID="com.yourcompany.clipery.web"   # the Services ID
++export APPLE_TEAM_ID="ABCDE12345"
++export APPLE_KEY_ID="XYZ9876543"
++export APPLE_PRIVATE_KEY_FILE="/path/to/AuthKey_XYZ9876543.p8"
++
++# Only needed behind a proxy/CDN so the redirect URI is built correctly
++export BASE_URL="https://YOUR-DOMAIN"
++```
++
++Apple requires HTTPS for the return URL, so Apple sign-in cannot be tested on
++plain `http://localhost` — Google can.
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index 166f899..27eeddf 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -81,7 +81,14 @@ const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(e))
+ /** What the browser is allowed to know about an account. */
+ function publicUser(u) {
+   if (!u) return null;
+-  return { id: u.id, email: u.email, name: u.name || "", createdAt: u.createdAt, plan: u.plan || "free" };
++  return {
++    id: u.id,
++    email: u.email,
++    name: u.name || "",
++    createdAt: u.createdAt,
++    plan: u.plan || "free",
++    providers: u.providers || (u.hash ? ["password"] : []),
++  };
+ }
+ 
+ function parseCookies(req) {
+@@ -137,8 +144,46 @@ function registerUser({ email, password, name }) {
+   return { ok: true, user };
+ }
+ 
++/**
++ * Log in (or transparently sign up) via Google / Apple.
++ * Matching is by email, so signing in with Google to an address that already
++ * has a password account simply logs into that same account.
++ */
++function upsertSocialUser({ email, name, provider }) {
++  const mail = normalizeEmail(email);
++  if (!isValidEmail(mail)) return { ok: false, status: 400, error: "That account has no usable email." };
++
++  const users = readUsers();
++  const existing = users.find((u) => normalizeEmail(u.email) === mail);
++  if (existing) {
++    const known = existing.providers || (existing.hash ? ["password"] : []);
++    existing.providers = Array.from(new Set([...known, provider]));
++    if (!existing.name && name) existing.name = String(name).slice(0, 60);
++    writeUsers(users);
++    return { ok: true, user: existing, created: false };
++  }
++
++  const user = {
++    id: crypto.randomBytes(8).toString("hex"),
++    email: mail,
++    name: String(name || "").trim().slice(0, 60),
++    salt: "",
++    hash: "", // social-only account: no password to guess
++    providers: [provider],
++    plan: "free",
++    createdAt: new Date().toISOString(),
++  };
++  users.push(user);
++  writeUsers(users);
++  return { ok: true, user, created: true };
++}
++
+ function loginUser({ email, password }) {
+   const user = findUserByEmail(email);
++  if (user && !user.hash) {
++    const via = (user.providers || []).includes("apple") ? "Apple" : "Google";
++    return { ok: false, status: 401, error: `This account uses Sign in with ${via}.` };
++  }
+   // Same message either way so nobody can probe which emails exist.
+   if (!user || !verifyPassword(password, user.salt, user.hash))
+     return { ok: false, status: 401, error: "Wrong email or password." };
+@@ -182,6 +227,7 @@ module.exports = {
+   COOKIE,
+   registerUser,
+   loginUser,
++  upsertSocialUser,
+   createSession,
+   destroySession,
+   currentUser,
+diff --git a/clipery/lib/oauth.js b/clipery/lib/oauth.js
+new file mode 100644
+index 0000000..c5f87b3
+--- /dev/null
++++ b/clipery/lib/oauth.js
+@@ -0,0 +1,206 @@
++/**
++ * Clipery social login — Sign in with Google + Sign in with Apple.
++ *
++ * Still zero dependencies: Node 18's global fetch does the token exchange and
++ * crypto signs Apple's ES256 client secret.
++ *
++ * Configure with environment variables (see README). Any provider whose keys
++ * are missing is simply hidden from the login page — the site keeps working
++ * with email + password only.
++ *
++ *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
++ *   APPLE_CLIENT_ID (Services ID), APPLE_TEAM_ID, APPLE_KEY_ID,
++ *   APPLE_PRIVATE_KEY (contents of the .p8) or APPLE_PRIVATE_KEY_FILE (path)
++ *   BASE_URL (e.g. https://clipery.com) — optional, otherwise taken from the request
++ */
++const crypto = require("crypto");
++const fs = require("fs");
++
++const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
++const GOOGLE_TOKEN = "https://oauth2.googleapis.com/token";
++const APPLE_AUTH = "https://appleid.apple.com/auth/authorize";
++const APPLE_TOKEN = "https://appleid.apple.com/auth/token";
++
++const STATE_COOKIE = "clipery_oauth";
++
++/* --------------------------------- config --------------------------------- */
++
++function applePrivateKey() {
++  if (process.env.APPLE_PRIVATE_KEY) return process.env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n");
++  const file = process.env.APPLE_PRIVATE_KEY_FILE;
++  if (file && fs.existsSync(file)) return fs.readFileSync(file, "utf8");
++  return "";
++}
++
++function googleConfigured() {
++  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
++}
++function appleConfigured() {
++  return Boolean(
++    process.env.APPLE_CLIENT_ID &&
++      process.env.APPLE_TEAM_ID &&
++      process.env.APPLE_KEY_ID &&
++      applePrivateKey()
++  );
++}
++/** Which buttons the login page should show. */
++function providers() {
++  return { google: googleConfigured(), apple: appleConfigured() };
++}
++
++/** Public origin of this install (honours proxies, falls back to the Host header). */
++function baseUrl(req) {
++  if (process.env.BASE_URL) return String(process.env.BASE_URL).replace(/\/+$/, "");
++  const proto = String(req.headers["x-forwarded-proto"] || "").split(",")[0] || "http";
++  const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
++  return `${proto}://${host}`;
++}
++const redirectUri = (req, provider) => `${baseUrl(req)}/api/auth/${provider}/callback`;
++
++/* ---------------------------------- jwt ----------------------------------- */
++
++const b64url = (buf) =>
++  Buffer.from(buf).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
++
++/** Read a JWT payload. Safe here: the token comes straight from the provider's
++ *  token endpoint over TLS, so there is no untrusted hop to forge it. */
++function decodeJwt(token) {
++  try {
++    const part = String(token).split(".")[1];
++    return JSON.parse(Buffer.from(part.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
++  } catch {
++    return null;
++  }
++}
++
++/** Apple wants a short-lived ES256 JWT instead of a static client secret. */
++function appleClientSecret() {
++  const now = Math.floor(Date.now() / 1000);
++  const header = { alg: "ES256", kid: process.env.APPLE_KEY_ID, typ: "JWT" };
++  const payload = {
++    iss: process.env.APPLE_TEAM_ID,
++    iat: now,
++    exp: now + 60 * 30,
++    aud: "https://appleid.apple.com",
++    sub: process.env.APPLE_CLIENT_ID,
++  };
++  const data = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
++  const signature = crypto
++    .createSign("SHA256")
++    .update(data)
++    .sign({ key: applePrivateKey(), dsaEncoding: "ieee-p1363" });
++  return `${data}.${b64url(signature)}`;
++}
++
++/* ------------------------------ state cookie ------------------------------ */
++
++/** CSRF token + the page the visitor wanted, parked in a short-lived cookie. */
++function makeState(next) {
++  const token = crypto.randomBytes(16).toString("hex");
++  const safeNext = typeof next === "string" && /^\/[^/]/.test(next) ? next : "/studio";
++  const value = `${token}|${Buffer.from(safeNext).toString("base64")}`;
++  const cookie = `${STATE_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`;
++  return { token, cookie, next: safeNext };
++}
++function readState(cookieValue, stateFromProvider) {
++  if (!cookieValue) return { ok: false, next: "/studio" };
++  const [token, encodedNext] = String(cookieValue).split("|");
++  const next = encodedNext ? Buffer.from(encodedNext, "base64").toString("utf8") : "/studio";
++  if (!token || token !== stateFromProvider) return { ok: false, next };
++  return { ok: true, next };
++}
++const clearState = () => `${STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
++
++/* --------------------------------- google --------------------------------- */
++
++function googleAuthUrl(req, state) {
++  const params = new URLSearchParams({
++    client_id: process.env.GOOGLE_CLIENT_ID,
++    redirect_uri: redirectUri(req, "google"),
++    response_type: "code",
++    scope: "openid email profile",
++    state,
++    prompt: "select_account",
++  });
++  return `${GOOGLE_AUTH}?${params}`;
++}
++
++async function googleProfile(req, code) {
++  const res = await fetch(GOOGLE_TOKEN, {
++    method: "POST",
++    headers: { "Content-Type": "application/x-www-form-urlencoded" },
++    body: new URLSearchParams({
++      code,
++      client_id: process.env.GOOGLE_CLIENT_ID,
++      client_secret: process.env.GOOGLE_CLIENT_SECRET,
++      redirect_uri: redirectUri(req, "google"),
++      grant_type: "authorization_code",
++    }),
++  });
++  const data = await res.json().catch(() => ({}));
++  if (!res.ok || !data.id_token) throw new Error(data.error_description || "Google sign-in failed.");
++  const claims = decodeJwt(data.id_token);
++  if (!claims || !claims.email) throw new Error("Google did not share an email address.");
++  if (claims.email_verified === false) throw new Error("Please verify your Google email first.");
++  return { email: claims.email, name: claims.name || claims.given_name || "", provider: "google" };
++}
++
++/* ---------------------------------- apple --------------------------------- */
++
++function appleAuthUrl(req, state) {
++  const params = new URLSearchParams({
++    client_id: process.env.APPLE_CLIENT_ID,
++    redirect_uri: redirectUri(req, "apple"),
++    response_type: "code id_token",
++    scope: "name email",
++    response_mode: "form_post", // Apple posts the result back to us
++    state,
++  });
++  return `${APPLE_AUTH}?${params}`;
++}
++
++async function appleProfile(req, code, idTokenFromForm, userJson) {
++  let claims = idTokenFromForm ? decodeJwt(idTokenFromForm) : null;
++  if (!claims && code) {
++    const res = await fetch(APPLE_TOKEN, {
++      method: "POST",
++      headers: { "Content-Type": "application/x-www-form-urlencoded" },
++      body: new URLSearchParams({
++        code,
++        client_id: process.env.APPLE_CLIENT_ID,
++        client_secret: appleClientSecret(),
++        redirect_uri: redirectUri(req, "apple"),
++        grant_type: "authorization_code",
++      }),
++    });
++    const data = await res.json().catch(() => ({}));
++    if (!res.ok || !data.id_token) throw new Error(data.error_description || data.error || "Apple sign-in failed.");
++    claims = decodeJwt(data.id_token);
++  }
++  if (!claims || !claims.email) throw new Error("Apple did not share an email address.");
++
++  // Apple sends the display name once, on the very first authorisation only.
++  let name = "";
++  try {
++    const parsed = typeof userJson === "string" ? JSON.parse(userJson) : userJson;
++    if (parsed && parsed.name) name = [parsed.name.firstName, parsed.name.lastName].filter(Boolean).join(" ");
++  } catch {}
++
++  return { email: claims.email, name, provider: "apple" };
++}
++
++module.exports = {
++  STATE_COOKIE,
++  providers,
++  googleConfigured,
++  appleConfigured,
++  googleAuthUrl,
++  googleProfile,
++  appleAuthUrl,
++  appleProfile,
++  makeState,
++  readState,
++  clearState,
++  baseUrl,
++  redirectUri,
++};
+diff --git a/clipery/public/auth.js b/clipery/public/auth.js
+index 893f51b..31da805 100644
+--- a/clipery/public/auth.js
++++ b/clipery/public/auth.js
+@@ -55,6 +55,31 @@
+     });
+   }
+ 
++  /* Social buttons: only show the providers this server actually has keys for,
++     and carry the ?next= target through the round-trip. */
++  (function socialSetup() {
++    var box = document.getElementById("social");
++    if (!box) return;
++    fetch("/api/auth/providers")
++      .then(function (r) { return r.json(); })
++      .then(function (d) {
++        var p = (d && d.providers) || {};
++        var google = document.getElementById("btn-google");
++        var apple = document.getElementById("btn-apple");
++        var next = encodeURIComponent(nextUrl());
++        if (p.google) google.href = "/api/auth/google?next=" + next; else google.remove();
++        if (p.apple) apple.href = "/api/auth/apple?next=" + next; else apple.remove();
++        if (p.google || p.apple) box.classList.add("on");
++      })
++      .catch(function () {});
++  })();
++
++  // A failed social round-trip comes back as /login?error=…
++  (function showOauthError() {
++    var err = new URLSearchParams(location.search).get("error");
++    if (err) say(err);
++  })();
++
+   tabLogin.addEventListener("click", function () { setMode("login"); });
+   tabRegister.addEventListener("click", function () { setMode("register"); });
+   bindSwitch();
+diff --git a/clipery/public/login.html b/clipery/public/login.html
+index 7193079..4633050 100644
+--- a/clipery/public/login.html
++++ b/clipery/public/login.html
+@@ -59,6 +59,26 @@
+       .auth-msg.ok { display: block; background: rgba(200, 245, 66, 0.1); border: 1px solid rgba(200, 245, 66, 0.35); color: #dcf98d; }
+       .auth-foot { margin: 1.15rem 0 0; text-align: center; font-size: 0.86rem; color: #9894a6; }
+       .auth-foot a { color: #ff8a4c; text-decoration: none; font-weight: 700; }
++      .social { display: none; margin: 0 0 1.25rem; }
++      .social.on { display: block; }
++      .social-btn {
++        width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
++        padding: 0.75rem 1rem; margin: 0 0 0.6rem; border-radius: 12px; cursor: pointer;
++        font-family: inherit; font-size: 0.93rem; font-weight: 700; text-decoration: none;
++        border: 1px solid rgba(255, 255, 255, 0.16); transition: all 0.15s;
++      }
++      .social-btn:hover { transform: translateY(-1px); }
++      .social-google { background: #fff; color: #1f1f1f; border-color: #fff; }
++      .social-apple { background: #000; color: #fff; border-color: rgba(255, 255, 255, 0.35); }
++      .social-btn svg { width: 18px; height: 18px; flex: none; }
++      .or-line {
++        display: flex; align-items: center; gap: 0.75rem;
++        margin: 0 0 1.15rem; color: #66627a; font-size: 0.76rem;
++        text-transform: uppercase; letter-spacing: 0.08em;
++      }
++      .or-line::before, .or-line::after {
++        content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);
++      }
+       .auth-note {
+         margin: 1.3rem 0 0; padding-top: 1.1rem; border-top: 1px solid rgba(255, 255, 255, 0.07);
+         font-size: 0.78rem; color: #66627a; text-align: center;
+@@ -88,6 +108,25 @@
+ 
+         <div class="auth-msg" id="auth-msg" role="alert"></div>
+ 
++        <div class="social" id="social">
++          <a class="social-btn social-google" id="btn-google" href="/api/auth/google">
++            <svg viewBox="0 0 48 48" aria-hidden="true">
++              <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.2 17.6 9.5 24 9.5z"/>
++              <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.1 5.4-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.4z"/>
++              <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-7.8-6.1C1 16.4 0 20.1 0 24s1 7.6 2.6 10.8l7.8-6.1z"/>
++              <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.3-4.6 2.1-8.8 2.1-6.4 0-11.7-3.7-13.6-8.9l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/>
++            </svg>
++            Continue with Google
++          </a>
++          <a class="social-btn social-apple" id="btn-apple" href="/api/auth/apple">
++            <svg viewBox="0 0 384 512" aria-hidden="true" fill="currentColor">
++              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
++            </svg>
++            Continue with Apple
++          </a>
++          <div class="or-line">or</div>
++        </div>
++
+         <form id="auth-form" novalidate>
+           <div class="auth-field" id="field-name" hidden>
+             <label for="name">Name</label>
+diff --git a/clipery/server.js b/clipery/server.js
+index c1800a6..c2428ae 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -20,6 +20,7 @@ const {
+ } = require("./lib/linkVideoEngine");
+ const { normalizeSubStyle } = require("./lib/subtitles");
+ const auth = require("./lib/auth");
++const oauth = require("./lib/oauth");
+ 
+ const PORT = process.env.PORT || 3000;
+ const ROOT = __dirname;
+@@ -429,6 +430,81 @@ const server = http.createServer(async (req, res) => {
+ 
+   try {
+     /* ------------------------------ accounts ------------------------------ */
++    // Which social buttons to show (a provider without keys stays hidden)
++    if (pathname === "/api/auth/providers" && req.method === "GET") {
++      return send(res, 200, { ok: true, providers: oauth.providers() });
++    }
++
++    // Kick off Google / Apple sign-in
++    if ((pathname === "/api/auth/google" || pathname === "/api/auth/apple") && req.method === "GET") {
++      const provider = pathname.endsWith("google") ? "google" : "apple";
++      const on = provider === "google" ? oauth.googleConfigured() : oauth.appleConfigured();
++      if (!on) {
++        return send(res, 503, {
++          ok: false,
++          error: `Sign in with ${provider === "google" ? "Google" : "Apple"} is not configured on this server.`,
++        });
++      }
++      const state = oauth.makeState(url.searchParams.get("next"));
++      const target =
++        provider === "google"
++          ? oauth.googleAuthUrl(req, state.token)
++          : oauth.appleAuthUrl(req, state.token);
++      res.writeHead(302, { Location: target, "Set-Cookie": state.cookie, "Cache-Control": "no-store" });
++      return res.end();
++    }
++
++    // Come back from the provider (Google redirects with GET, Apple posts a form)
++    if (
++      (pathname === "/api/auth/google/callback" && req.method === "GET") ||
++      (pathname === "/api/auth/apple/callback" && (req.method === "POST" || req.method === "GET"))
++    ) {
++      const provider = pathname.includes("google") ? "google" : "apple";
++      let params = url.searchParams;
++      let appleUserJson = null;
++      if (req.method === "POST") {
++        const raw = (await parseBody(req, 256 * 1024)).toString("utf8");
++        params = new URLSearchParams(raw);
++        appleUserJson = params.get("user");
++      }
++
++      const fail = (message) => {
++        res.writeHead(302, {
++          Location: `/login?error=${encodeURIComponent(message)}`,
++          "Set-Cookie": oauth.clearState(),
++          "Cache-Control": "no-store",
++        });
++        res.end();
++      };
++
++      if (params.get("error")) return fail("Sign-in was cancelled.");
++
++      const cookies = auth.parseCookies(req);
++      const state = oauth.readState(cookies[oauth.STATE_COOKIE], params.get("state"));
++      if (!state.ok) return fail("Sign-in expired. Please try again.");
++
++      try {
++        const profile =
++          provider === "google"
++            ? await oauth.googleProfile(req, params.get("code"))
++            : await oauth.appleProfile(req, params.get("code"), params.get("id_token"), appleUserJson);
++
++        const result = auth.upsertSocialUser(profile);
++        if (!result.ok) return fail(result.error || "Sign-in failed.");
++
++        const { cookie } = auth.createSession(result.user.id);
++        res.writeHead(302, {
++          Location: state.next || "/studio",
++          "Set-Cookie": [cookie, oauth.clearState()],
++          "Cache-Control": "no-store",
++        });
++        return res.end();
++      } catch (e) {
++        console.error(`[oauth:${provider}]`, e.message);
++        return fail(e.message || "Sign-in failed.");
++      }
++    }
++
+     if (pathname === "/api/auth/register" && req.method === "POST") {
+       let body = {};
+       try {

@@ -1,0 +1,345 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 4bfc2a6..2f2aac8 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -503,7 +503,12 @@ function writeJob(job) {
+   fs.writeFileSync(jobPath(job.id), JSON.stringify(job, null, 2));
+ }
+ 
+-function listJobs(limit = 50) {
++/**
++ * Jobs on disk, newest first.
++ * Pass a userId to get only that account's jobs — a library is private, so
++ * everything without a matching owner is filtered out.
++ */
++function listJobs(limit = 50, userId) {
+   if (!fs.existsSync(JOBS_DIR)) return [];
+   const files = fs
+     .readdirSync(JOBS_DIR)
+@@ -516,6 +521,7 @@ function listJobs(limit = 50) {
+       }
+     })
+     .filter(Boolean)
++    .filter((j) => (userId ? j.userId === userId : true))
+     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+   return files.slice(0, limit);
+ }
+@@ -574,6 +580,8 @@ async function processVideo(sourcePath, options = {}) {
+ 
+   const job = {
+     id,
++    // keep the owner stamped by the seed so the job stays in ONE library
++    userId: options.userId || (readJob(id) || {}).userId || null,
+     status: "processing",
+     stage: "probing",
+     progress: 4,
+@@ -882,7 +890,7 @@ function scoreLinkEntry(entry, index) {
+   };
+ }
+ 
+-function createLinkBoard({ name, links, niche }) {
++function createLinkBoard({ name, links, niche, userId }) {
+   const id = crypto.randomBytes(5).toString("hex");
+   const scored = (links || [])
+     .filter((l) => l && l.url)
+@@ -915,6 +923,7 @@ function createLinkBoard({ name, links, niche }) {
+ 
+   const board = {
+     id,
++    userId: userId || null, // boards belong to the account that made them
+     name: name || "Link ranking board",
+     niche: niche || "general",
+     createdAt: new Date().toISOString(),
+diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
+index b487719..4727aa8 100644
+--- a/clipery/lib/linkVideoEngine.js
++++ b/clipery/lib/linkVideoEngine.js
+@@ -517,6 +517,7 @@ async function processMultiRank(sources, options = {}) {
+ 
+   const job = {
+     id,
++    userId: (options && options.userId) || (readJob(id) || {}).userId || null,
+     status: "processing",
+     stage: "scoring_sources",
+     progress: 5,
+@@ -725,6 +726,7 @@ async function processLinksToRankingVideo(links, options = {}) {
+   // seed job early
+   const job = {
+     id,
++    userId: (options && options.userId) || (readJob(id) || {}).userId || null,
+     status: "processing",
+     stage: "downloading",
+     progress: 2,
+diff --git a/clipery/scripts/claim-jobs.js b/clipery/scripts/claim-jobs.js
+new file mode 100644
+index 0000000..77b4354
+--- /dev/null
++++ b/clipery/scripts/claim-jobs.js
+@@ -0,0 +1,78 @@
++#!/usr/bin/env node
++/**
++ * Give old jobs an owner.
++ *
++ * Clips made before accounts existed have no userId, so they show up in
++ * nobody's library. Run this once to hand them to your account:
++ *
++ *   node scripts/claim-jobs.js you@example.com
++ *
++ * Add --dry to see what would change without touching anything.
++ */
++const fs = require("fs");
++const path = require("path");
++
++const ROOT = path.join(__dirname, "..");
++const JOBS_DIR = path.join(ROOT, "data", "jobs");
++const USERS_FILE = path.join(ROOT, "data", "users.json");
++const LINKS_FILE = path.join(ROOT, "data", "link-rankings.json");
++
++const email = String(process.argv[2] || "").trim().toLowerCase();
++const dry = process.argv.includes("--dry");
++
++if (!email) {
++  console.error("Usage: node scripts/claim-jobs.js you@example.com [--dry]");
++  process.exit(1);
++}
++
++let users = [];
++try {
++  users = JSON.parse(fs.readFileSync(USERS_FILE, "utf8")).users || [];
++} catch {
++  console.error("No accounts yet — register on the site first.");
++  process.exit(1);
++}
++
++const user = users.find((u) => String(u.email).toLowerCase() === email);
++if (!user) {
++  console.error(`No account for ${email}. Accounts: ${users.map((u) => u.email).join(", ") || "(none)"}`);
++  process.exit(1);
++}
++
++let claimed = 0;
++let skipped = 0;
++if (fs.existsSync(JOBS_DIR)) {
++  for (const file of fs.readdirSync(JOBS_DIR).filter((f) => f.endsWith(".json"))) {
++    const full = path.join(JOBS_DIR, file);
++    let job;
++    try {
++      job = JSON.parse(fs.readFileSync(full, "utf8"));
++    } catch {
++      continue;
++    }
++    if (job.userId) {
++      skipped++;
++      continue;
++    }
++    job.userId = user.id;
++    if (!dry) fs.writeFileSync(full, JSON.stringify(job, null, 2));
++    claimed++;
++  }
++}
++
++let boards = 0;
++try {
++  const data = JSON.parse(fs.readFileSync(LINKS_FILE, "utf8"));
++  for (const b of data.boards || []) {
++    if (!b.userId) {
++      b.userId = user.id;
++      boards++;
++    }
++  }
++  if (!dry && boards) fs.writeFileSync(LINKS_FILE, JSON.stringify(data, null, 2));
++} catch {}
++
++console.log(
++  `${dry ? "[dry run] would claim" : "Claimed"} ${claimed} job(s) and ${boards} board(s) for ${user.email}` +
++    (skipped ? ` — ${skipped} already owned` : "")
++);
+diff --git a/clipery/server.js b/clipery/server.js
+index 6825898..c80f59a 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -261,10 +261,31 @@ function serveFile(req, res, fullPath) {
+   });
+ }
+ 
++/**
++ * Rendered clips live in public/clips/<jobId>/… so ffmpeg can write them and
++ * <video> can stream them — but the URL must not be a public back door.
++ * Every hit is checked against the job's owner: your clips, your eyes only.
++ * Guessing a job id gets you a 404, same as a job that doesn't exist.
++ */
++function canSeeClip(req, clean) {
++  const m = /^\/clips\/([a-z0-9]+)\//i.exec(clean);
++  if (!m) return true; // not a clip path — nothing to guard here
++  const me = auth.currentUser(req);
++  if (!me) return false;
++  const job = readJob(m[1]);
++  if (!job) return false;
++  return job.userId === me.id;
++}
++
+ function serveStatic(req, res, pathname, search) {
+   // strip query already done by URL
+   let clean = pathname.split("?")[0];
+ 
++  if (!canSeeClip(req, clean)) {
++    send(res, 404, { error: "Not found" });
++    return;
++  }
++
+   // Studio & co. are members-only — bounce guests to the login page and
+   // remember where they were headed so we can send them back after login.
+   if (isProtectedPage(clean) && !auth.currentUser(req)) {
+@@ -309,6 +330,7 @@ function serveStatic(req, res, pathname, search) {
+ function seedJob(jobId, extra = {}) {
+   const jobSeed = {
+     id: jobId,
++    userId: extra.userId || null, // who this belongs to — nobody else may see it
+     status: "queued",
+     stage: "queued",
+     progress: 1,
+@@ -655,7 +677,8 @@ const server = http.createServer(async (req, res) => {
+ 
+     // List jobs
+     if (pathname === "/api/jobs" && req.method === "GET") {
+-      const jobs = listJobs(40).map((j) => ({
++      const me = auth.currentUser(req);
++      const jobs = listJobs(40, me.id).map((j) => ({
+         id: j.id,
+         status: j.status,
+         mode: j.mode,
+@@ -692,9 +715,10 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 410, { ok: false, error: "Demo videos removed. Upload your own video." });
+       }
+       const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = auth.currentUser(req);
+       const dest = path.join(UPLOADS, `${jobId}-sample.mp4`);
+       fs.copyFileSync(sample, dest);
+-      seedJob(jobId, {
++      seedJob(jobId, { userId: owner && owner.id,
+         mode,
+         sourceName: `demo-podcast.mp4 (${mode})`,
+       });
+@@ -768,10 +792,12 @@ const server = http.createServer(async (req, res) => {
+       });
+ 
+       const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = auth.currentUser(req);
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.writeFileSync(dest, filePart.body);
+-      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
++      seedJob(jobId, { userId: owner && owner.id, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
+       const q = enqueue(dest, {
++        userId: owner && owner.id,
+         jobId, sourceName: orig, mode, subtitles, subStyle,
+         hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+       });
+@@ -804,7 +830,8 @@ const server = http.createServer(async (req, res) => {
+       const hookOpts = readHook((n) => body[n]);
+       const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      seedJob(jobId, {
++      const owner = auth.currentUser(req);
++      seedJob(jobId, { userId: owner && owner.id,
+         mode,
+         sourceName: videoUrl.slice(0, 80),
+         subtitles,
+@@ -817,6 +844,7 @@ const server = http.createServer(async (req, res) => {
+         type: "from-url",
+         url: videoUrl,
+         meta: {
++          userId: owner && owner.id,
+           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
+           hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+         },
+@@ -838,13 +866,19 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 400, { ok: false, error: "Bad job id" });
+       }
+       const job = readJob(id);
+-      if (!job) return send(res, 404, { ok: false, error: "Job not found" });
++      const me = auth.currentUser(req);
++      if (!job || !me || job.userId !== me.id) {
++        return send(res, 404, { ok: false, error: "Job not found" });
++      }
+       return send(res, 200, { ok: true, job });
+     }
+ 
+     // Link ranking boards
+     if (pathname === "/api/rank/links" && req.method === "GET") {
+-      const boards = readLinkBoards().map((b) => ({
++      const me = auth.currentUser(req);
++      const boards = readLinkBoards()
++        .filter((b) => b.userId && me && b.userId === me.id)
++        .map((b) => ({
+         id: b.id,
+         name: b.name,
+         niche: b.niche,
+@@ -884,10 +918,12 @@ const server = http.createServer(async (req, res) => {
+       if (links.length > 40) {
+         return send(res, 400, { ok: false, error: "Max 40 links per board." });
+       }
++      const boardOwner = auth.currentUser(req);
+       const board = createLinkBoard({
+         name: body.name || "Link ranking",
+         niche: body.niche || "general",
+         links,
++        userId: boardOwner && boardOwner.id,
+       });
+       return send(res, 201, {
+         ok: true,
+@@ -898,8 +934,11 @@ const server = http.createServer(async (req, res) => {
+ 
+     if (pathname.startsWith("/api/rank/links/") && req.method === "GET") {
+       const id = pathname.split("/").pop();
++      const viewer = auth.currentUser(req);
+       const board = getLinkBoard(id);
+-      if (!board) return send(res, 404, { ok: false, error: "Board not found" });
++      if (!board || !viewer || board.userId !== viewer.id) {
++        return send(res, 404, { ok: false, error: "Board not found" });
++      }
+       return send(res, 200, { ok: true, board });
+     }
+ 
+@@ -943,7 +982,8 @@ const server = http.createServer(async (req, res) => {
+       const hookOpts = readHook((n) => body[n]);
+       const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      seedJob(jobId, {
++      const owner = auth.currentUser(req);
++      seedJob(jobId, { userId: owner && owner.id,
+         mode: "link-rank-video",
+         modeLabel: "Link ranking video",
+         sourceName: body.name || `${links.length} links → ranking video`,
+@@ -958,6 +998,7 @@ const server = http.createServer(async (req, res) => {
+         type: "link-rank-video",
+         links,
+         meta: {
++          userId: owner && owner.id,
+           jobId,
+           sourceName: boardTitle,
+           boardTitle,
+@@ -1004,6 +1045,7 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 400, { ok: false, error: "Maximum 5 videos." });
+       }
+       const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = auth.currentUser(req);
+       const sources = [];
+       for (let i = 0; i < files.length; i++) {
+         const f = files[i];
+@@ -1046,7 +1088,7 @@ const server = http.createServer(async (req, res) => {
+         const p = parts.find((x) => x.name === n);
+         return p ? p.body.toString("utf8") : "";
+       });
+-      seedJob(jobId, {
++      seedJob(jobId, { userId: owner && owner.id,
+         mode: "link-rank-video",
+         modeLabel: "Link ranking video",
+         sourceName: boardTitle,
+@@ -1060,6 +1102,7 @@ const server = http.createServer(async (req, res) => {
+         type: "multi-rank",
+         sources,
+         meta: {
++          userId: owner && owner.id,
+           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+           hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, trends: trendsUp,
+         },
