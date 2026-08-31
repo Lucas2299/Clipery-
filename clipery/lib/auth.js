@@ -81,7 +81,14 @@ const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(e))
 /** What the browser is allowed to know about an account. */
 function publicUser(u) {
   if (!u) return null;
-  return { id: u.id, email: u.email, name: u.name || "", createdAt: u.createdAt, plan: u.plan || "free" };
+  return {
+    id: u.id,
+    email: u.email,
+    name: u.name || "",
+    createdAt: u.createdAt,
+    plan: u.plan || "free",
+    providers: u.providers || (u.hash ? ["password"] : []),
+  };
 }
 
 function parseCookies(req) {
@@ -137,8 +144,46 @@ function registerUser({ email, password, name }) {
   return { ok: true, user };
 }
 
+/**
+ * Log in (or transparently sign up) via Google / Apple.
+ * Matching is by email, so signing in with Google to an address that already
+ * has a password account simply logs into that same account.
+ */
+function upsertSocialUser({ email, name, provider }) {
+  const mail = normalizeEmail(email);
+  if (!isValidEmail(mail)) return { ok: false, status: 400, error: "That account has no usable email." };
+
+  const users = readUsers();
+  const existing = users.find((u) => normalizeEmail(u.email) === mail);
+  if (existing) {
+    const known = existing.providers || (existing.hash ? ["password"] : []);
+    existing.providers = Array.from(new Set([...known, provider]));
+    if (!existing.name && name) existing.name = String(name).slice(0, 60);
+    writeUsers(users);
+    return { ok: true, user: existing, created: false };
+  }
+
+  const user = {
+    id: crypto.randomBytes(8).toString("hex"),
+    email: mail,
+    name: String(name || "").trim().slice(0, 60),
+    salt: "",
+    hash: "", // social-only account: no password to guess
+    providers: [provider],
+    plan: "free",
+    createdAt: new Date().toISOString(),
+  };
+  users.push(user);
+  writeUsers(users);
+  return { ok: true, user, created: true };
+}
+
 function loginUser({ email, password }) {
   const user = findUserByEmail(email);
+  if (user && !user.hash) {
+    const via = (user.providers || []).includes("apple") ? "Apple" : "Google";
+    return { ok: false, status: 401, error: `This account uses Sign in with ${via}.` };
+  }
   // Same message either way so nobody can probe which emails exist.
   if (!user || !verifyPassword(password, user.salt, user.hash))
     return { ok: false, status: 401, error: "Wrong email or password." };
@@ -182,6 +227,7 @@ module.exports = {
   COOKIE,
   registerUser,
   loginUser,
+  upsertSocialUser,
   createSession,
   destroySession,
   currentUser,

@@ -20,6 +20,7 @@ const {
 } = require("./lib/linkVideoEngine");
 const { normalizeSubStyle } = require("./lib/subtitles");
 const auth = require("./lib/auth");
+const oauth = require("./lib/oauth");
 
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
@@ -429,6 +430,81 @@ const server = http.createServer(async (req, res) => {
 
   try {
     /* ------------------------------ accounts ------------------------------ */
+    // Which social buttons to show (a provider without keys stays hidden)
+    if (pathname === "/api/auth/providers" && req.method === "GET") {
+      return send(res, 200, { ok: true, providers: oauth.providers() });
+    }
+
+    // Kick off Google / Apple sign-in
+    if ((pathname === "/api/auth/google" || pathname === "/api/auth/apple") && req.method === "GET") {
+      const provider = pathname.endsWith("google") ? "google" : "apple";
+      const on = provider === "google" ? oauth.googleConfigured() : oauth.appleConfigured();
+      if (!on) {
+        return send(res, 503, {
+          ok: false,
+          error: `Sign in with ${provider === "google" ? "Google" : "Apple"} is not configured on this server.`,
+        });
+      }
+      const state = oauth.makeState(url.searchParams.get("next"));
+      const target =
+        provider === "google"
+          ? oauth.googleAuthUrl(req, state.token)
+          : oauth.appleAuthUrl(req, state.token);
+      res.writeHead(302, { Location: target, "Set-Cookie": state.cookie, "Cache-Control": "no-store" });
+      return res.end();
+    }
+
+    // Come back from the provider (Google redirects with GET, Apple posts a form)
+    if (
+      (pathname === "/api/auth/google/callback" && req.method === "GET") ||
+      (pathname === "/api/auth/apple/callback" && (req.method === "POST" || req.method === "GET"))
+    ) {
+      const provider = pathname.includes("google") ? "google" : "apple";
+      let params = url.searchParams;
+      let appleUserJson = null;
+      if (req.method === "POST") {
+        const raw = (await parseBody(req, 256 * 1024)).toString("utf8");
+        params = new URLSearchParams(raw);
+        appleUserJson = params.get("user");
+      }
+
+      const fail = (message) => {
+        res.writeHead(302, {
+          Location: `/login?error=${encodeURIComponent(message)}`,
+          "Set-Cookie": oauth.clearState(),
+          "Cache-Control": "no-store",
+        });
+        res.end();
+      };
+
+      if (params.get("error")) return fail("Sign-in was cancelled.");
+
+      const cookies = auth.parseCookies(req);
+      const state = oauth.readState(cookies[oauth.STATE_COOKIE], params.get("state"));
+      if (!state.ok) return fail("Sign-in expired. Please try again.");
+
+      try {
+        const profile =
+          provider === "google"
+            ? await oauth.googleProfile(req, params.get("code"))
+            : await oauth.appleProfile(req, params.get("code"), params.get("id_token"), appleUserJson);
+
+        const result = auth.upsertSocialUser(profile);
+        if (!result.ok) return fail(result.error || "Sign-in failed.");
+
+        const { cookie } = auth.createSession(result.user.id);
+        res.writeHead(302, {
+          Location: state.next || "/studio",
+          "Set-Cookie": [cookie, oauth.clearState()],
+          "Cache-Control": "no-store",
+        });
+        return res.end();
+      } catch (e) {
+        console.error(`[oauth:${provider}]`, e.message);
+        return fail(e.message || "Sign-in failed.");
+      }
+    }
+
     if (pathname === "/api/auth/register" && req.method === "POST") {
       let body = {};
       try {
