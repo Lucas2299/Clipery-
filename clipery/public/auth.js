@@ -1,4 +1,4 @@
-/* Clipery — login / register page */
+/* Clipery - login / register page */
 (function () {
   var form = document.getElementById("auth-form");
   var msg = document.getElementById("auth-msg");
@@ -35,7 +35,7 @@
     pwHint.hidden = !reg;
     title.textContent = reg ? "Create your account" : "Welcome back";
     sub.textContent = reg
-      ? "Free to start — no card needed. You get the Studio right after."
+      ? "Free to start - no card needed. You get the Studio right after."
       : "Log in to open the Studio and your clip library.";
     submit.textContent = reg ? "Create account" : "Log in";
     password.setAttribute("autocomplete", reg ? "new-password" : "current-password");
@@ -74,7 +74,7 @@
       .catch(function () {});
   })();
 
-  // A failed social round-trip comes back as /login?error=…
+  // A failed social round-trip comes back as /login?error=...
   (function showOauthError() {
     var err = new URLSearchParams(location.search).get("error");
     if (err) say(err);
@@ -99,7 +99,7 @@
     if (mode === "register" && pass.length < 8) return say("Password must be at least 8 characters.");
 
     submit.disabled = true;
-    submit.textContent = mode === "register" ? "Creating…" : "Logging in…";
+    submit.textContent = mode === "register" ? "Creating..." : "Logging in...";
     say("");
 
     try {
@@ -115,7 +115,7 @@
         submit.textContent = mode === "register" ? "Create account" : "Log in";
         return;
       }
-      say(mode === "register" ? "Account created — opening Studio…" : "Logged in — opening Studio…", "ok");
+      say(mode === "register" ? "Account created - opening Studio..." : "Logged in - opening Studio...", "ok");
       location.href = nextUrl();
     } catch (err) {
       say("Network error. Check your connection and try again.");

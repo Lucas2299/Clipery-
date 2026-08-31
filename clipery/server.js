@@ -60,7 +60,7 @@ if (!fs.existsSync(WAITLIST_FILE)) {
 }
 
 // Only heavy MEDIA files may live in the browser cache. Code files (.js/.css/.html/.json...)
-// must always be fresh — otherwise an updated site runs on stale scripts and UI buttons die.
+// must always be fresh - otherwise an updated site runs on stale scripts and UI buttons die.
 const CACHEABLE_EXT = new Set([
   ".mp4", ".webm", ".mov", ".jpg", ".jpeg", ".png", ".webp", ".gif",
   ".svg", ".ico", ".woff", ".woff2", ".ass",
@@ -83,7 +83,7 @@ const MIME = {
   ".woff2": "font/woff2",
 };
 
-// Pretty routes → static files
+// Pretty routes -> static files
 const ROUTES = {
   "/": "index.html",
   "/studio": "studio.html",
@@ -124,6 +124,23 @@ const PROTECTED_API = [
   "/api/rank/links",
   "/api/jobs",
 ];
+
+// Guarded by FILE, not by URL spelling: whatever path a request uses, if it
+// ends up serving one of these it must belong to a logged-in account.
+const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html"]);
+const CLIPS_DIR = path.join(PUBLIC, "clips");
+
+/** Collapse "//studio", "/./studio.html", "%2e", backslashes, trailing "/" ... */
+function normalizePath(raw) {
+  let clean = String(raw || "/").split("?")[0];
+  try {
+    clean = decodeURIComponent(clean);
+  } catch {}
+  clean = clean.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+  clean = path.posix.normalize(clean);
+  if (clean.length > 1) clean = clean.replace(/\/+$/, "");
+  return clean.startsWith("/") ? clean : "/" + clean;
+}
 
 function isProtectedPage(pathname) {
   if (PROTECTED_PAGES.includes(pathname)) return true;
@@ -219,9 +236,27 @@ function parseMultipart(buf, contentType) {
 }
 
 function serveFile(req, res, fullPath) {
+  // Last line of defence - every page and every clip funnels through here.
+  // Matching on the resolved FILE name means no URL spelling gets around it
+  // (including Windows' case-insensitive "/STUDIO.HTML").
+  const base = path.basename(fullPath).toLowerCase();
+  const membersOnly = PROTECTED_FILES.has(base);
+  if (membersOnly && !auth.currentUser(req)) {
+    console.log(`[gate] guest blocked from ${req.url} - sent to /login`);
+    const next = encodeURIComponent(req.url || "/studio");
+    res.writeHead(302, { Location: `/login?next=${next}`, "Cache-Control": "no-store" });
+    res.end();
+    return;
+  }
+  if (!canSeeClipFile(req, fullPath)) {
+    console.log(`[gate] blocked clip request ${req.url}`);
+    send(res, 404, { error: "Not found" });
+    return;
+  }
+
   fs.stat(fullPath, (err, st) => {
     if (err || !st.isFile()) {
-      // SPA-ish fallback for unknown paths → 404 page
+      // SPA-ish fallback for unknown paths -> 404 page
       const notFound = path.join(PUBLIC, "404.html");
       if (fs.existsSync(notFound) && !fullPath.endsWith("404.html")) {
         res.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
@@ -255,17 +290,38 @@ function serveFile(req, res, fullPath) {
       "Content-Type": type,
       "Content-Length": st.size,
       "Accept-Ranges": "bytes",
-      "Cache-Control": CACHEABLE_EXT.has(ext) ? "public, max-age=3600" : "no-cache",
+      "Cache-Control": membersOnly
+        ? "no-store, must-revalidate"
+        : CACHEABLE_EXT.has(ext)
+        ? "public, max-age=3600"
+        : "no-cache",
     });
     fs.createReadStream(fullPath).pipe(res);
   });
 }
 
-function serveStatic(req, res, pathname, search) {
-  // strip query already done by URL
-  let clean = pathname.split("?")[0];
+/**
+ * Rendered clips live in public/clips/<jobId>/... so ffmpeg can write them and
+ * <video> can stream them - but the URL must not be a public back door.
+ * Checked on the RESOLVED file path, so "//clips/..." or "/a/../clips/..." can't
+ * sneak around it. Your clips, your eyes only; anyone else gets a 404.
+ */
+function canSeeClipFile(req, fullPath) {
+  const rel = path.relative(CLIPS_DIR, fullPath);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return true; // not a clip
+  const jobId = rel.split(path.sep)[0];
+  if (!jobId) return true;
+  const me = auth.currentUser(req);
+  if (!me) return false;
+  const job = readJob(jobId);
+  return Boolean(job && job.userId === me.id);
+}
 
-  // Studio & co. are members-only — bounce guests to the login page and
+function serveStatic(req, res, pathname, search) {
+  // One canonical form, so "//studio" and "/studio" take the same road
+  const clean = normalizePath(pathname);
+
+  // Studio & co. are members-only - bounce guests to the login page and
   // remember where they were headed so we can send them back after login.
   if (isProtectedPage(clean) && !auth.currentUser(req)) {
     const next = encodeURIComponent(clean + (search || ""));
@@ -279,7 +335,7 @@ function serveStatic(req, res, pathname, search) {
     res.end();
     return;
   }
-  // Studio is the hub — Rank video lives under Studio
+  // Studio is the hub - Rank video lives under Studio
   if (clean === "/rank" || clean === "/rank.html") {
     res.writeHead(302, { Location: "/studio?tool=rank", "Cache-Control": "no-store" });
     res.end();
@@ -288,7 +344,7 @@ function serveStatic(req, res, pathname, search) {
   if (ROUTES[clean]) {
     return serveFile(req, res, path.join(PUBLIC, ROUTES[clean]));
   }
-  // /job/abc → job.html (client reads id)
+  // /job/abc -> job.html (client reads id)
   if (/^\/job\/[a-f0-9]+$/i.test(clean)) {
     return serveFile(req, res, path.join(PUBLIC, "job.html"));
   }
@@ -309,6 +365,7 @@ function serveStatic(req, res, pathname, search) {
 function seedJob(jobId, extra = {}) {
   const jobSeed = {
     id: jobId,
+    userId: extra.userId || null, // who this belongs to - nobody else may see it
     status: "queued",
     stage: "queued",
     progress: 1,
@@ -420,7 +477,7 @@ function readSubStyle(get) {
   });
 }
 
-// user-supplied trend keywords: lowercase word list, max 12 — boosts hooks & ranking
+// user-supplied trend keywords: lowercase word list, max 12 - boosts hooks & ranking
 function readTrends(get) {
   const raw = String(get("trends") || "").toLowerCase();
   const list = raw
@@ -655,7 +712,8 @@ const server = http.createServer(async (req, res) => {
 
     // List jobs
     if (pathname === "/api/jobs" && req.method === "GET") {
-      const jobs = listJobs(40).map((j) => ({
+      const me = auth.currentUser(req);
+      const jobs = listJobs(40, me.id).map((j) => ({
         id: j.id,
         status: j.status,
         mode: j.mode,
@@ -692,9 +750,10 @@ const server = http.createServer(async (req, res) => {
         return send(res, 410, { ok: false, error: "Demo videos removed. Upload your own video." });
       }
       const jobId = crypto.randomBytes(6).toString("hex");
+      const owner = auth.currentUser(req);
       const dest = path.join(UPLOADS, `${jobId}-sample.mp4`);
       fs.copyFileSync(sample, dest);
-      seedJob(jobId, {
+      seedJob(jobId, { userId: owner && owner.id,
         mode,
         sourceName: `demo-podcast.mp4 (${mode})`,
       });
@@ -708,7 +767,7 @@ const server = http.createServer(async (req, res) => {
         jobId,
         mode,
         ...q,
-        message: "Clipping sample…",
+        message: "Clipping sample...",
         jobUrl: `/job/${jobId}`,
       });
     }
@@ -747,7 +806,7 @@ const server = http.createServer(async (req, res) => {
       let ext = path.extname(orig).toLowerCase() || ".mp4";
       const allowed = [".mp4", ".mov", ".webm", ".mkv", ".m4v", ""];
       if (ext && !allowed.includes(ext)) {
-        // still accept if browser sent odd name — sniff not available, default mp4
+        // still accept if browser sent odd name - sniff not available, default mp4
         ext = ".mp4";
       }
       if (!ext) ext = ".mp4";
@@ -768,10 +827,12 @@ const server = http.createServer(async (req, res) => {
       });
 
       const jobId = crypto.randomBytes(6).toString("hex");
+      const owner = auth.currentUser(req);
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
-      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
+      seedJob(jobId, { userId: owner && owner.id, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
       const q = enqueue(dest, {
+        userId: owner && owner.id,
         jobId, sourceName: orig, mode, subtitles, subStyle,
         hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
       });
@@ -780,7 +841,7 @@ const server = http.createServer(async (req, res) => {
         jobId,
         mode,
         ...q,
-        message: "Upload received. Processing…",
+        message: "Upload received. Processing...",
         jobUrl: `/job/${jobId}`,
       });
     }
@@ -804,7 +865,8 @@ const server = http.createServer(async (req, res) => {
       const hookOpts = readHook((n) => body[n]);
       const trends = readTrends((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
-      seedJob(jobId, {
+      const owner = auth.currentUser(req);
+      seedJob(jobId, { userId: owner && owner.id,
         mode,
         sourceName: videoUrl.slice(0, 80),
         subtitles,
@@ -817,6 +879,7 @@ const server = http.createServer(async (req, res) => {
         type: "from-url",
         url: videoUrl,
         meta: {
+          userId: owner && owner.id,
           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
           hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
         },
@@ -826,7 +889,7 @@ const server = http.createServer(async (req, res) => {
         jobId,
         mode,
         ...q,
-        message: "Downloading and clipping…",
+        message: "Downloading and clipping...",
         jobUrl: `/job/${jobId}`,
       });
     }
@@ -838,13 +901,19 @@ const server = http.createServer(async (req, res) => {
         return send(res, 400, { ok: false, error: "Bad job id" });
       }
       const job = readJob(id);
-      if (!job) return send(res, 404, { ok: false, error: "Job not found" });
+      const me = auth.currentUser(req);
+      if (!job || !me || job.userId !== me.id) {
+        return send(res, 404, { ok: false, error: "Job not found" });
+      }
       return send(res, 200, { ok: true, job });
     }
 
     // Link ranking boards
     if (pathname === "/api/rank/links" && req.method === "GET") {
-      const boards = readLinkBoards().map((b) => ({
+      const me = auth.currentUser(req);
+      const boards = readLinkBoards()
+        .filter((b) => b.userId && me && b.userId === me.id)
+        .map((b) => ({
         id: b.id,
         name: b.name,
         niche: b.niche,
@@ -884,10 +953,12 @@ const server = http.createServer(async (req, res) => {
       if (links.length > 40) {
         return send(res, 400, { ok: false, error: "Max 40 links per board." });
       }
+      const boardOwner = auth.currentUser(req);
       const board = createLinkBoard({
         name: body.name || "Link ranking",
         niche: body.niche || "general",
         links,
+        userId: boardOwner && boardOwner.id,
       });
       return send(res, 201, {
         ok: true,
@@ -898,13 +969,16 @@ const server = http.createServer(async (req, res) => {
 
     if (pathname.startsWith("/api/rank/links/") && req.method === "GET") {
       const id = pathname.split("/").pop();
+      const viewer = auth.currentUser(req);
       const board = getLinkBoard(id);
-      if (!board) return send(res, 404, { ok: false, error: "Board not found" });
+      if (!board || !viewer || board.userId !== viewer.id) {
+        return send(res, 404, { ok: false, error: "Board not found" });
+      }
       return send(res, 200, { ok: true, board });
     }
 
 
-    // ---- Multi-link → ranking VIDEO ----
+    // ---- Multi-link -> ranking VIDEO ----
     if (pathname === "/api/rank/video/links" && req.method === "POST") {
       const buf = await parseBody(req, 2e6);
       const body = JSON.parse(buf.toString("utf8") || "{}");
@@ -933,7 +1007,7 @@ const server = http.createServer(async (req, res) => {
         });
       }
       if (!links || links.length < 2) {
-        return send(res, 400, { ok: false, error: "Add 2–5 video links." });
+        return send(res, 400, { ok: false, error: "Add 2-5 video links." });
       }
       if (links.length > 5) {
         return send(res, 400, { ok: false, error: "Maximum 5 links." });
@@ -943,10 +1017,11 @@ const server = http.createServer(async (req, res) => {
       const hookOpts = readHook((n) => body[n]);
       const trends = readTrends((n) => body[n]);
       const jobId = crypto.randomBytes(6).toString("hex");
-      seedJob(jobId, {
+      const owner = auth.currentUser(req);
+      seedJob(jobId, { userId: owner && owner.id,
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
-        sourceName: body.name || `${links.length} links → ranking video`,
+        sourceName: body.name || `${links.length} links -> ranking video`,
         subtitles,
         subStyle,
         hook: hookOpts.enabled,
@@ -958,6 +1033,7 @@ const server = http.createServer(async (req, res) => {
         type: "link-rank-video",
         links,
         meta: {
+          userId: owner && owner.id,
           jobId,
           sourceName: boardTitle,
           boardTitle,
@@ -972,12 +1048,12 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         jobId,
         ...q,
-        message: "Building ranking video from links…",
+        message: "Building ranking video from links...",
         jobUrl: `/job/${jobId}`,
       });
     }
 
-    // Multi-file upload → ranking video
+    // Multi-file upload -> ranking video
     if (pathname === "/api/rank/video/upload" && req.method === "POST") {
       const ct = req.headers["content-type"] || "";
       if (!ct.includes("multipart/form-data")) {
@@ -1004,6 +1080,7 @@ const server = http.createServer(async (req, res) => {
         return send(res, 400, { ok: false, error: "Maximum 5 videos." });
       }
       const jobId = crypto.randomBytes(6).toString("hex");
+      const owner = auth.currentUser(req);
       const sources = [];
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
@@ -1046,7 +1123,7 @@ const server = http.createServer(async (req, res) => {
         const p = parts.find((x) => x.name === n);
         return p ? p.body.toString("utf8") : "";
       });
-      seedJob(jobId, {
+      seedJob(jobId, { userId: owner && owner.id,
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: boardTitle,
@@ -1060,6 +1137,7 @@ const server = http.createServer(async (req, res) => {
         type: "multi-rank",
         sources,
         meta: {
+          userId: owner && owner.id,
           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
           hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, trends: trendsUp,
         },
@@ -1068,7 +1146,7 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         jobId,
         ...q,
-        message: "Building ranking video from uploads…",
+        message: "Building ranking video from uploads...",
         jobUrl: `/job/${jobId}`,
       });
     }

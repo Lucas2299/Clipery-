@@ -1,5 +1,5 @@
 /**
- * Clipery accounts — register / login / sessions.
+ * Clipery accounts - register / login / sessions.
  *
  * Zero dependencies on purpose (the whole project runs on plain Node):
  *  - users live in data/users.json

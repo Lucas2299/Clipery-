@@ -1,17 +1,17 @@
 /**
- * Clipery social login — Sign in with Google + Sign in with Apple.
+ * Clipery social login - Sign in with Google + Sign in with Apple.
  *
  * Still zero dependencies: Node 18's global fetch does the token exchange and
  * crypto signs Apple's ES256 client secret.
  *
  * Configure with environment variables (see README). Any provider whose keys
- * are missing is simply hidden from the login page — the site keeps working
+ * are missing is simply hidden from the login page - the site keeps working
  * with email + password only.
  *
  *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
  *   APPLE_CLIENT_ID (Services ID), APPLE_TEAM_ID, APPLE_KEY_ID,
  *   APPLE_PRIVATE_KEY (contents of the .p8) or APPLE_PRIVATE_KEY_FILE (path)
- *   BASE_URL (e.g. https://clipery.com) — optional, otherwise taken from the request
+ *   BASE_URL (e.g. https://clipery.com) - optional, otherwise taken from the request
  */
 const crypto = require("crypto");
 const fs = require("fs");
