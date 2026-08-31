@@ -1,0 +1,667 @@
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index 05a9b35..9eecb48 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -223,6 +223,132 @@ function currentUser(req) {
+ 
+ const clearCookie = () => sessionCookie("", 0);
+ 
++
++/* ---------------------------------- plans ---------------------------------- */
++
++/**
++ * What each plan may do per calendar month. "videos" is how many jobs the
++ * account can start (uploads, links, ranking videos - anything that renders).
++ * The owner can change a plan or hand out bonus videos from the dashboard.
++ */
++const PLANS = {
++  free: { id: "free", label: "Free", videos: 5 },
++  plus: { id: "plus", label: "Plus", videos: 50 },
++  pro: { id: "pro", label: "Pro", videos: 200 },
++  unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity },
++};
++
++const currentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM
++
++function planOf(user) {
++  return PLANS[(user && user.plan) || "free"] || PLANS.free;
++}
++
++/** Usage for this month, reset automatically when the month rolls over. */
++function usageOf(user) {
++  const month = currentMonth();
++  if (!user.usage || user.usage.month !== month) {
++    user.usage = { month, videos: 0 };
++  }
++  return user.usage;
++}
++
++/** How many videos this account may still make right now. */
++function remainingVideos(user) {
++  if (!user) return 0;
++  const limit = planOf(user).videos + (Number(user.bonusVideos) || 0);
++  const used = usageOf(user).videos;
++  return limit === Infinity ? Infinity : Math.max(0, limit - used);
++}
++
++/** Count one rendered video against the account. Returns false when out. */
++function consumeVideo(userId) {
++  const users = readUsers();
++  const user = users.find((u) => u.id === userId);
++  if (!user) return { ok: false, error: "Account not found." };
++  if (remainingVideos(user) <= 0) {
++    return {
++      ok: false,
++      status: 402,
++      error: `You have used all ${planOf(user).videos + (Number(user.bonusVideos) || 0)} videos on the ${planOf(user).label} plan this month.`,
++    };
++  }
++  usageOf(user).videos += 1;
++  writeUsers(users);
++  return { ok: true, remaining: remainingVideos(user) };
++}
++
++/* ---------------------------------- owner ---------------------------------- */
++
++/**
++ * Who runs this install. Either listed in ADMIN_EMAILS, or - so a fresh
++ * install is never locked out - the very first account created.
++ */
++function isAdmin(user) {
++  if (!user) return false;
++  if (user.role === "owner") return true;
++  const list = String(process.env.ADMIN_EMAILS || "")
++    .split(",")
++    .map((e) => e.trim().toLowerCase())
++    .filter(Boolean);
++  if (list.includes(normalizeEmail(user.email))) return true;
++  const users = readUsers();
++  return users.length > 0 && users[0].id === user.id;
++}
++
++/** Everyone, with the numbers the dashboard needs. */
++function listUsers() {
++  return readUsers().map((u) => {
++    const limit = planOf(u).videos + (Number(u.bonusVideos) || 0);
++    return {
++      ...publicUser(u),
++      role: isAdmin(u) ? "owner" : "member",
++      bonusVideos: Number(u.bonusVideos) || 0,
++      planLabel: planOf(u).label,
++      used: usageOf(u).videos,
++      limit: limit === Infinity ? null : limit,
++      remaining: remainingVideos(u) === Infinity ? null : remainingVideos(u),
++    };
++  });
++}
++
++/** Owner action: move somebody to another plan. */
++function setPlan(userId, plan) {
++  if (!PLANS[plan]) return { ok: false, status: 400, error: "Unknown plan." };
++  const users = readUsers();
++  const user = users.find((u) => u.id === userId);
++  if (!user) return { ok: false, status: 404, error: "Account not found." };
++  user.plan = plan;
++  writeUsers(users);
++  return { ok: true, user: publicUser(user) };
++}
++
++/** Owner action: hand out extra videos on top of the plan. */
++function addBonusVideos(userId, amount) {
++  const n = Math.round(Number(amount) || 0);
++  if (!n) return { ok: false, status: 400, error: "Give a number of videos." };
++  const users = readUsers();
++  const user = users.find((u) => u.id === userId);
++  if (!user) return { ok: false, status: 404, error: "Account not found." };
++  user.bonusVideos = Math.max(0, (Number(user.bonusVideos) || 0) + n);
++  writeUsers(users);
++  return { ok: true, bonusVideos: user.bonusVideos };
++}
++
++/** Owner action: wipe this month's usage for one account. */
++function resetUsage(userId) {
++  const users = readUsers();
++  const user = users.find((u) => u.id === userId);
++  if (!user) return { ok: false, status: 404, error: "Account not found." };
++  user.usage = { month: currentMonth(), videos: 0 };
++  writeUsers(users);
++  return { ok: true };
++}
++
++function findUserById(id) {
++  return readUsers().find((u) => u.id === id) || null;
++}
++
+ module.exports = {
+   COOKIE,
+   registerUser,
+@@ -235,4 +361,14 @@ module.exports = {
+   parseCookies,
+   clearCookie,
+   isValidEmail,
++  PLANS,
++  planOf,
++  remainingVideos,
++  consumeVideo,
++  isAdmin,
++  listUsers,
++  setPlan,
++  addBonusVideos,
++  resetUsage,
++  findUserById,
+ };
+diff --git a/clipery/public/admin.html b/clipery/public/admin.html
+new file mode 100644
+index 0000000..64628eb
+--- /dev/null
++++ b/clipery/public/admin.html
+@@ -0,0 +1,111 @@
++<!DOCTYPE html>
++<html lang="en">
++  <head>
++    <meta charset="utf-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <title>Owner dashboard - Clipery</title>
++    <meta name="theme-color" content="#07070b" />
++    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
++    <link rel="stylesheet" href="/styles.css" />
++    <style>
++      .adm { max-width: 1180px; margin: 0 auto; padding: 1.6rem 1.1rem 4rem; }
++      .adm h1 { font-size: 1.7rem; margin: 0 0 .3rem; }
++      .adm .lede { color: #9894a6; margin: 0 0 1.6rem; font-size: .93rem; }
++      .adm-tabs { display: flex; gap: .5rem; margin: 0 0 1.4rem; }
++      .adm-tab {
++        padding: .55rem 1.2rem; border-radius: 999px; cursor: pointer; font-family: inherit;
++        font-weight: 700; font-size: .9rem; color: #f4f1ea; background: transparent;
++        border: 1px solid rgba(255,255,255,.16);
++      }
++      .adm-tab.on { background: linear-gradient(135deg,#ff4d6d,#ff8a4c); border-color: transparent; }
++      .stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: .8rem; margin: 0 0 1.6rem; }
++      .stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: .9rem 1rem; }
++      .stat b { display: block; font-size: 1.5rem; font-weight: 800; }
++      .stat span { color: #9894a6; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
++      table.adm-t { width: 100%; border-collapse: collapse; font-size: .89rem; }
++      table.adm-t th {
++        text-align: left; color: #9894a6; font-size: .74rem; text-transform: uppercase;
++        letter-spacing: .07em; padding: .5rem .6rem; border-bottom: 1px solid rgba(255,255,255,.1);
++      }
++      table.adm-t td { padding: .65rem .6rem; border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: middle; }
++      table.adm-t tr:hover td { background: rgba(255,255,255,.03); }
++      .pill { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 800; }
++      .pill.free { background: rgba(255,255,255,.1); color: #c9c5d8; }
++      .pill.plus { background: rgba(139,124,255,.2); color: #b9aeff; }
++      .pill.pro { background: rgba(255,138,76,.2); color: #ffc09a; }
++      .pill.unlimited { background: rgba(200,245,66,.16); color: #dcf98d; }
++      .pill.owner { background: rgba(255,77,109,.2); color: #ffb3c1; }
++      select, .adm input[type="number"] {
++        background: rgba(0,0,0,.45); color: #f4f1ea; border: 1px solid rgba(255,255,255,.16);
++        border-radius: 9px; padding: .35rem .5rem; font-family: inherit; font-size: .85rem;
++      }
++      .adm input[type="number"] { width: 66px; }
++      .mini {
++        padding: .35rem .7rem; border-radius: 999px; cursor: pointer; font-family: inherit;
++        font-weight: 700; font-size: .78rem; color: #fff; border: none;
++        background: linear-gradient(135deg,#ff4d6d,#ff8a4c);
++      }
++      .mini.ghost { background: transparent; border: 1px solid rgba(255,255,255,.2); color: #f4f1ea; }
++      .bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; width: 96px; }
++      .bar i { display: block; height: 100%; background: linear-gradient(90deg,#c8f542,#ff8a4c); }
++      .vids { display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: .9rem; }
++      .vid { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; overflow: hidden; }
++      .vid video { width: 100%; display: block; background: #000; aspect-ratio: 9/16; object-fit: cover; }
++      .vid .meta { padding: .55rem .7rem .7rem; }
++      .vid .who { font-size: .76rem; color: #ff8a4c; font-weight: 800; word-break: break-all; }
++      .vid .nm { font-size: .8rem; margin: .15rem 0 .3rem; word-break: break-word; }
++      .vid .sc { font-size: .72rem; color: #9894a6; }
++      .empty { color: #66627a; padding: 2rem 0; text-align: center; }
++      .flash {
++        position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
++        background: #16161f; border: 1px solid rgba(200,245,66,.4); color: #dcf98d;
++        padding: .7rem 1.1rem; border-radius: 12px; font-size: .87rem; display: none; z-index: 50;
++      }
++    </style>
++  </head>
++  <body>
++    <header class="header">
++      <div class="header-inner">
++        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
++        <nav class="nav" aria-label="Primary">
++          <a href="/studio" data-nav>Studio</a>
++          <a href="/library" data-nav>Library</a>
++          <a href="/admin" data-nav class="active">Dashboard</a>
++        </nav>
++      </div>
++    </header>
++
++    <main class="adm">
++      <h1>Owner dashboard</h1>
++      <p class="lede">Everything made on this install, and who is allowed to make how much.</p>
++
++      <div class="stats" id="stats"></div>
++
++      <div class="adm-tabs">
++        <button type="button" class="adm-tab on" data-tab="people">People</button>
++        <button type="button" class="adm-tab" data-tab="videos">All videos</button>
++      </div>
++
++      <section id="tab-people">
++        <table class="adm-t">
++          <thead>
++            <tr>
++              <th>Account</th><th>Plan</th><th>Used this month</th>
++              <th>Bonus</th><th>Change plan</th><th>Give videos</th><th></th>
++            </tr>
++          </thead>
++          <tbody id="people"></tbody>
++        </table>
++      </section>
++
++      <section id="tab-videos" hidden>
++        <div class="vids" id="videos"></div>
++      </section>
++    </main>
++
++    <div class="flash" id="flash"></div>
++
++    <script src="/shared.js"></script>
++    <script src="/admin.js"></script>
++  </body>
++</html>
+diff --git a/clipery/public/admin.js b/clipery/public/admin.js
+new file mode 100644
+index 0000000..bacb896
+--- /dev/null
++++ b/clipery/public/admin.js
+@@ -0,0 +1,151 @@
++/* Clipery - owner dashboard */
++(function () {
++  var esc = (window.CF && window.CF.escapeHtml) || function (s) { return String(s); };
++  var people = [];
++  var plans = [];
++  var jobs = [];
++
++  function flash(text) {
++    var f = document.getElementById("flash");
++    f.textContent = text;
++    f.style.display = "block";
++    setTimeout(function () { f.style.display = "none"; }, 2600);
++  }
++
++  async function api(url, body) {
++    var res = await fetch(url, body
++      ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
++      : undefined);
++    var data = await res.json().catch(function () { return {}; });
++    if (!res.ok || !data.ok) throw new Error(data.error || "Request failed");
++    return data;
++  }
++
++  function stats() {
++    var totalClips = jobs.reduce(function (a, j) { return a + (j.clipCount || 0); }, 0);
++    var usedThisMonth = people.reduce(function (a, u) { return a + (u.used || 0); }, 0);
++    var paying = people.filter(function (u) { return u.plan && u.plan !== "free"; }).length;
++    document.getElementById("stats").innerHTML =
++      card(people.length, "accounts") +
++      card(paying, "on a paid plan") +
++      card(jobs.length, "jobs made") +
++      card(totalClips, "clips rendered") +
++      card(usedThisMonth, "videos this month");
++  }
++  function card(n, label) {
++    return '<div class="stat"><b>' + n + "</b><span>" + label + "</span></div>";
++  }
++
++  function renderPeople() {
++    var rows = people.map(function (u) {
++      var limit = u.limit === null ? "unlimited" : u.limit;
++      var pct = u.limit ? Math.min(100, Math.round((u.used / u.limit) * 100)) : 0;
++      var options = plans.map(function (p) {
++        return '<option value="' + p.id + '"' + (p.id === u.plan ? " selected" : "") + ">" + esc(p.label) + "</option>";
++      }).join("");
++      return (
++        "<tr data-id='" + u.id + "'>" +
++        "<td><b>" + esc(u.name || u.email) + "</b><br><span style='color:#66627a;font-size:.78rem'>" + esc(u.email) + "</span></td>" +
++        '<td><span class="pill ' + esc(u.plan) + '">' + esc(u.planLabel) + "</span>" +
++        (u.role === "owner" ? ' <span class="pill owner">owner</span>' : "") + "</td>" +
++        "<td>" + u.used + " / " + limit +
++        '<div class="bar"><i style="width:' + pct + '%"></i></div></td>' +
++        "<td>" + (u.bonusVideos ? "+" + u.bonusVideos : "-") + "</td>" +
++        '<td><select data-plan>' + options + "</select></td>" +
++        '<td><input type="number" data-bonus value="10" min="1" /> ' +
++        '<button class="mini" data-give>Give</button></td>' +
++        '<td><button class="mini ghost" data-reset>Reset usage</button></td>' +
++        "</tr>"
++      );
++    });
++    document.getElementById("people").innerHTML =
++      rows.join("") || '<tr><td colspan="7" class="empty">No accounts yet.</td></tr>';
++  }
++
++  function renderVideos() {
++    var box = document.getElementById("videos");
++    var cards = [];
++    jobs.forEach(function (j) {
++      (j.clips || []).forEach(function (c) {
++        cards.push(
++          '<div class="vid">' +
++          '<video src="' + esc(c.url) + '" controls preload="metadata"></video>' +
++          '<div class="meta">' +
++          '<div class="who">' + esc(j.ownerEmail) + "</div>" +
++          '<div class="nm">' + esc(c.title || j.sourceName || "clip") + "</div>" +
++          '<div class="sc">score ' + (c.score || "-") + " &middot; " +
++          new Date(j.createdAt).toLocaleDateString() + "</div>" +
++          "</div></div>"
++        );
++      });
++      if (j.compilation) {
++        cards.push(
++          '<div class="vid">' +
++          '<video src="' + esc(j.compilation) + '" controls preload="metadata"></video>' +
++          '<div class="meta"><div class="who">' + esc(j.ownerEmail) + "</div>" +
++          '<div class="nm">Ranking video</div>' +
++          '<div class="sc">' + new Date(j.createdAt).toLocaleDateString() + "</div></div></div>"
++        );
++      }
++    });
++    box.innerHTML = cards.join("") || '<p class="empty">No videos rendered yet.</p>';
++  }
++
++  document.getElementById("people").addEventListener("change", async function (e) {
++    if (!e.target.hasAttribute("data-plan")) return;
++    var id = e.target.closest("tr").getAttribute("data-id");
++    try {
++      await api("/api/admin/plan", { userId: id, plan: e.target.value });
++      flash("Plan updated");
++      await load();
++    } catch (err) { flash(err.message); }
++  });
++
++  document.getElementById("people").addEventListener("click", async function (e) {
++    var row = e.target.closest("tr");
++    if (!row) return;
++    var id = row.getAttribute("data-id");
++    try {
++      if (e.target.hasAttribute("data-give")) {
++        var n = row.querySelector("[data-bonus]").value;
++        await api("/api/admin/bonus", { userId: id, videos: n });
++        flash("Gave " + n + " extra videos");
++        await load();
++      }
++      if (e.target.hasAttribute("data-reset")) {
++        await api("/api/admin/reset-usage", { userId: id });
++        flash("Usage reset");
++        await load();
++      }
++    } catch (err) { flash(err.message); }
++  });
++
++  Array.prototype.forEach.call(document.querySelectorAll(".adm-tab"), function (t) {
++    t.addEventListener("click", function () {
++      Array.prototype.forEach.call(document.querySelectorAll(".adm-tab"), function (x) {
++        x.classList.toggle("on", x === t);
++      });
++      var tab = t.getAttribute("data-tab");
++      document.getElementById("tab-people").hidden = tab !== "people";
++      document.getElementById("tab-videos").hidden = tab !== "videos";
++    });
++  });
++
++  async function load() {
++    try {
++      var u = await api("/api/admin/users");
++      people = u.users;
++      plans = u.plans;
++      var j = await api("/api/admin/jobs");
++      jobs = j.jobs;
++      stats();
++      renderPeople();
++      renderVideos();
++    } catch (err) {
++      document.querySelector(".adm").innerHTML =
++        '<p class="empty">' + esc(err.message) + "</p>";
++    }
++  }
++
++  load();
++})();
+diff --git a/clipery/public/shared.js b/clipery/public/shared.js
+index 33c1ed1..4ea6f63 100644
+--- a/clipery/public/shared.js
++++ b/clipery/public/shared.js
+@@ -267,6 +267,13 @@
+     wrap.setAttribute("data-account", "");
+     wrap.style.cssText = "display:inline-flex;align-items:center;gap:0.55rem;margin-left:0.4rem";
+ 
++    if (user && user.isOwner) {
++      var dash = document.createElement("a");
++      dash.href = "/admin";
++      dash.textContent = "Dashboard";
++      dash.style.cssText = "font-size:0.82rem;font-weight:800;color:#ff8a4c;text-decoration:none";
++      wrap.appendChild(dash);
++    }
+     if (user) {
+       var who = document.createElement("span");
+       who.textContent = user.name || user.email;
+diff --git a/clipery/server.js b/clipery/server.js
+index 362a14a..147f485 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -98,6 +98,8 @@ const ROUTES = {
+   "/waitlist.html": "waitlist.html",
+   "/job": "job.html",
+   "/job.html": "job.html",
++  "/admin": "admin.html",
++  "/admin.html": "admin.html",
+   "/login": "login.html",
+   "/login.html": "login.html",
+   "/register": "login.html",
+@@ -128,6 +130,8 @@ const PROTECTED_API = [
+ // Guarded by FILE, not by URL spelling: whatever path a request uses, if it
+ // ends up serving one of these it must belong to a logged-in account.
+ const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html"]);
++// The dashboard is owner-only, a stricter club than the members pages.
++const OWNER_FILES = new Set(["admin.html"]);
+ const CLIPS_DIR = path.join(PUBLIC, "clips");
+ 
+ /** Collapse "//studio", "/./studio.html", "%2e", backslashes, trailing "/" ... */
+@@ -240,7 +244,18 @@ function serveFile(req, res, fullPath) {
+   // Matching on the resolved FILE name means no URL spelling gets around it
+   // (including Windows' case-insensitive "/STUDIO.HTML").
+   const base = path.basename(fullPath).toLowerCase();
+-  const membersOnly = PROTECTED_FILES.has(base);
++  const membersOnly = PROTECTED_FILES.has(base) || OWNER_FILES.has(base);
++  if (OWNER_FILES.has(base) && !auth.isAdmin(auth.currentUser(req))) {
++    const me = auth.currentUser(req);
++    console.log(`[gate] ${me ? me.email : "guest"} blocked from the owner dashboard`);
++    const next = encodeURIComponent(req.url || "/admin");
++    res.writeHead(302, {
++      Location: me ? "/studio" : `/login?next=${next}`,
++      "Cache-Control": "no-store",
++    });
++    res.end();
++    return;
++  }
+   if (membersOnly && !auth.currentUser(req)) {
+     console.log(`[gate] guest blocked from ${req.url} - sent to /login`);
+     const next = encodeURIComponent(req.url || "/studio");
+@@ -314,7 +329,9 @@ function canSeeClipFile(req, fullPath) {
+   const me = auth.currentUser(req);
+   if (!me) return false;
+   const job = readJob(jobId);
+-  return Boolean(job && job.userId === me.id);
++  if (!job) return false;
++  // The owner can watch anything - that is the point of the dashboard.
++  return job.userId === me.id || auth.isAdmin(me);
+ }
+ 
+ function serveStatic(req, res, pathname, search) {
+@@ -362,6 +379,30 @@ function serveStatic(req, res, pathname, search) {
+   serveFile(req, res, full);
+ }
+ 
++
++/**
++ * Take one video off the account's monthly allowance. Replies 402 with a clear
++ * message when the plan is used up, so the Studio can tell them what to do.
++ */
++function chargeVideo(req, res) {
++  const me = auth.currentUser(req);
++  if (!me) {
++    send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
++    return null;
++  }
++  const charged = auth.consumeVideo(me.id);
++  if (!charged.ok) {
++    send(res, charged.status || 402, {
++      ok: false,
++      error: charged.error,
++      upgrade: true,
++      plan: auth.planOf(me).id,
++    });
++    return null;
++  }
++  return me;
++}
++
+ function seedJob(jobId, extra = {}) {
+   const jobSeed = {
+     id: jobId,
+@@ -618,7 +659,78 @@ const server = http.createServer(async (req, res) => {
+ 
+     if (pathname === "/api/auth/me" && req.method === "GET") {
+       const user = auth.currentUser(req);
+-      return send(res, 200, { ok: true, user: auth.publicUser(user) });
++      if (!user) return send(res, 200, { ok: true, user: null });
++      const left = auth.remainingVideos(user);
++      return send(res, 200, {
++        ok: true,
++        user: {
++          ...auth.publicUser(user),
++          isOwner: auth.isAdmin(user),
++          planLabel: auth.planOf(user).label,
++          videosLeft: left === Infinity ? null : left,
++        },
++      });
++    }
++
++    /* ---------------------------- owner dashboard ---------------------------- */
++    if (pathname.startsWith("/api/admin/")) {
++      const boss = auth.currentUser(req);
++      if (!auth.isAdmin(boss)) {
++        return send(res, 403, { ok: false, error: "Owner only." });
++      }
++
++      // Everyone, with plan + usage
++      if (pathname === "/api/admin/users" && req.method === "GET") {
++        return send(res, 200, { ok: true, users: auth.listUsers(), plans: Object.values(auth.PLANS).map((p) => ({ id: p.id, label: p.label, videos: p.videos === Infinity ? null : p.videos })) });
++      }
++
++      // Every job on the install, newest first, with its owner
++      if (pathname === "/api/admin/jobs" && req.method === "GET") {
++        const people = new Map(auth.listUsers().map((u) => [u.id, u]));
++        const jobs = listJobs(200).map((j) => {
++          const owner = people.get(j.userId);
++          return {
++            id: j.id,
++            status: j.status,
++            stage: j.stage,
++            progress: j.progress,
++            mode: j.mode,
++            sourceName: j.sourceName,
++            createdAt: j.createdAt,
++            duration: j.duration,
++            error: j.error,
++            clipCount: (j.clips || []).length,
++            clips: (j.clips || []).map((c) => ({ url: c.url, score: c.score, title: c.title })),
++            compilation: j.compilation && j.compilation.url ? j.compilation.url : null,
++            ownerId: j.userId || null,
++            ownerEmail: owner ? owner.email : j.userId ? "(deleted account)" : "(no owner)",
++          };
++        });
++        return send(res, 200, { ok: true, jobs });
++      }
++
++      // Move somebody to another plan
++      if (pathname === "/api/admin/plan" && req.method === "POST") {
++        const body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
++        const r = auth.setPlan(body.userId, body.plan);
++        return send(res, r.ok ? 200 : r.status || 400, r);
++      }
++
++      // Hand out extra videos on top of the plan
++      if (pathname === "/api/admin/bonus" && req.method === "POST") {
++        const body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
++        const r = auth.addBonusVideos(body.userId, body.videos);
++        return send(res, r.ok ? 200 : r.status || 400, r);
++      }
++
++      // Clear this month's usage
++      if (pathname === "/api/admin/reset-usage" && req.method === "POST") {
++        const body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
++        const r = auth.resetUsage(body.userId);
++        return send(res, r.ok ? 200 : r.status || 400, r);
++      }
++
++      return send(res, 404, { ok: false, error: "Unknown admin endpoint." });
+     }
+ 
+     // Locked API: no account, no clipping.
+@@ -750,7 +862,8 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 410, { ok: false, error: "Demo videos removed. Upload your own video." });
+       }
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      const owner = auth.currentUser(req);
++      const owner = chargeVideo(req, res);
++      if (!owner) return;
+       const dest = path.join(UPLOADS, `${jobId}-sample.mp4`);
+       fs.copyFileSync(sample, dest);
+       seedJob(jobId, { userId: owner && owner.id,
+@@ -827,7 +940,8 @@ const server = http.createServer(async (req, res) => {
+       });
+ 
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      const owner = auth.currentUser(req);
++      const owner = chargeVideo(req, res);
++      if (!owner) return;
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.writeFileSync(dest, filePart.body);
+       seedJob(jobId, { userId: owner && owner.id, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
+@@ -865,7 +979,8 @@ const server = http.createServer(async (req, res) => {
+       const hookOpts = readHook((n) => body[n]);
+       const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      const owner = auth.currentUser(req);
++      const owner = chargeVideo(req, res);
++      if (!owner) return;
+       seedJob(jobId, { userId: owner && owner.id,
+         mode,
+         sourceName: videoUrl.slice(0, 80),
+@@ -902,7 +1017,7 @@ const server = http.createServer(async (req, res) => {
+       }
+       const job = readJob(id);
+       const me = auth.currentUser(req);
+-      if (!job || !me || job.userId !== me.id) {
++      if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) {
+         return send(res, 404, { ok: false, error: "Job not found" });
+       }
+       return send(res, 200, { ok: true, job });
+@@ -1017,7 +1132,8 @@ const server = http.createServer(async (req, res) => {
+       const hookOpts = readHook((n) => body[n]);
+       const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      const owner = auth.currentUser(req);
++      const owner = chargeVideo(req, res);
++      if (!owner) return;
+       seedJob(jobId, { userId: owner && owner.id,
+         mode: "link-rank-video",
+         modeLabel: "Link ranking video",
+@@ -1080,7 +1196,8 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 400, { ok: false, error: "Maximum 5 videos." });
+       }
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      const owner = auth.currentUser(req);
++      const owner = chargeVideo(req, res);
++      if (!owner) return;
+       const sources = [];
+       for (let i = 0; i < files.length; i++) {
+         const f = files[i];
