@@ -26,8 +26,8 @@ const MODES = {
     label: "Viral clips",
     description: "Short hook-first cuts optimized for TikTok / Reels / Shorts",
     targetMin: 30,
-    targetMax: 90,
-    ideal: 60,
+    targetMax: 50,
+    ideal: 40,
     maxClips: 8,
     sceneThreshold: 0.2,
     captionStyle: "viral",
@@ -37,8 +37,8 @@ const MODES = {
     label: "Ranking analysis",
     description: "Score every moment with a full breakdown — post order ready",
     targetMin: 30,
-    targetMax: 90,
-    ideal: 60,
+    targetMax: 50,
+    ideal: 40,
     maxClips: 10,
     sceneThreshold: 0.18,
     captionStyle: "rank",
@@ -213,12 +213,11 @@ function scoreDimensions(c, duration, energy, mode, index) {
   const mid = (c.start + c.end) / 2;
   const pos = mid / Math.max(duration, 1);
 
-  // Length fit — 30s minimum, ~60s is the sweet spot, longer is fine
+  // Length fit — testing mode: 30s minimum, ~40s sweet spot, max ~50s (PC-friendly)
   let length = 30;
-  if (len >= 50 && len <= 70) length = 98;
-  else if (len >= 40 && len <= 85) length = 92;
-  else if (len >= mode.targetMin && len <= mode.targetMax) length = 84;
-  else if (len > mode.targetMax) length = 70;
+  if (len >= 36 && len <= 44) length = 98;
+  else if (len >= mode.targetMin && len <= mode.targetMax) length = 92;
+  else if (len > mode.targetMax && len <= 60) length = 68;
   else if (len >= 20) length = 45;
 
   // Hook / cold-open strength (first seconds win the algorithm)
@@ -244,7 +243,7 @@ function scoreDimensions(c, duration, energy, mode, index) {
 
   // Replay / share potential
   const replay = Math.round(
-    Math.min(99, pacing * 0.4 + hook * 0.35 + (len >= 30 && len <= 85 ? 90 : 55) * 0.25)
+    Math.min(99, pacing * 0.4 + hook * 0.35 + (len >= 30 && len <= 55 ? 90 : 55) * 0.25)
   );
 
   // AI viral prediction (weighted for “will this go viral?”)

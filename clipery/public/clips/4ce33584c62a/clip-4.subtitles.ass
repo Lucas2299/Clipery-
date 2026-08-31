@@ -1,0 +1,129 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 384
+PlayResY: 684
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Cap,DejaVu Sans,30,&H006D4DFF,&H73FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0,8,12,12,500,1
+Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:00.10,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}And {\1c&H73FFFFFF}being {\1c&H73FFFFFF}the\N{\1c&H73FFFFFF}responsible {\1c&H73FFFFFF}little
+Dialogue: 0,0:00:00.10,0:00:00.52,Cap,,0,0,0,,{\1c&H004CE7FF}And {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}being {\1c&H73FFFFFF}the\N{\1c&H73FFFFFF}responsible {\1c&H73FFFFFF}little
+Dialogue: 0,0:00:00.52,0:00:00.68,Cap,,0,0,0,,{\1c&H004CE7FF}And {\1c&H006D4DFF}being {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the\N{\1c&H73FFFFFF}responsible {\1c&H73FFFFFF}little
+Dialogue: 0,0:00:00.68,0:00:01.22,Cap,,0,0,0,,{\1c&H004CE7FF}And {\1c&H006D4DFF}being {\1c&H00F5D43C}the\N{\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}responsible {\1c&H73FFFFFF}little
+Dialogue: 0,0:00:01.22,0:00:01.50,Cap,,0,0,0,,{\1c&H004CE7FF}And {\1c&H006D4DFF}being {\1c&H00F5D43C}the\N{\1c&H0058D130}responsible {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}little
+Dialogue: 0,0:00:01.52,0:00:01.78,Cap,,0,0,0,,{\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}boy {\1c&H73FFFFFF}he {\1c&H73FFFFFF}was, {\1c&H73FFFFFF}Eli\N{\1c&H73FFFFFF}took {\1c&H73FFFFFF}his {\1c&H73FFFFFF}bike {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:01.78,0:00:01.98,Cap,,0,0,0,,{\1c&H00FF6BA8}boy {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he {\1c&H73FFFFFF}was, {\1c&H73FFFFFF}Eli\N{\1c&H73FFFFFF}took {\1c&H73FFFFFF}his {\1c&H73FFFFFF}bike {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:01.98,0:00:02.88,Cap,,0,0,0,,{\1c&H00FF6BA8}boy {\1c&H004CE7FF}he {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}was, {\1c&H73FFFFFF}Eli\N{\1c&H73FFFFFF}took {\1c&H73FFFFFF}his {\1c&H73FFFFFF}bike {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:02.88,0:00:03.08,Cap,,0,0,0,,{\1c&H00FF6BA8}boy {\1c&H004CE7FF}he {\1c&H006D4DFF}was, {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Eli\N{\1c&H73FFFFFF}took {\1c&H73FFFFFF}his {\1c&H73FFFFFF}bike {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:03.08,0:00:03.44,Cap,,0,0,0,,{\1c&H00FF6BA8}boy {\1c&H004CE7FF}he {\1c&H006D4DFF}was, {\1c&H00F5D43C}Eli\N{\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}took {\1c&H73FFFFFF}his {\1c&H73FFFFFF}bike {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:03.44,0:00:03.64,Cap,,0,0,0,,{\1c&H00FF6BA8}boy {\1c&H004CE7FF}he {\1c&H006D4DFF}was, {\1c&H00F5D43C}Eli\N{\1c&H0058D130}took {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}his {\1c&H73FFFFFF}bike {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:03.64,0:00:03.88,Cap,,0,0,0,,{\1c&H00FF6BA8}boy {\1c&H004CE7FF}he {\1c&H006D4DFF}was, {\1c&H00F5D43C}Eli\N{\1c&H0058D130}took {\1c&H004C8AFF}his {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}bike {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:03.88,0:00:04.20,Cap,,0,0,0,,{\1c&H00FF6BA8}boy {\1c&H004CE7FF}he {\1c&H006D4DFF}was, {\1c&H00F5D43C}Eli\N{\1c&H0058D130}took {\1c&H004C8AFF}his {\1c&H00FF6BA8}bike {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}and
+Dialogue: 0,0:00:04.22,0:00:04.40,Cap,,0,0,0,,{\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}put {\1c&H73FFFFFF}on {\1c&H73FFFFFF}his {\1c&H73FFFFFF}helmet\N{\1c&H73FFFFFF}before {\1c&H73FFFFFF}heading {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:04.40,0:00:04.56,Cap,,0,0,0,,{\1c&H006D4DFF}put {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}on {\1c&H73FFFFFF}his {\1c&H73FFFFFF}helmet\N{\1c&H73FFFFFF}before {\1c&H73FFFFFF}heading {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:04.56,0:00:04.74,Cap,,0,0,0,,{\1c&H006D4DFF}put {\1c&H00F5D43C}on {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}his {\1c&H73FFFFFF}helmet\N{\1c&H73FFFFFF}before {\1c&H73FFFFFF}heading {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:04.74,0:00:04.96,Cap,,0,0,0,,{\1c&H006D4DFF}put {\1c&H00F5D43C}on {\1c&H0058D130}his {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}helmet\N{\1c&H73FFFFFF}before {\1c&H73FFFFFF}heading {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:04.96,0:00:05.36,Cap,,0,0,0,,{\1c&H006D4DFF}put {\1c&H00F5D43C}on {\1c&H0058D130}his {\1c&H004C8AFF}helmet\N{\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}before {\1c&H73FFFFFF}heading {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:05.36,0:00:05.64,Cap,,0,0,0,,{\1c&H006D4DFF}put {\1c&H00F5D43C}on {\1c&H0058D130}his {\1c&H004C8AFF}helmet\N{\1c&H00FF6BA8}before {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}heading {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:05.64,0:00:05.80,Cap,,0,0,0,,{\1c&H006D4DFF}put {\1c&H00F5D43C}on {\1c&H0058D130}his {\1c&H004C8AFF}helmet\N{\1c&H00FF6BA8}before {\1c&H004CE7FF}heading {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to
+Dialogue: 0,0:00:05.82,0:00:05.96,Cap,,0,0,0,,{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the {\1c&H73FFFFFF}store. {\1c&H73FFFFFF}Once {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}had {\1c&H73FFFFFF}bought {\1c&H73FFFFFF}his
+Dialogue: 0,0:00:05.96,0:00:06.50,Cap,,0,0,0,,{\1c&H00F5D43C}the {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}store. {\1c&H73FFFFFF}Once {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}had {\1c&H73FFFFFF}bought {\1c&H73FFFFFF}his
+Dialogue: 0,0:00:06.50,0:00:06.64,Cap,,0,0,0,,{\1c&H00F5D43C}the {\1c&H0058D130}store. {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Once {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}had {\1c&H73FFFFFF}bought {\1c&H73FFFFFF}his
+Dialogue: 0,0:00:06.64,0:00:06.76,Cap,,0,0,0,,{\1c&H00F5D43C}the {\1c&H0058D130}store. {\1c&H004C8AFF}Once {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he\N{\1c&H73FFFFFF}had {\1c&H73FFFFFF}bought {\1c&H73FFFFFF}his
+Dialogue: 0,0:00:06.76,0:00:06.86,Cap,,0,0,0,,{\1c&H00F5D43C}the {\1c&H0058D130}store. {\1c&H004C8AFF}Once {\1c&H00FF6BA8}he\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}had {\1c&H73FFFFFF}bought {\1c&H73FFFFFF}his
+Dialogue: 0,0:00:06.86,0:00:07.00,Cap,,0,0,0,,{\1c&H00F5D43C}the {\1c&H0058D130}store. {\1c&H004C8AFF}Once {\1c&H00FF6BA8}he\N{\1c&H004CE7FF}had {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}bought {\1c&H73FFFFFF}his
+Dialogue: 0,0:00:07.00,0:00:07.20,Cap,,0,0,0,,{\1c&H00F5D43C}the {\1c&H0058D130}store. {\1c&H004C8AFF}Once {\1c&H00FF6BA8}he\N{\1c&H004CE7FF}had {\1c&H006D4DFF}bought {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}his
+Dialogue: 0,0:00:07.22,0:00:07.90,Cap,,0,0,0,,{\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}treats, {\1c&H73FFFFFF}he {\1c&H73FFFFFF}began\N{\1c&H73FFFFFF}riding {\1c&H73FFFFFF}back {\1c&H73FFFFFF}home. 🏠
+Dialogue: 0,0:00:07.90,0:00:07.98,Cap,,0,0,0,,{\1c&H0058D130}treats, {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he {\1c&H73FFFFFF}began\N{\1c&H73FFFFFF}riding {\1c&H73FFFFFF}back {\1c&H73FFFFFF}home. 🏠
+Dialogue: 0,0:00:07.98,0:00:08.32,Cap,,0,0,0,,{\1c&H0058D130}treats, {\1c&H004C8AFF}he {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}began\N{\1c&H73FFFFFF}riding {\1c&H73FFFFFF}back {\1c&H73FFFFFF}home. 🏠
+Dialogue: 0,0:00:08.32,0:00:08.68,Cap,,0,0,0,,{\1c&H0058D130}treats, {\1c&H004C8AFF}he {\1c&H00FF6BA8}began\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}riding {\1c&H73FFFFFF}back {\1c&H73FFFFFF}home. 🏠
+Dialogue: 0,0:00:08.68,0:00:08.94,Cap,,0,0,0,,{\1c&H0058D130}treats, {\1c&H004C8AFF}he {\1c&H00FF6BA8}began\N{\1c&H004CE7FF}riding {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}back {\1c&H73FFFFFF}home. 🏠
+Dialogue: 0,0:00:08.94,0:00:09.73,Cap,,0,0,0,,{\1c&H0058D130}treats, {\1c&H004C8AFF}he {\1c&H00FF6BA8}began\N{\1c&H004CE7FF}riding {\1c&H006D4DFF}back {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}home. 🏠
+Dialogue: 0,0:00:09.90,0:00:10.02,Cap,,0,0,0,,{\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}At {\1c&H73FFFFFF}the {\1c&H73FFFFFF}crossing, {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}stopped {\1c&H73FFFFFF}and {\1c&H73FFFFFF}waited
+Dialogue: 0,0:00:10.02,0:00:10.12,Cap,,0,0,0,,{\1c&H0058D130}At {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the {\1c&H73FFFFFF}crossing, {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}stopped {\1c&H73FFFFFF}and {\1c&H73FFFFFF}waited
+Dialogue: 0,0:00:10.12,0:00:11.04,Cap,,0,0,0,,{\1c&H0058D130}At {\1c&H004C8AFF}the {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}crossing, {\1c&H73FFFFFF}he\N{\1c&H73FFFFFF}stopped {\1c&H73FFFFFF}and {\1c&H73FFFFFF}waited
+Dialogue: 0,0:00:11.04,0:00:11.24,Cap,,0,0,0,,{\1c&H0058D130}At {\1c&H004C8AFF}the {\1c&H00FF6BA8}crossing, {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he\N{\1c&H73FFFFFF}stopped {\1c&H73FFFFFF}and {\1c&H73FFFFFF}waited
+Dialogue: 0,0:00:11.24,0:00:11.52,Cap,,0,0,0,,{\1c&H0058D130}At {\1c&H004C8AFF}the {\1c&H00FF6BA8}crossing, {\1c&H004CE7FF}he\N{\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}stopped {\1c&H73FFFFFF}and {\1c&H73FFFFFF}waited
+Dialogue: 0,0:00:11.52,0:00:11.78,Cap,,0,0,0,,{\1c&H0058D130}At {\1c&H004C8AFF}the {\1c&H00FF6BA8}crossing, {\1c&H004CE7FF}he\N{\1c&H006D4DFF}stopped {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}and {\1c&H73FFFFFF}waited
+Dialogue: 0,0:00:11.78,0:00:11.96,Cap,,0,0,0,,{\1c&H0058D130}At {\1c&H004C8AFF}the {\1c&H00FF6BA8}crossing, {\1c&H004CE7FF}he\N{\1c&H006D4DFF}stopped {\1c&H00F5D43C}and {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}waited
+Dialogue: 0,0:00:11.98,0:00:12.18,Cap,,0,0,0,,{\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}for {\1c&H73FFFFFF}the {\1c&H73FFFFFF}light {\1c&H73FFFFFF}to\N{\1c&H73FFFFFF}turn {\1c&H73FFFFFF}green. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}he
+Dialogue: 0,0:00:12.18,0:00:12.30,Cap,,0,0,0,,{\1c&H004C8AFF}for {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the {\1c&H73FFFFFF}light {\1c&H73FFFFFF}to\N{\1c&H73FFFFFF}turn {\1c&H73FFFFFF}green. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}he
+Dialogue: 0,0:00:12.30,0:00:12.48,Cap,,0,0,0,,{\1c&H004C8AFF}for {\1c&H00FF6BA8}the {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}light {\1c&H73FFFFFF}to\N{\1c&H73FFFFFF}turn {\1c&H73FFFFFF}green. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}he
+Dialogue: 0,0:00:12.48,0:00:12.64,Cap,,0,0,0,,{\1c&H004C8AFF}for {\1c&H00FF6BA8}the {\1c&H004CE7FF}light {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to\N{\1c&H73FFFFFF}turn {\1c&H73FFFFFF}green. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}he
+Dialogue: 0,0:00:12.64,0:00:12.90,Cap,,0,0,0,,{\1c&H004C8AFF}for {\1c&H00FF6BA8}the {\1c&H004CE7FF}light {\1c&H006D4DFF}to\N{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}turn {\1c&H73FFFFFF}green. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}he
+Dialogue: 0,0:00:12.90,0:00:13.98,Cap,,0,0,0,,{\1c&H004C8AFF}for {\1c&H00FF6BA8}the {\1c&H004CE7FF}light {\1c&H006D4DFF}to\N{\1c&H00F5D43C}turn {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}green. {\1c&H73FFFFFF}But {\1c&H73FFFFFF}he
+Dialogue: 0,0:00:13.98,0:00:14.20,Cap,,0,0,0,,{\1c&H004C8AFF}for {\1c&H00FF6BA8}the {\1c&H004CE7FF}light {\1c&H006D4DFF}to\N{\1c&H00F5D43C}turn {\1c&H0058D130}green. {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}But {\1c&H73FFFFFF}he
+Dialogue: 0,0:00:14.20,0:00:14.32,Cap,,0,0,0,,{\1c&H004C8AFF}for {\1c&H00FF6BA8}the {\1c&H004CE7FF}light {\1c&H006D4DFF}to\N{\1c&H00F5D43C}turn {\1c&H0058D130}green. {\1c&H004C8AFF}But {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he
+Dialogue: 0,0:00:14.34,0:00:14.50,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}had {\1c&H73FFFFFF}no ❌ {\1c&H73FFFFFF}idea {\1c&H73FFFFFF}that\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}was {\1c&H73FFFFFF}never {\1c&H73FFFFFF}going
+Dialogue: 0,0:00:14.50,0:00:14.78,Cap,,0,0,0,,{\1c&H004CE7FF}had {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}no ❌ {\1c&H73FFFFFF}idea {\1c&H73FFFFFF}that\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}was {\1c&H73FFFFFF}never {\1c&H73FFFFFF}going
+Dialogue: 0,0:00:14.78,0:00:15.22,Cap,,0,0,0,,{\1c&H004CE7FF}had {\1c&H006D4DFF}no ❌ {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}idea {\1c&H73FFFFFF}that\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}was {\1c&H73FFFFFF}never {\1c&H73FFFFFF}going
+Dialogue: 0,0:00:15.22,0:00:15.66,Cap,,0,0,0,,{\1c&H004CE7FF}had {\1c&H006D4DFF}no ❌ {\1c&H00F5D43C}idea {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}that\N{\1c&H73FFFFFF}he {\1c&H73FFFFFF}was {\1c&H73FFFFFF}never {\1c&H73FFFFFF}going
+Dialogue: 0,0:00:15.66,0:00:15.78,Cap,,0,0,0,,{\1c&H004CE7FF}had {\1c&H006D4DFF}no ❌ {\1c&H00F5D43C}idea {\1c&H0058D130}that\N{\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}he {\1c&H73FFFFFF}was {\1c&H73FFFFFF}never {\1c&H73FFFFFF}going
+Dialogue: 0,0:00:15.78,0:00:15.98,Cap,,0,0,0,,{\1c&H004CE7FF}had {\1c&H006D4DFF}no ❌ {\1c&H00F5D43C}idea {\1c&H0058D130}that\N{\1c&H004C8AFF}he {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}was {\1c&H73FFFFFF}never {\1c&H73FFFFFF}going
+Dialogue: 0,0:00:15.98,0:00:16.28,Cap,,0,0,0,,{\1c&H004CE7FF}had {\1c&H006D4DFF}no ❌ {\1c&H00F5D43C}idea {\1c&H0058D130}that\N{\1c&H004C8AFF}he {\1c&H00FF6BA8}was {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}never {\1c&H73FFFFFF}going
+Dialogue: 0,0:00:16.28,0:00:16.62,Cap,,0,0,0,,{\1c&H004CE7FF}had {\1c&H006D4DFF}no ❌ {\1c&H00F5D43C}idea {\1c&H0058D130}that\N{\1c&H004C8AFF}he {\1c&H00FF6BA8}was {\1c&H004CE7FF}never {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}going
+Dialogue: 0,0:00:16.64,0:00:16.80,Cap,,0,0,0,,{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to {\1c&H73FFFFFF}make {\1c&H73FFFFFF}it {\1c&H73FFFFFF}across\N{\1c&H73FFFFFF}the {\1c&H73FFFFFF}road.
+Dialogue: 0,0:00:16.80,0:00:16.92,Cap,,0,0,0,,{\1c&H00F5D43C}to {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}make {\1c&H73FFFFFF}it {\1c&H73FFFFFF}across\N{\1c&H73FFFFFF}the {\1c&H73FFFFFF}road.
+Dialogue: 0,0:00:16.92,0:00:17.06,Cap,,0,0,0,,{\1c&H00F5D43C}to {\1c&H0058D130}make {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}it {\1c&H73FFFFFF}across\N{\1c&H73FFFFFF}the {\1c&H73FFFFFF}road.
+Dialogue: 0,0:00:17.06,0:00:17.36,Cap,,0,0,0,,{\1c&H00F5D43C}to {\1c&H0058D130}make {\1c&H004C8AFF}it {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}across\N{\1c&H73FFFFFF}the {\1c&H73FFFFFF}road.
+Dialogue: 0,0:00:17.36,0:00:17.78,Cap,,0,0,0,,{\1c&H00F5D43C}to {\1c&H0058D130}make {\1c&H004C8AFF}it {\1c&H00FF6BA8}across\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the {\1c&H73FFFFFF}road.
+Dialogue: 0,0:00:17.78,0:00:18.43,Cap,,0,0,0,,{\1c&H00F5D43C}to {\1c&H0058D130}make {\1c&H004C8AFF}it {\1c&H00FF6BA8}across\N{\1c&H004CE7FF}the {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}road.
+Dialogue: 0,0:00:33.85,0:00:34.39,Cap,,0,0,0,,{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}That {\1c&H73FFFFFF}pickup {\1c&H73FFFFFF}truck\N{\1c&H73FFFFFF}ran {\1c&H73FFFFFF}a {\1c&H73FFFFFF}red {\1c&H73FFFFFF}light,
+Dialogue: 0,0:00:34.39,0:00:34.71,Cap,,0,0,0,,{\1c&H00F5D43C}That {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}pickup {\1c&H73FFFFFF}truck\N{\1c&H73FFFFFF}ran {\1c&H73FFFFFF}a {\1c&H73FFFFFF}red {\1c&H73FFFFFF}light,
+Dialogue: 0,0:00:34.71,0:00:35.19,Cap,,0,0,0,,{\1c&H00F5D43C}That {\1c&H0058D130}pickup {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}truck\N{\1c&H73FFFFFF}ran {\1c&H73FFFFFF}a {\1c&H73FFFFFF}red {\1c&H73FFFFFF}light,
+Dialogue: 0,0:00:35.19,0:00:35.75,Cap,,0,0,0,,{\1c&H00F5D43C}That {\1c&H0058D130}pickup {\1c&H004C8AFF}truck\N{\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}ran {\1c&H73FFFFFF}a {\1c&H73FFFFFF}red {\1c&H73FFFFFF}light,
+Dialogue: 0,0:00:35.75,0:00:35.93,Cap,,0,0,0,,{\1c&H00F5D43C}That {\1c&H0058D130}pickup {\1c&H004C8AFF}truck\N{\1c&H00FF6BA8}ran {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}red {\1c&H73FFFFFF}light,
+Dialogue: 0,0:00:35.93,0:00:36.09,Cap,,0,0,0,,{\1c&H00F5D43C}That {\1c&H0058D130}pickup {\1c&H004C8AFF}truck\N{\1c&H00FF6BA8}ran {\1c&H004CE7FF}a {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}red {\1c&H73FFFFFF}light,
+Dialogue: 0,0:00:36.09,0:00:36.67,Cap,,0,0,0,,{\1c&H00F5D43C}That {\1c&H0058D130}pickup {\1c&H004C8AFF}truck\N{\1c&H00FF6BA8}ran {\1c&H004CE7FF}a {\1c&H006D4DFF}red {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}light,
+Dialogue: 0,0:00:36.69,0:00:36.83,Cap,,0,0,0,,{\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}made {\1c&H73FFFFFF}a {\1c&H73FFFFFF}right ✅ {\1c&H73FFFFFF}turn,\N{\1c&H73FFFFFF}and {\1c&H73FFFFFF}crushed {\1c&H73FFFFFF}Eli
+Dialogue: 0,0:00:36.83,0:00:36.97,Cap,,0,0,0,,{\1c&H0058D130}made {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}right ✅ {\1c&H73FFFFFF}turn,\N{\1c&H73FFFFFF}and {\1c&H73FFFFFF}crushed {\1c&H73FFFFFF}Eli
+Dialogue: 0,0:00:36.97,0:00:37.11,Cap,,0,0,0,,{\1c&H0058D130}made {\1c&H004C8AFF}a {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}right ✅ {\1c&H73FFFFFF}turn,\N{\1c&H73FFFFFF}and {\1c&H73FFFFFF}crushed {\1c&H73FFFFFF}Eli
+Dialogue: 0,0:00:37.11,0:00:37.99,Cap,,0,0,0,,{\1c&H0058D130}made {\1c&H004C8AFF}a {\1c&H00FF6BA8}right ✅ {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}turn,\N{\1c&H73FFFFFF}and {\1c&H73FFFFFF}crushed {\1c&H73FFFFFF}Eli
+Dialogue: 0,0:00:37.99,0:00:38.19,Cap,,0,0,0,,{\1c&H0058D130}made {\1c&H004C8AFF}a {\1c&H00FF6BA8}right ✅ {\1c&H004CE7FF}turn,\N{\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}and {\1c&H73FFFFFF}crushed {\1c&H73FFFFFF}Eli
+Dialogue: 0,0:00:38.19,0:00:38.59,Cap,,0,0,0,,{\1c&H0058D130}made {\1c&H004C8AFF}a {\1c&H00FF6BA8}right ✅ {\1c&H004CE7FF}turn,\N{\1c&H006D4DFF}and {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}crushed {\1c&H73FFFFFF}Eli
+Dialogue: 0,0:00:38.59,0:00:39.01,Cap,,0,0,0,,{\1c&H0058D130}made {\1c&H004C8AFF}a {\1c&H00FF6BA8}right ✅ {\1c&H004CE7FF}turn,\N{\1c&H006D4DFF}and {\1c&H00F5D43C}crushed {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Eli
+Dialogue: 0,0:00:39.03,0:00:39.43,Cap,,0,0,0,,{\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}beneath {\1c&H73FFFFFF}it,\N{\1c&H73FFFFFF}dragging {\1c&H73FFFFFF}him {\1c&H73FFFFFF}for
+Dialogue: 0,0:00:39.43,0:00:40.29,Cap,,0,0,0,,{\1c&H004C8AFF}beneath {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}it,\N{\1c&H73FFFFFF}dragging {\1c&H73FFFFFF}him {\1c&H73FFFFFF}for
+Dialogue: 0,0:00:40.29,0:00:40.65,Cap,,0,0,0,,{\1c&H004C8AFF}beneath {\1c&H00FF6BA8}it,\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}dragging {\1c&H73FFFFFF}him {\1c&H73FFFFFF}for
+Dialogue: 0,0:00:40.65,0:00:40.95,Cap,,0,0,0,,{\1c&H004C8AFF}beneath {\1c&H00FF6BA8}it,\N{\1c&H004CE7FF}dragging {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}him {\1c&H73FFFFFF}for
+Dialogue: 0,0:00:40.95,0:00:41.11,Cap,,0,0,0,,{\1c&H004C8AFF}beneath {\1c&H00FF6BA8}it,\N{\1c&H004CE7FF}dragging {\1c&H006D4DFF}him {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}for
+Dialogue: 0,0:00:41.13,0:00:41.59,Cap,,0,0,0,,{\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}several {\1c&H73FFFFFF}meters. {\1c&H73FFFFFF}But\N{\1c&H73FFFFFF}instead {\1c&H73FFFFFF}of
+Dialogue: 0,0:00:41.59,0:00:41.99,Cap,,0,0,0,,{\1c&H0058D130}several {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}meters. {\1c&H73FFFFFF}But\N{\1c&H73FFFFFF}instead {\1c&H73FFFFFF}of
+Dialogue: 0,0:00:41.99,0:00:42.91,Cap,,0,0,0,,{\1c&H0058D130}several {\1c&H004C8AFF}meters. {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}But\N{\1c&H73FFFFFF}instead {\1c&H73FFFFFF}of
+Dialogue: 0,0:00:42.91,0:00:43.15,Cap,,0,0,0,,{\1c&H0058D130}several {\1c&H004C8AFF}meters. {\1c&H00FF6BA8}But\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}instead {\1c&H73FFFFFF}of
+Dialogue: 0,0:00:43.15,0:00:43.25,Cap,,0,0,0,,{\1c&H0058D130}several {\1c&H004C8AFF}meters. {\1c&H00FF6BA8}But\N{\1c&H004CE7FF}instead {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}of
+Dialogue: 0,0:00:43.27,0:00:44.09,Cap,,0,0,0,,{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}stopping, {\1c&H73FFFFFF}the\N{\1c&H73FFFFFF}driver {\1c&H73FFFFFF}took {\1c&H73FFFFFF}a {\1c&H73FFFFFF}U
+Dialogue: 0,0:00:44.09,0:00:44.17,Cap,,0,0,0,,{\1c&H00F5D43C}stopping, {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the\N{\1c&H73FFFFFF}driver {\1c&H73FFFFFF}took {\1c&H73FFFFFF}a {\1c&H73FFFFFF}U
+Dialogue: 0,0:00:44.17,0:00:44.47,Cap,,0,0,0,,{\1c&H00F5D43C}stopping, {\1c&H0058D130}the\N{\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}driver {\1c&H73FFFFFF}took {\1c&H73FFFFFF}a {\1c&H73FFFFFF}U
+Dialogue: 0,0:00:44.47,0:00:44.69,Cap,,0,0,0,,{\1c&H00F5D43C}stopping, {\1c&H0058D130}the\N{\1c&H004C8AFF}driver {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}took {\1c&H73FFFFFF}a {\1c&H73FFFFFF}U
+Dialogue: 0,0:00:44.69,0:00:44.81,Cap,,0,0,0,,{\1c&H00F5D43C}stopping, {\1c&H0058D130}the\N{\1c&H004C8AFF}driver {\1c&H00FF6BA8}took {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}a {\1c&H73FFFFFF}U
+Dialogue: 0,0:00:44.81,0:00:44.89,Cap,,0,0,0,,{\1c&H00F5D43C}stopping, {\1c&H0058D130}the\N{\1c&H004C8AFF}driver {\1c&H00FF6BA8}took {\1c&H004CE7FF}a {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}U
+Dialogue: 0,0:00:44.91,0:00:45.17,Cap,,0,0,0,,{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}-turn {\1c&H73FFFFFF}and {\1c&H73FFFFFF}kept\N{\1c&H73FFFFFF}going. {\1c&H73FFFFFF}With {\1c&H73FFFFFF}Eli's
+Dialogue: 0,0:00:45.17,0:00:45.49,Cap,,0,0,0,,{\1c&H00F5D43C}-turn {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}and {\1c&H73FFFFFF}kept\N{\1c&H73FFFFFF}going. {\1c&H73FFFFFF}With {\1c&H73FFFFFF}Eli's
+Dialogue: 0,0:00:45.49,0:00:45.71,Cap,,0,0,0,,{\1c&H00F5D43C}-turn {\1c&H0058D130}and {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}kept\N{\1c&H73FFFFFF}going. {\1c&H73FFFFFF}With {\1c&H73FFFFFF}Eli's
+Dialogue: 0,0:00:45.71,0:00:46.55,Cap,,0,0,0,,{\1c&H00F5D43C}-turn {\1c&H0058D130}and {\1c&H004C8AFF}kept\N{\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}going. {\1c&H73FFFFFF}With {\1c&H73FFFFFF}Eli's
+Dialogue: 0,0:00:46.55,0:00:46.73,Cap,,0,0,0,,{\1c&H00F5D43C}-turn {\1c&H0058D130}and {\1c&H004C8AFF}kept\N{\1c&H00FF6BA8}going. {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}With {\1c&H73FFFFFF}Eli's
+Dialogue: 0,0:00:46.73,0:00:47.27,Cap,,0,0,0,,{\1c&H00F5D43C}-turn {\1c&H0058D130}and {\1c&H004C8AFF}kept\N{\1c&H00FF6BA8}going. {\1c&H004CE7FF}With {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}Eli's
+Dialogue: 0,0:00:47.29,0:00:47.61,Cap,,0,0,0,,{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}bike {\1c&H73FFFFFF}still {\1c&H73FFFFFF}launched\N{\1c&H73FFFFFF}underneath,
+Dialogue: 0,0:00:47.61,0:00:48.37,Cap,,0,0,0,,{\1c&H00F5D43C}bike {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}still {\1c&H73FFFFFF}launched\N{\1c&H73FFFFFF}underneath,
+Dialogue: 0,0:00:48.37,0:00:48.85,Cap,,0,0,0,,{\1c&H00F5D43C}bike {\1c&H0058D130}still {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}launched\N{\1c&H73FFFFFF}underneath,
+Dialogue: 0,0:00:48.85,0:00:49.51,Cap,,0,0,0,,{\1c&H00F5D43C}bike {\1c&H0058D130}still {\1c&H004C8AFF}launched\N{\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}underneath,
+Dialogue: 0,0:00:49.53,0:00:49.77,Cap,,0,0,0,,{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}witnesses {\1c&H73FFFFFF}began\N{\1c&H73FFFFFF}recording {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:49.77,0:00:50.31,Cap,,0,0,0,,{\1c&H004CE7FF}witnesses {\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}began\N{\1c&H73FFFFFF}recording {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:50.31,0:00:50.79,Cap,,0,0,0,,{\1c&H004CE7FF}witnesses {\1c&H006D4DFF}began\N{\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}recording {\1c&H73FFFFFF}and
+Dialogue: 0,0:00:50.79,0:00:51.09,Cap,,0,0,0,,{\1c&H004CE7FF}witnesses {\1c&H006D4DFF}began\N{\1c&H00F5D43C}recording {\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}and
+Dialogue: 0,0:00:51.11,0:00:51.51,Cap,,0,0,0,,{\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}followed {\1c&H73FFFFFF}the {\1c&H73FFFFFF}truck,\N{\1c&H73FFFFFF}determined {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:51.51,0:00:51.71,Cap,,0,0,0,,{\1c&H004C8AFF}followed {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}the {\1c&H73FFFFFF}truck,\N{\1c&H73FFFFFF}determined {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:51.71,0:00:52.39,Cap,,0,0,0,,{\1c&H004C8AFF}followed {\1c&H00FF6BA8}the {\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}truck,\N{\1c&H73FFFFFF}determined {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:52.39,0:00:52.73,Cap,,0,0,0,,{\1c&H004C8AFF}followed {\1c&H00FF6BA8}the {\1c&H004CE7FF}truck,\N{\1c&H006D4DFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}determined {\1c&H73FFFFFF}to
+Dialogue: 0,0:00:52.73,0:00:52.89,Cap,,0,0,0,,{\1c&H004C8AFF}followed {\1c&H00FF6BA8}the {\1c&H004CE7FF}truck,\N{\1c&H006D4DFF}determined {\1c&H00F5D43C\fscx100\fscy100\t(0,70,\fscx112\fscy112)}to
+Dialogue: 0,0:00:52.91,0:00:53.25,Cap,,0,0,0,,{\1c&H0058D130\fscx100\fscy100\t(0,70,\fscx112\fscy112)}capture {\1c&H73FFFFFF}its {\1c&H73FFFFFF}license\N{\1c&H73FFFFFF}plate.
+Dialogue: 0,0:00:53.25,0:00:53.51,Cap,,0,0,0,,{\1c&H0058D130}capture {\1c&H004C8AFF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}its {\1c&H73FFFFFF}license\N{\1c&H73FFFFFF}plate.
+Dialogue: 0,0:00:53.51,0:00:53.75,Cap,,0,0,0,,{\1c&H0058D130}capture {\1c&H004C8AFF}its {\1c&H00FF6BA8\fscx100\fscy100\t(0,70,\fscx112\fscy112)}license\N{\1c&H73FFFFFF}plate.
+Dialogue: 0,0:00:53.75,0:00:54.52,Cap,,0,0,0,,{\1c&H0058D130}capture {\1c&H004C8AFF}its {\1c&H00FF6BA8}license\N{\1c&H004CE7FF\fscx100\fscy100\t(0,70,\fscx112\fscy112)}plate.

@@ -1,20 +1,50 @@
-diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
-index 7823db1..45d36a9 100644
 --- a/clipery/lib/clipEngine.js
 +++ b/clipery/lib/clipEngine.js
-@@ -346,7 +346,6 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
-   const dur = Math.max(0.5, end - start);
-   const targetW = 608;
-   const targetH = 1080;
--  const accent = mode.id === "viral" ? "0xFF4D6D" : "0x8B7CFF";
+@@ -26,8 +26,8 @@
+     label: "Viral clips",
+     description: "Short hook-first cuts optimized for TikTok / Reels / Shorts",
+     targetMin: 30,
+-    targetMax: 90,
+-    ideal: 60,
++    targetMax: 50,
++    ideal: 40,
+     maxClips: 8,
+     sceneThreshold: 0.2,
+     captionStyle: "viral",
+@@ -37,8 +37,8 @@
+     label: "Ranking analysis",
+     description: "Score every moment with a full breakdown — post order ready",
+     targetMin: 30,
+-    targetMax: 90,
+-    ideal: 60,
++    targetMax: 50,
++    ideal: 40,
+     maxClips: 10,
+     sceneThreshold: 0.18,
+     captionStyle: "rank",
+@@ -213,12 +213,11 @@
+   const mid = (c.start + c.end) / 2;
+   const pos = mid / Math.max(duration, 1);
  
-   // Face-follow: lock the portrait frame onto the speaker (centre crop fallback)
-   const faceX = await faceCenterX(source, start, end);
-@@ -357,7 +356,6 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode) {
-   const vf = [
-     `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
-     crop,
--    `drawbox=x=0:y=0:w=8:h=ih:color=${accent}:t=fill`,
-     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
-     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
-   ].join(",");
+-  // Length fit — 30s minimum, ~60s is the sweet spot, longer is fine
++  // Length fit — testing mode: 30s minimum, ~40s sweet spot, max ~50s (PC-friendly)
+   let length = 30;
+-  if (len >= 50 && len <= 70) length = 98;
+-  else if (len >= 40 && len <= 85) length = 92;
+-  else if (len >= mode.targetMin && len <= mode.targetMax) length = 84;
+-  else if (len > mode.targetMax) length = 70;
++  if (len >= 36 && len <= 44) length = 98;
++  else if (len >= mode.targetMin && len <= mode.targetMax) length = 92;
++  else if (len > mode.targetMax && len <= 60) length = 68;
+   else if (len >= 20) length = 45;
+ 
+   // Hook / cold-open strength (first seconds win the algorithm)
+@@ -244,7 +243,7 @@
+ 
+   // Replay / share potential
+   const replay = Math.round(
+-    Math.min(99, pacing * 0.4 + hook * 0.35 + (len >= 30 && len <= 85 ? 90 : 55) * 0.25)
++    Math.min(99, pacing * 0.4 + hook * 0.35 + (len >= 30 && len <= 55 ? 90 : 55) * 0.25)
+   );
+ 
+   // AI viral prediction (weighted for “will this go viral?”)
