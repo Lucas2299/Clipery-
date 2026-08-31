@@ -1,0 +1,2309 @@
+diff --git a/.gitignore b/.gitignore
+index b3b5f4b..92b6137 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -4,3 +4,8 @@ clipery/public/clips/*
+ !clipery/public/clips/.gitkeep
+ clipery/tmp/*
+ !clipery/tmp/.gitkeep
++
++# accounts (local only — never commit password hashes or sessions)
++clipery/data/users.json
++clipery/data/sessions.json
++clipery/.env
+diff --git a/clipery/.env.example b/clipery/.env.example
+new file mode 100644
+index 0000000..ae03561
+--- /dev/null
++++ b/clipery/.env.example
+@@ -0,0 +1,17 @@
++# Copy to ".env" and fill in — the server loads it automatically on start.
++# Any provider you leave blank stays hidden on the login page.
++
++# Google — https://console.cloud.google.com/apis/credentials
++# Authorised redirect URI: https://YOUR-DOMAIN/api/auth/google/callback
++GOOGLE_CLIENT_ID=
++GOOGLE_CLIENT_SECRET=
++
++# Apple — https://developer.apple.com/account/resources/identifiers
++# Return URL: https://YOUR-DOMAIN/api/auth/apple/callback  (HTTPS only)
++APPLE_CLIENT_ID=
++APPLE_TEAM_ID=
++APPLE_KEY_ID=
++APPLE_PRIVATE_KEY_FILE=
++
++# Only needed behind a proxy/CDN
++BASE_URL=
+diff --git a/clipery/GOOGLE-LOGIN.md b/clipery/GOOGLE-LOGIN.md
+new file mode 100644
+index 0000000..a2b34e4
+--- /dev/null
++++ b/clipery/GOOGLE-LOGIN.md
+@@ -0,0 +1,118 @@
++# How to make "Continue with Google" work
++
++You need two secret strings from Google — a **Client ID** and a **Client secret**.
++They are free. The whole thing takes about 5 minutes.
++
++---
++
++## 1. Open Google Cloud Console
++
++Go to **https://console.cloud.google.com/**
++
++Sign in with the Google account you want to own the app (your normal Gmail is fine).
++
++## 2. Make a project
++
++Top-left, click the project dropdown → **New project**.
++
++- Name: `Clipery`
++- Click **Create**, then make sure the project dropdown shows **Clipery**.
++
++## 3. Fill the consent screen
++
++Left menu → **APIs & Services** → **OAuth consent screen**.
++
++- User type: **External** → **Create**
++- App name: `Clipery`
++- User support email: your email
++- Developer contact email: your email
++- **Save and continue** through *Scopes* (change nothing)
++- On **Test users** → **Add users** → type your own Gmail address → **Save**
++
++> While the app is in "Testing" mode, only the emails listed as test users can log
++> in. Add yourself, or anyone else you want to try it. Later you can press
++> **Publish app** to open it to everybody.
++
++## 4. Create the credentials
++
++Left menu → **APIs & Services** → **Credentials** → **+ Create credentials** →
++**OAuth client ID**.
++
++- Application type: **Web application**
++- Name: `Clipery web`
++- Under **Authorised redirect URIs** click **+ Add URI** and paste exactly:
++
++```
++http://localhost:3000/api/auth/google/callback
++```
++
++If you also run Clipery on a real domain, add that one too:
++
++```
++https://YOUR-DOMAIN.com/api/auth/google/callback
++```
++
++Click **Create**. A popup shows:
++
++- **Client ID** — looks like `812345678901-abc123def456.apps.googleusercontent.com`
++- **Client secret** — looks like `GOCSPX-aBcD1234EfGh5678`
++
++Copy both (you can reopen them any time from the Credentials list).
++
++## 5. Put them in Clipery
++
++In your Clipery folder there is a file `clipery/.env.example`. Copy it to
++`clipery/.env` and paste your two values:
++
++```bash
++cd ~/Desktop/Clipery/clipery
++cp .env.example .env
++```
++
++Then edit `.env` so it looks like this (no quotes, no spaces around `=`):
++
++```
++GOOGLE_CLIENT_ID=812345678901-abc123def456.apps.googleusercontent.com
++GOOGLE_CLIENT_SECRET=GOCSPX-aBcD1234EfGh5678
++```
++
++`.env` is in `.gitignore`, so your secret never gets pushed to GitHub.
++
++## 6. Restart the server
++
++```bash
++cd ~/Desktop/Clipery/clipery
++npm start
++```
++
++You should see this line in the terminal:
++
++```
++[env] loaded clipery/.env
++```
++
++Open **http://localhost:3000/login** — the white **Continue with Google** button
++is there. Click it, pick your Google account, and you land in the Studio,
++already logged in.
++
++---
++
++## If something goes wrong
++
++| What you see | What it means | Fix |
++|---|---|---|
++| No Google button at all | The server has no keys | `.env` is missing, in the wrong folder, or the server wasn't restarted. It must be at `clipery/.env`, next to `server.js`. Look for `[env] loaded clipery/.env` on start. |
++| `Error 400: redirect_uri_mismatch` | The URI in Google ≠ the URI Clipery sent | Copy the URI from the error message and add it to your Google credentials, character for character. Most often it's `http` vs `https`, or a missing `/api/auth/google/callback`. |
++| `Error 403: access_denied` | Your app is in Testing mode and this Gmail isn't a test user | OAuth consent screen → Test users → add that address (or Publish the app). |
++| `Sign-in expired. Please try again.` | The 10-minute state cookie ran out, or cookies are blocked | Just click the button again. |
++| Works on localhost, fails on your domain | The live URL isn't registered | Add `https://YOUR-DOMAIN.com/api/auth/google/callback` in Google, and set `BASE_URL=https://YOUR-DOMAIN.com` in `.env`. |
++
++---
++
++## Apple (optional, later)
++
++Sign in with Apple needs a paid Apple Developer account ($99/year), a Services
++ID, and a downloaded `.p8` key — and Apple refuses `http://localhost`, so it can
++only be tested on a real HTTPS domain. Everything is already coded; you just fill
++in `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID` and
++`APPLE_PRIVATE_KEY_FILE` in the same `.env` when you're ready.
+diff --git a/clipery/README.md b/clipery/README.md
+index 90caceb..c27210a 100644
+--- a/clipery/README.md
++++ b/clipery/README.md
+@@ -50,3 +50,31 @@ Open http://localhost:3000
+ - `GET/POST /api/rank/links`
+ - `GET /api/rank/links/:id`
+ - `GET/POST /api/waitlist`
++
++## Sign in with Google / Apple (optional)
++
++Email + password works out of the box. To switch on the social buttons, set
++these environment variables before `npm start` — any provider you leave unset
++is simply hidden on the login page.
++
++```bash
++# Google — https://console.cloud.google.com/apis/credentials
++# Create an "OAuth client ID" (Web application) and add this redirect URI:
++#   https://YOUR-DOMAIN/api/auth/google/callback
++export GOOGLE_CLIENT_ID="....apps.googleusercontent.com"
++export GOOGLE_CLIENT_SECRET="...."
++
++# Apple — https://developer.apple.com/account/resources/identifiers
++# Needs a Services ID + a Sign in with Apple key (.p8). Return URL:
++#   https://YOUR-DOMAIN/api/auth/apple/callback
++export APPLE_CLIENT_ID="com.yourcompany.clipery.web"   # the Services ID
++export APPLE_TEAM_ID="ABCDE12345"
++export APPLE_KEY_ID="XYZ9876543"
++export APPLE_PRIVATE_KEY_FILE="/path/to/AuthKey_XYZ9876543.p8"
++
++# Only needed behind a proxy/CDN so the redirect URI is built correctly
++export BASE_URL="https://YOUR-DOMAIN"
++```
++
++Apple requires HTTPS for the return URL, so Apple sign-in cannot be tested on
++plain `http://localhost` — Google can.
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+new file mode 100644
+index 0000000..27eeddf
+--- /dev/null
++++ b/clipery/lib/auth.js
+@@ -0,0 +1,238 @@
++/**
++ * Clipery accounts — register / login / sessions.
++ *
++ * Zero dependencies on purpose (the whole project runs on plain Node):
++ *  - users live in data/users.json
++ *  - passwords are scrypt hashes with a per-user random salt (never plain text)
++ *  - sessions live in data/sessions.json and are carried by an HttpOnly cookie
++ */
++const fs = require("fs");
++const path = require("path");
++const crypto = require("crypto");
++
++const ROOT = path.join(__dirname, "..");
++const DATA_DIR = path.join(ROOT, "data");
++const USERS_FILE = path.join(DATA_DIR, "users.json");
++const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
++
++const COOKIE = "clipery_sid";
++const SESSION_DAYS = 30;
++
++if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
++for (const [file, seed] of [
++  [USERS_FILE, { users: [] }],
++  [SESSIONS_FILE, { sessions: [] }],
++]) {
++  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify(seed, null, 2));
++}
++
++/* ---------------------------------- store --------------------------------- */
++
++function readJson(file, fallback) {
++  try {
++    const data = JSON.parse(fs.readFileSync(file, "utf8"));
++    return data && typeof data === "object" ? data : fallback;
++  } catch {
++    return fallback;
++  }
++}
++function writeJson(file, data) {
++  fs.writeFileSync(file, JSON.stringify(data, null, 2));
++}
++function readUsers() {
++  const d = readJson(USERS_FILE, { users: [] });
++  return Array.isArray(d.users) ? d.users : [];
++}
++function writeUsers(users) {
++  writeJson(USERS_FILE, { users });
++}
++function readSessions() {
++  const d = readJson(SESSIONS_FILE, { sessions: [] });
++  const now = Date.now();
++  const live = (Array.isArray(d.sessions) ? d.sessions : []).filter((s) => s.expires > now);
++  if (live.length !== (d.sessions || []).length) writeJson(SESSIONS_FILE, { sessions: live });
++  return live;
++}
++function writeSessions(sessions) {
++  writeJson(SESSIONS_FILE, { sessions });
++}
++
++/* -------------------------------- passwords -------------------------------- */
++
++function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
++  const hash = crypto.scryptSync(String(password), salt, 64).toString("hex");
++  return { salt, hash };
++}
++function verifyPassword(password, salt, hash) {
++  try {
++    const candidate = crypto.scryptSync(String(password), salt, 64);
++    const known = Buffer.from(String(hash), "hex");
++    return known.length === candidate.length && crypto.timingSafeEqual(known, candidate);
++  } catch {
++    return false;
++  }
++}
++
++/* --------------------------------- helpers --------------------------------- */
++
++const normalizeEmail = (e) => String(e || "").trim().toLowerCase();
++const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(e));
++
++/** What the browser is allowed to know about an account. */
++function publicUser(u) {
++  if (!u) return null;
++  return {
++    id: u.id,
++    email: u.email,
++    name: u.name || "",
++    createdAt: u.createdAt,
++    plan: u.plan || "free",
++    providers: u.providers || (u.hash ? ["password"] : []),
++  };
++}
++
++function parseCookies(req) {
++  const out = {};
++  const raw = req.headers.cookie || "";
++  for (const part of raw.split(";")) {
++    const i = part.indexOf("=");
++    if (i < 0) continue;
++    out[part.slice(0, i).trim()] = decodeURIComponent(part.slice(i + 1).trim());
++  }
++  return out;
++}
++
++function sessionCookie(token, maxAgeSec) {
++  const bits = [
++    `${COOKIE}=${token}`,
++    "Path=/",
++    "HttpOnly",
++    "SameSite=Lax",
++    `Max-Age=${maxAgeSec}`,
++  ];
++  return bits.join("; ");
++}
++
++/* --------------------------------- accounts -------------------------------- */
++
++function findUserByEmail(email) {
++  const target = normalizeEmail(email);
++  return readUsers().find((u) => normalizeEmail(u.email) === target) || null;
++}
++
++function registerUser({ email, password, name }) {
++  const mail = normalizeEmail(email);
++  if (!isValidEmail(mail)) return { ok: false, status: 400, error: "Enter a valid email address." };
++  if (String(password || "").length < 8)
++    return { ok: false, status: 400, error: "Password must be at least 8 characters." };
++  if (findUserByEmail(mail))
++    return { ok: false, status: 409, error: "That email already has an account. Log in instead." };
++
++  const { salt, hash } = hashPassword(password);
++  const user = {
++    id: crypto.randomBytes(8).toString("hex"),
++    email: mail,
++    name: String(name || "").trim().slice(0, 60),
++    salt,
++    hash,
++    plan: "free",
++    createdAt: new Date().toISOString(),
++  };
++  const users = readUsers();
++  users.push(user);
++  writeUsers(users);
++  return { ok: true, user };
++}
++
++/**
++ * Log in (or transparently sign up) via Google / Apple.
++ * Matching is by email, so signing in with Google to an address that already
++ * has a password account simply logs into that same account.
++ */
++function upsertSocialUser({ email, name, provider }) {
++  const mail = normalizeEmail(email);
++  if (!isValidEmail(mail)) return { ok: false, status: 400, error: "That account has no usable email." };
++
++  const users = readUsers();
++  const existing = users.find((u) => normalizeEmail(u.email) === mail);
++  if (existing) {
++    const known = existing.providers || (existing.hash ? ["password"] : []);
++    existing.providers = Array.from(new Set([...known, provider]));
++    if (!existing.name && name) existing.name = String(name).slice(0, 60);
++    writeUsers(users);
++    return { ok: true, user: existing, created: false };
++  }
++
++  const user = {
++    id: crypto.randomBytes(8).toString("hex"),
++    email: mail,
++    name: String(name || "").trim().slice(0, 60),
++    salt: "",
++    hash: "", // social-only account: no password to guess
++    providers: [provider],
++    plan: "free",
++    createdAt: new Date().toISOString(),
++  };
++  users.push(user);
++  writeUsers(users);
++  return { ok: true, user, created: true };
++}
++
++function loginUser({ email, password }) {
++  const user = findUserByEmail(email);
++  if (user && !user.hash) {
++    const via = (user.providers || []).includes("apple") ? "Apple" : "Google";
++    return { ok: false, status: 401, error: `This account uses Sign in with ${via}.` };
++  }
++  // Same message either way so nobody can probe which emails exist.
++  if (!user || !verifyPassword(password, user.salt, user.hash))
++    return { ok: false, status: 401, error: "Wrong email or password." };
++  return { ok: true, user };
++}
++
++/* --------------------------------- sessions -------------------------------- */
++
++function createSession(userId) {
++  const token = crypto.randomBytes(32).toString("hex");
++  const maxAgeSec = SESSION_DAYS * 24 * 60 * 60;
++  const sessions = readSessions();
++  sessions.push({
++    token,
++    userId,
++    createdAt: new Date().toISOString(),
++    expires: Date.now() + maxAgeSec * 1000,
++  });
++  writeSessions(sessions);
++  return { token, cookie: sessionCookie(token, maxAgeSec) };
++}
++
++function destroySession(token) {
++  if (!token) return;
++  writeSessions(readSessions().filter((s) => s.token !== token));
++}
++
++/** The logged-in user for this request, or null. */
++function currentUser(req) {
++  const token = parseCookies(req)[COOKIE];
++  if (!token) return null;
++  const session = readSessions().find((s) => s.token === token);
++  if (!session) return null;
++  const user = readUsers().find((u) => u.id === session.userId);
++  return user || null;
++}
++
++const clearCookie = () => sessionCookie("", 0);
++
++module.exports = {
++  COOKIE,
++  registerUser,
++  loginUser,
++  upsertSocialUser,
++  createSession,
++  destroySession,
++  currentUser,
++  publicUser,
++  parseCookies,
++  clearCookie,
++  isValidEmail,
++};
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 86038ef..2f2aac8 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -163,10 +163,42 @@ async function sampleEnergy(file, start, end) {
+   }
+ }
+ 
++/** How many moments we analyze per job (scales with length, capped for speed). */
++const MAX_CANDIDATES = 24;
++
++/**
++ * Keep `limit` windows SPREAD OVER THE WHOLE TIMELINE instead of just taking
++ * the first N. The timeline is split into `limit` buckets and we round-robin
++ * through them, so round 1 already guarantees coverage from start to finish.
++ */
++function spreadSelect(list, duration, limit) {
++  if (list.length <= limit) return list.slice();
++  const bucketSize = Math.max(1, duration / limit);
++  const buckets = new Map();
++  for (const c of list) {
++    const b = Math.min(limit - 1, Math.floor(c.start / bucketSize));
++    if (!buckets.has(b)) buckets.set(b, []);
++    buckets.get(b).push(c);
++  }
++  const out = [];
++  for (let round = 0; out.length < limit; round++) {
++    let added = false;
++    for (let b = 0; b < limit && out.length < limit; b++) {
++      const arr = buckets.get(b);
++      if (arr && arr[round]) {
++        out.push(arr[round]);
++        added = true;
++      }
++    }
++    if (!added) break;
++  }
++  return out.sort((a, b) => a.start - b.start);
++}
++
+ function buildCandidates(duration, sceneTimes, mode) {
+   const MIN = mode.targetMin;   // never shorter than this
+   const MAX = mode.targetMax;   // soft cap ("can be more" lives up to here)
+-  const IDEAL = mode.ideal;     // the sweet spot (~60s)
++  const IDEAL = mode.ideal;     // the sweet spot
+   const bounds = [0, ...sceneTimes.filter((t) => t > 0.5 && t < duration - 1), duration].sort((a, b) => a - b);
+   const raw = [];
+ 
+@@ -177,11 +209,16 @@ function buildCandidates(duration, sceneTimes, mode) {
+     if (end - start >= MIN) raw.push({ start, end });
+   }
+ 
+-  // Sliding starts every ~20s so nothing between scene cuts is missed
+-  for (let s = 20; s + MIN <= duration; s += 20) {
+-    raw.push({ start: s, end: Math.min(s + IDEAL, duration) });
++  // Sliding starts across the FULL duration. The step scales with the video so
++  // a 20 min source is swept end-to-end, not just its first few minutes.
++  const step = Math.min(45, Math.max(12, (duration - MIN) / MAX_CANDIDATES));
++  for (let s = step; s + MIN <= duration; s += step) {
++    raw.push({ start: +s.toFixed(2), end: Math.min(s + IDEAL, duration) });
+   }
+ 
++  // Always consider the tail of the video too (endings/payoffs live there)
++  if (duration - MIN > 0) raw.push({ start: Math.max(0, duration - IDEAL), end: duration });
++
+   // One longer variant ("can be more") from each scene start
+   for (const start of bounds) {
+     const end = Math.min(start + MAX, duration);
+@@ -197,21 +234,63 @@ function buildCandidates(duration, sceneTimes, mode) {
+   }
+ 
+   raw.sort((a, b) => a.start - b.start || (a.end - a.start) - (b.end - b.start));
+-  const out = [];
++  const deduped = [];
+   for (const c of raw) {
+     const start = Math.max(0, +c.start.toFixed(2));
+     const end = Math.min(duration, +c.end.toFixed(2));
+     if (end - start < MIN && end < duration) continue; // never ship under 30s
+-    if (out.some((o) => Math.abs(o.start - start) < 6 && Math.abs((o.end - o.start) - (end - start)) < 12)) continue;
+-    out.push({ start, end });
++    if (deduped.some((o) => Math.abs(o.start - start) < 6 && Math.abs((o.end - o.start) - (end - start)) < 12)) continue;
++    deduped.push({ start, end });
+   }
+-  return out.slice(0, 16);
++  // Spread instead of truncating the head — this is what stopped every clip
++  // from being taken out of the first minutes of the source.
++  return spreadSelect(deduped, duration, MAX_CANDIDATES);
+ }
+ 
+-function scoreDimensions(c, duration, energy, mode, index) {
++/**
++ * Choose the final clips: best score first, but never overlapping and never
++ * bunched together, so the set covers the whole video.
++ */
++function pickDiverse(scoredDesc, limit, duration) {
++  const overlaps = (c, o) => c.start < o.end && o.start < c.end;
++  const minGap = Math.min(120, Math.max(20, duration / Math.max(limit, 1)));
++  const chosen = [];
++
++  for (const c of scoredDesc) {
++    if (chosen.length >= limit) break;
++    if (chosen.some((o) => overlaps(c, o))) continue;
++    if (chosen.some((o) => Math.abs(c.start - o.start) < minGap)) continue;
++    chosen.push(c);
++  }
++  // Relax the spacing rule if the video is too short to fill the quota
++  if (chosen.length < limit) {
++    for (const c of scoredDesc) {
++      if (chosen.length >= limit) break;
++      if (chosen.includes(c)) continue;
++      if (chosen.some((o) => overlaps(c, o))) continue;
++      chosen.push(c);
++    }
++  }
++  // Last resort (very short sources): allow a small overlap rather than
++  // shipping near-duplicate cuts or too few clips.
++  if (chosen.length < limit) {
++    const overlapAmount = (c, o) => Math.max(0, Math.min(c.end, o.end) - Math.max(c.start, o.start));
++    for (const c of scoredDesc) {
++      if (chosen.length >= limit) break;
++      if (chosen.includes(c)) continue;
++      const worst = Math.max(0, ...chosen.map((o) => overlapAmount(c, o) / (c.end - c.start)));
++      if (worst > 0.35) continue;
++      chosen.push(c);
++    }
++  }
++  return chosen.sort((a, b) => b.score - a.score);
++}
++
++function scoreDimensions(c, duration, energy, mode, index, stats) {
+   const len = c.end - c.start;
+   const mid = (c.start + c.end) / 2;
+   const pos = mid / Math.max(duration, 1);
++  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+ 
+   // Length fit — testing mode: 30s minimum, ~40s sweet spot, max ~50s (PC-friendly)
+   let length = 30;
+@@ -220,17 +299,29 @@ function scoreDimensions(c, duration, energy, mode, index) {
+   else if (len > mode.targetMax && len <= 60) length = 68;
+   else if (len >= 20) length = 45;
+ 
+-  // Hook / cold-open strength (first seconds win the algorithm)
+-  let hook = 70;
+-  if (pos < 0.08) hook = 99;
+-  else if (pos < 0.15) hook = mode.id === "viral" ? 96 : 90;
+-  else if (pos < 0.3) hook = 88;
+-  else if (pos < 0.55) hook = 76;
+-  else if (pos > 0.88) hook = mode.id === "ranking" ? 84 : 68;
+-  else hook = 72;
++  // Hook strength is driven by what the moment SOUNDS like (punch + energy
++  // relative to the rest of the video), not by where it sits in the timeline.
++  // Position only nudges it, so mid/late moments can win.
++  const avgPunch = stats ? stats.avgPunch : 50;
++  const avgEnergy = stats ? stats.avgEnergy : 50;
++  let posBonus = 0;
++  if (pos < 0.06) posBonus = 7;                                   // cold open
++  else if (pos < 0.15) posBonus = mode.id === "viral" ? 4 : 3;
++  else if (pos > 0.9) posBonus = mode.id === "ranking" ? 5 : 2;   // payoff/CTA
++  const hook = Math.round(
++    clamp(
++      68 + (energy.punch - avgPunch) * 0.55 + (energy.energy - avgEnergy) * 0.3 + posBonus,
++      40,
++      99
++    )
++  );
+ 
+-  // Pacing / energy from audio
+-  const pacing = Math.round(energy.energy * 0.55 + energy.punch * 0.45);
++  // Pacing / energy from audio, boosted when this moment stands out from the
++  // video's own average (a loud beat in a calm video is what goes viral).
++  const rel = (energy.energy - avgEnergy) * 0.5 + (energy.punch - avgPunch) * 0.5;
++  const pacing = Math.round(
++    clamp(energy.energy * 0.55 + energy.punch * 0.45 + clamp(rel * 0.6, -10, 14), 0, 100)
++  );
+ 
+   // Retention proxy
+   let retention = Math.round(
+@@ -412,7 +503,12 @@ function writeJob(job) {
+   fs.writeFileSync(jobPath(job.id), JSON.stringify(job, null, 2));
+ }
+ 
+-function listJobs(limit = 50) {
++/**
++ * Jobs on disk, newest first.
++ * Pass a userId to get only that account's jobs — a library is private, so
++ * everything without a matching owner is filtered out.
++ */
++function listJobs(limit = 50, userId) {
+   if (!fs.existsSync(JOBS_DIR)) return [];
+   const files = fs
+     .readdirSync(JOBS_DIR)
+@@ -425,6 +521,7 @@ function listJobs(limit = 50) {
+       }
+     })
+     .filter(Boolean)
++    .filter((j) => (userId ? j.userId === userId : true))
+     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+   return files.slice(0, limit);
+ }
+@@ -483,6 +580,8 @@ async function processVideo(sourcePath, options = {}) {
+ 
+   const job = {
+     id,
++    // keep the owner stamped by the seed so the job stays in ONE library
++    userId: options.userId || (readJob(id) || {}).userId || null,
+     status: "processing",
+     stage: "probing",
+     progress: 4,
+@@ -535,12 +634,26 @@ async function processVideo(sourcePath, options = {}) {
+     const trendSet = videoWords ? new Set(options.trends) : null;
+ 
+     const scored = [];
++    // Pass 1 — measure every candidate so we know what "loud" means for THIS video
++    const energies = [];
++    for (let i = 0; i < candidates.length; i++) {
++      const c = candidates[i];
++      energies.push(
++        meta.hasAudio ? await sampleEnergy(sourcePath, c.start, c.end) : { energy: 55, punch: 55 }
++      );
++      job.progress = 28 + Math.round(((i + 1) / candidates.length) * 14);
++      writeJob(job);
++    }
++    const stats = {
++      avgEnergy: energies.reduce((a, e) => a + e.energy, 0) / (energies.length || 1),
++      avgPunch: energies.reduce((a, e) => a + e.punch, 0) / (energies.length || 1),
++    };
++
++    // Pass 2 — score each moment against the video's own baseline
+     for (let i = 0; i < candidates.length; i++) {
+       const c = candidates[i];
+-      const energy = meta.hasAudio
+-        ? await sampleEnergy(sourcePath, c.start, c.end)
+-        : { energy: 55, punch: 55 };
+-      const dims = scoreDimensions(c, meta.duration, energy, mode, i);
++      const energy = energies[i];
++      const dims = scoreDimensions(c, meta.duration, energy, mode, i, stats);
+       if (trendSet) {
+         let hits = 0;
+         for (const w of videoWords) {
+@@ -556,12 +669,16 @@ async function processVideo(sourcePath, options = {}) {
+         dimensions: dims,
+         title: titleForClip(c, meta.duration, dims, mode, i),
+       });
+-      job.progress = 28 + Math.round(((i + 1) / candidates.length) * 22);
++      job.progress = 42 + Math.round(((i + 1) / candidates.length) * 8);
+       writeJob(job);
+     }
+ 
+     scored.sort((a, b) => b.score - a.score);
+ 
++    // The clips we will actually ship (score-ranked, non-overlapping, spread
++    // across the whole source) — also used for the post-order preview.
++    const previewTop = pickDiverse(scored, Math.min(mode.maxClips, scored.length), meta.duration);
++
+     // Full viral leaderboard (all analyzed moments)
+     job.rankings = scored.map((c, i) => ({
+       rank: i + 1,
+@@ -581,7 +698,7 @@ async function processVideo(sourcePath, options = {}) {
+       analyzed: scored.length,
+       topViralScore: scored[0]?.score || 0,
+       likelyViral: scored.filter((c) => (c.dimensions.viralScore || c.score) >= 82).length,
+-      postOrder: scored.slice(0, Math.min(mode.maxClips, scored.length)).map((c, i) => ({
++      postOrder: previewTop.map((c, i) => ({
+         rank: i + 1,
+         title: c.title,
+         viralScore: c.score,
+@@ -594,7 +711,9 @@ async function processVideo(sourcePath, options = {}) {
+     };
+ 
+     const topN = Math.min(mode.maxClips, scored.length);
+-    const top = scored.slice(0, topN);
++    // Best scores first, but non-overlapping and spread across the source so
++    // the clip set represents the whole video instead of its opening minutes.
++    const top = previewTop;
+ 
+     // Speech-aware cutting: nudge cut points to natural pauses so nobody
+     // gets chopped mid-sentence. Falls back silently to original cuts.
+@@ -771,7 +890,7 @@ function scoreLinkEntry(entry, index) {
+   };
+ }
+ 
+-function createLinkBoard({ name, links, niche }) {
++function createLinkBoard({ name, links, niche, userId }) {
+   const id = crypto.randomBytes(5).toString("hex");
+   const scored = (links || [])
+     .filter((l) => l && l.url)
+@@ -804,6 +923,7 @@ function createLinkBoard({ name, links, niche }) {
+ 
+   const board = {
+     id,
++    userId: userId || null, // boards belong to the account that made them
+     name: name || "Link ranking board",
+     niche: niche || "general",
+     createdAt: new Date().toISOString(),
+diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
+index b487719..4727aa8 100644
+--- a/clipery/lib/linkVideoEngine.js
++++ b/clipery/lib/linkVideoEngine.js
+@@ -517,6 +517,7 @@ async function processMultiRank(sources, options = {}) {
+ 
+   const job = {
+     id,
++    userId: (options && options.userId) || (readJob(id) || {}).userId || null,
+     status: "processing",
+     stage: "scoring_sources",
+     progress: 5,
+@@ -725,6 +726,7 @@ async function processLinksToRankingVideo(links, options = {}) {
+   // seed job early
+   const job = {
+     id,
++    userId: (options && options.userId) || (readJob(id) || {}).userId || null,
+     status: "processing",
+     stage: "downloading",
+     progress: 2,
+diff --git a/clipery/lib/oauth.js b/clipery/lib/oauth.js
+new file mode 100644
+index 0000000..c5f87b3
+--- /dev/null
++++ b/clipery/lib/oauth.js
+@@ -0,0 +1,206 @@
++/**
++ * Clipery social login — Sign in with Google + Sign in with Apple.
++ *
++ * Still zero dependencies: Node 18's global fetch does the token exchange and
++ * crypto signs Apple's ES256 client secret.
++ *
++ * Configure with environment variables (see README). Any provider whose keys
++ * are missing is simply hidden from the login page — the site keeps working
++ * with email + password only.
++ *
++ *   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
++ *   APPLE_CLIENT_ID (Services ID), APPLE_TEAM_ID, APPLE_KEY_ID,
++ *   APPLE_PRIVATE_KEY (contents of the .p8) or APPLE_PRIVATE_KEY_FILE (path)
++ *   BASE_URL (e.g. https://clipery.com) — optional, otherwise taken from the request
++ */
++const crypto = require("crypto");
++const fs = require("fs");
++
++const GOOGLE_AUTH = "https://accounts.google.com/o/oauth2/v2/auth";
++const GOOGLE_TOKEN = "https://oauth2.googleapis.com/token";
++const APPLE_AUTH = "https://appleid.apple.com/auth/authorize";
++const APPLE_TOKEN = "https://appleid.apple.com/auth/token";
++
++const STATE_COOKIE = "clipery_oauth";
++
++/* --------------------------------- config --------------------------------- */
++
++function applePrivateKey() {
++  if (process.env.APPLE_PRIVATE_KEY) return process.env.APPLE_PRIVATE_KEY.replace(/\\n/g, "\n");
++  const file = process.env.APPLE_PRIVATE_KEY_FILE;
++  if (file && fs.existsSync(file)) return fs.readFileSync(file, "utf8");
++  return "";
++}
++
++function googleConfigured() {
++  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
++}
++function appleConfigured() {
++  return Boolean(
++    process.env.APPLE_CLIENT_ID &&
++      process.env.APPLE_TEAM_ID &&
++      process.env.APPLE_KEY_ID &&
++      applePrivateKey()
++  );
++}
++/** Which buttons the login page should show. */
++function providers() {
++  return { google: googleConfigured(), apple: appleConfigured() };
++}
++
++/** Public origin of this install (honours proxies, falls back to the Host header). */
++function baseUrl(req) {
++  if (process.env.BASE_URL) return String(process.env.BASE_URL).replace(/\/+$/, "");
++  const proto = String(req.headers["x-forwarded-proto"] || "").split(",")[0] || "http";
++  const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost";
++  return `${proto}://${host}`;
++}
++const redirectUri = (req, provider) => `${baseUrl(req)}/api/auth/${provider}/callback`;
++
++/* ---------------------------------- jwt ----------------------------------- */
++
++const b64url = (buf) =>
++  Buffer.from(buf).toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
++
++/** Read a JWT payload. Safe here: the token comes straight from the provider's
++ *  token endpoint over TLS, so there is no untrusted hop to forge it. */
++function decodeJwt(token) {
++  try {
++    const part = String(token).split(".")[1];
++    return JSON.parse(Buffer.from(part.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
++  } catch {
++    return null;
++  }
++}
++
++/** Apple wants a short-lived ES256 JWT instead of a static client secret. */
++function appleClientSecret() {
++  const now = Math.floor(Date.now() / 1000);
++  const header = { alg: "ES256", kid: process.env.APPLE_KEY_ID, typ: "JWT" };
++  const payload = {
++    iss: process.env.APPLE_TEAM_ID,
++    iat: now,
++    exp: now + 60 * 30,
++    aud: "https://appleid.apple.com",
++    sub: process.env.APPLE_CLIENT_ID,
++  };
++  const data = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
++  const signature = crypto
++    .createSign("SHA256")
++    .update(data)
++    .sign({ key: applePrivateKey(), dsaEncoding: "ieee-p1363" });
++  return `${data}.${b64url(signature)}`;
++}
++
++/* ------------------------------ state cookie ------------------------------ */
++
++/** CSRF token + the page the visitor wanted, parked in a short-lived cookie. */
++function makeState(next) {
++  const token = crypto.randomBytes(16).toString("hex");
++  const safeNext = typeof next === "string" && /^\/[^/]/.test(next) ? next : "/studio";
++  const value = `${token}|${Buffer.from(safeNext).toString("base64")}`;
++  const cookie = `${STATE_COOKIE}=${encodeURIComponent(value)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=600`;
++  return { token, cookie, next: safeNext };
++}
++function readState(cookieValue, stateFromProvider) {
++  if (!cookieValue) return { ok: false, next: "/studio" };
++  const [token, encodedNext] = String(cookieValue).split("|");
++  const next = encodedNext ? Buffer.from(encodedNext, "base64").toString("utf8") : "/studio";
++  if (!token || token !== stateFromProvider) return { ok: false, next };
++  return { ok: true, next };
++}
++const clearState = () => `${STATE_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
++
++/* --------------------------------- google --------------------------------- */
++
++function googleAuthUrl(req, state) {
++  const params = new URLSearchParams({
++    client_id: process.env.GOOGLE_CLIENT_ID,
++    redirect_uri: redirectUri(req, "google"),
++    response_type: "code",
++    scope: "openid email profile",
++    state,
++    prompt: "select_account",
++  });
++  return `${GOOGLE_AUTH}?${params}`;
++}
++
++async function googleProfile(req, code) {
++  const res = await fetch(GOOGLE_TOKEN, {
++    method: "POST",
++    headers: { "Content-Type": "application/x-www-form-urlencoded" },
++    body: new URLSearchParams({
++      code,
++      client_id: process.env.GOOGLE_CLIENT_ID,
++      client_secret: process.env.GOOGLE_CLIENT_SECRET,
++      redirect_uri: redirectUri(req, "google"),
++      grant_type: "authorization_code",
++    }),
++  });
++  const data = await res.json().catch(() => ({}));
++  if (!res.ok || !data.id_token) throw new Error(data.error_description || "Google sign-in failed.");
++  const claims = decodeJwt(data.id_token);
++  if (!claims || !claims.email) throw new Error("Google did not share an email address.");
++  if (claims.email_verified === false) throw new Error("Please verify your Google email first.");
++  return { email: claims.email, name: claims.name || claims.given_name || "", provider: "google" };
++}
++
++/* ---------------------------------- apple --------------------------------- */
++
++function appleAuthUrl(req, state) {
++  const params = new URLSearchParams({
++    client_id: process.env.APPLE_CLIENT_ID,
++    redirect_uri: redirectUri(req, "apple"),
++    response_type: "code id_token",
++    scope: "name email",
++    response_mode: "form_post", // Apple posts the result back to us
++    state,
++  });
++  return `${APPLE_AUTH}?${params}`;
++}
++
++async function appleProfile(req, code, idTokenFromForm, userJson) {
++  let claims = idTokenFromForm ? decodeJwt(idTokenFromForm) : null;
++  if (!claims && code) {
++    const res = await fetch(APPLE_TOKEN, {
++      method: "POST",
++      headers: { "Content-Type": "application/x-www-form-urlencoded" },
++      body: new URLSearchParams({
++        code,
++        client_id: process.env.APPLE_CLIENT_ID,
++        client_secret: appleClientSecret(),
++        redirect_uri: redirectUri(req, "apple"),
++        grant_type: "authorization_code",
++      }),
++    });
++    const data = await res.json().catch(() => ({}));
++    if (!res.ok || !data.id_token) throw new Error(data.error_description || data.error || "Apple sign-in failed.");
++    claims = decodeJwt(data.id_token);
++  }
++  if (!claims || !claims.email) throw new Error("Apple did not share an email address.");
++
++  // Apple sends the display name once, on the very first authorisation only.
++  let name = "";
++  try {
++    const parsed = typeof userJson === "string" ? JSON.parse(userJson) : userJson;
++    if (parsed && parsed.name) name = [parsed.name.firstName, parsed.name.lastName].filter(Boolean).join(" ");
++  } catch {}
++
++  return { email: claims.email, name, provider: "apple" };
++}
++
++module.exports = {
++  STATE_COOKIE,
++  providers,
++  googleConfigured,
++  appleConfigured,
++  googleAuthUrl,
++  googleProfile,
++  appleAuthUrl,
++  appleProfile,
++  makeState,
++  readState,
++  clearState,
++  baseUrl,
++  redirectUri,
++};
+diff --git a/clipery/public/auth-modal.js b/clipery/public/auth-modal.js
+new file mode 100644
+index 0000000..e694e62
+--- /dev/null
++++ b/clipery/public/auth-modal.js
+@@ -0,0 +1,285 @@
++/**
++ * Clipery — login / register popup.
++ *
++ * Drops a modal on any page. Guests clicking "Log in", "Start free" or
++ * anything pointing at the Studio get the card right there instead of being
++ * sent to /login. The standalone /login page still exists as a fallback
++ * (and for people who land on it directly).
++ *
++ *   window.CleryAuth.open("register")   // force the signup tab
++ *   <a href="/login" data-auth>…</a>    // any element opens it
++ */
++(function (global) {
++  var CSS = `
++  .cauth-back{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;
++    background:rgba(4,4,8,.78);backdrop-filter:blur(6px);padding:1.1rem;animation:cauthFade .18s ease}
++  .cauth-back.on{display:flex}
++  @keyframes cauthFade{from{opacity:0}to{opacity:1}}
++  @keyframes cauthPop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
++  .cauth-card{width:100%;max-width:420px;max-height:92vh;overflow:auto;position:relative;
++    background:#0e0e14;border:1px solid rgba(255,255,255,.1);border-radius:20px;
++    padding:1.9rem 1.7rem 1.6rem;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:cauthPop .2s ease;
++    font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#f4f1ea}
++  .cauth-x{position:absolute;top:.85rem;right:.9rem;width:32px;height:32px;border-radius:50%;cursor:pointer;
++    border:1px solid rgba(255,255,255,.14);background:transparent;color:#9894a6;font-size:1.1rem;line-height:1;
++    display:flex;align-items:center;justify-content:center}
++  .cauth-x:hover{color:#fff;border-color:rgba(255,255,255,.35)}
++  .cauth-tabs{display:flex;gap:.5rem;margin:0 0 1.3rem}
++  .cauth-tab{flex:1;padding:.6rem .5rem;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:700;
++    font-size:.9rem;border:1px solid rgba(255,255,255,.16);background:transparent;color:#f4f1ea;transition:all .15s}
++  .cauth-tab.on{background:linear-gradient(135deg,#ff4d6d,#ff8a4c);border-color:transparent;color:#fff;
++    box-shadow:0 8px 22px rgba(255,77,109,.32)}
++  .cauth-card h2{font-size:1.45rem;margin:0 0 .3rem;font-weight:800;letter-spacing:-.01em}
++  .cauth-sub{color:#9894a6;font-size:.9rem;margin:0 0 1.3rem;line-height:1.5}
++  .cauth-social{display:none;margin:0 0 1.15rem}
++  .cauth-social.on{display:block}
++  .cauth-sbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:.6rem;padding:.72rem 1rem;
++    margin:0 0 .55rem;border-radius:12px;cursor:pointer;font-family:inherit;font-size:.92rem;font-weight:700;
++    text-decoration:none;border:1px solid rgba(255,255,255,.16);transition:transform .15s}
++  .cauth-sbtn:hover{transform:translateY(-1px)}
++  .cauth-google{background:#fff;color:#1f1f1f;border-color:#fff}
++  .cauth-apple{background:#000;color:#fff;border-color:rgba(255,255,255,.35)}
++  .cauth-sbtn svg{width:18px;height:18px;flex:none}
++  .cauth-or{display:flex;align-items:center;gap:.75rem;margin:0 0 1.1rem;color:#66627a;font-size:.74rem;
++    text-transform:uppercase;letter-spacing:.08em}
++  .cauth-or::before,.cauth-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.1)}
++  .cauth-f{margin:0 0 .9rem}
++  .cauth-f label{display:block;font-size:.8rem;font-weight:700;color:#c9c5d8;margin:0 0 .32rem}
++  .cauth-f input{width:100%;padding:.75rem .9rem;border-radius:12px;border:1px solid rgba(255,255,255,.14);
++    background:rgba(0,0,0,.4);color:#f4f1ea;font-family:inherit;font-size:.94rem;box-sizing:border-box}
++  .cauth-f input:focus{outline:none;border-color:#ff4d6d}
++  .cauth-hint{font-size:.75rem;color:#66627a;margin:.3rem 0 0}
++  .cauth-go{width:100%;margin-top:.35rem;padding:.8rem 1rem;border:none;border-radius:999px;cursor:pointer;
++    font-family:inherit;font-size:.96rem;font-weight:800;color:#fff;
++    background:linear-gradient(135deg,#ff4d6d,#ff8a4c);box-shadow:0 10px 26px rgba(255,77,109,.32)}
++  .cauth-go:disabled{opacity:.6;cursor:default}
++  .cauth-msg{display:none;margin:0 0 1rem;padding:.7rem .85rem;border-radius:12px;font-size:.86rem;line-height:1.45}
++  .cauth-msg.err{display:block;background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.4);color:#ffb3c1}
++  .cauth-msg.ok{display:block;background:rgba(200,245,66,.1);border:1px solid rgba(200,245,66,.35);color:#dcf98d}
++  .cauth-foot{margin:1.05rem 0 0;text-align:center;font-size:.85rem;color:#9894a6}
++  .cauth-foot a{color:#ff8a4c;text-decoration:none;font-weight:700;cursor:pointer}
++  `;
++
++  var GOOGLE_SVG =
++    '<svg viewBox="0 0 48 48" aria-hidden="true">' +
++    '<path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.2 17.6 9.5 24 9.5z"/>' +
++    '<path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.1 5.4-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.4z"/>' +
++    '<path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-7.8-6.1C1 16.4 0 20.1 0 24s1 7.6 2.6 10.8l7.8-6.1z"/>' +
++    '<path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.3-4.6 2.1-8.8 2.1-6.4 0-11.7-3.7-13.6-8.9l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
++  var APPLE_SVG =
++    '<svg viewBox="0 0 384 512" aria-hidden="true" fill="currentColor">' +
++    '<path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>';
++
++  var el = {};
++  var mode = "login";
++  var nextTarget = "/studio";
++  var built = false;
++
++  function build() {
++    if (built) return;
++    built = true;
++
++    var style = document.createElement("style");
++    style.textContent = CSS;
++    document.head.appendChild(style);
++
++    var back = document.createElement("div");
++    back.className = "cauth-back";
++    back.setAttribute("role", "dialog");
++    back.setAttribute("aria-modal", "true");
++    back.innerHTML =
++      '<div class="cauth-card">' +
++      '<button type="button" class="cauth-x" aria-label="Close">✕</button>' +
++      '<div class="cauth-tabs">' +
++      '<button type="button" class="cauth-tab on" data-t="login">Log in</button>' +
++      '<button type="button" class="cauth-tab" data-t="register">Create account</button>' +
++      "</div>" +
++      '<h2 class="cauth-title">Welcome back</h2>' +
++      '<p class="cauth-sub">Log in to open the Studio and your clip library.</p>' +
++      '<div class="cauth-msg" role="alert"></div>' +
++      '<div class="cauth-social">' +
++      '<a class="cauth-sbtn cauth-google" data-p="google">' + GOOGLE_SVG + "Continue with Google</a>" +
++      '<a class="cauth-sbtn cauth-apple" data-p="apple">' + APPLE_SVG + "Continue with Apple</a>" +
++      '<div class="cauth-or">or</div>' +
++      "</div>" +
++      "<form novalidate>" +
++      '<div class="cauth-f cauth-name" hidden><label for="cauth-name">Name</label>' +
++      '<input type="text" id="cauth-name" autocomplete="name" placeholder="Your name" /></div>' +
++      '<div class="cauth-f"><label for="cauth-email">Email</label>' +
++      '<input type="email" id="cauth-email" autocomplete="email" placeholder="you@example.com" required /></div>' +
++      '<div class="cauth-f"><label for="cauth-pass">Password</label>' +
++      '<input type="password" id="cauth-pass" autocomplete="current-password" placeholder="••••••••" required />' +
++      '<p class="cauth-hint" hidden>At least 8 characters.</p></div>' +
++      '<button type="submit" class="cauth-go">Log in</button>' +
++      "</form>" +
++      '<p class="cauth-foot">No account yet? <a data-switch>Create one free</a></p>' +
++      "</div>";
++    document.body.appendChild(back);
++
++    el.back = back;
++    el.card = back.querySelector(".cauth-card");
++    el.title = back.querySelector(".cauth-title");
++    el.sub = back.querySelector(".cauth-sub");
++    el.msg = back.querySelector(".cauth-msg");
++    el.social = back.querySelector(".cauth-social");
++    el.google = back.querySelector('[data-p="google"]');
++    el.apple = back.querySelector('[data-p="apple"]');
++    el.form = back.querySelector("form");
++    el.name = back.querySelector(".cauth-name");
++    el.hint = back.querySelector(".cauth-hint");
++    el.go = back.querySelector(".cauth-go");
++    el.foot = back.querySelector(".cauth-foot");
++    el.pass = back.querySelector("#cauth-pass");
++
++    back.addEventListener("click", function (e) {
++      if (e.target === back) close();
++    });
++    back.querySelector(".cauth-x").addEventListener("click", close);
++    document.addEventListener("keydown", function (e) {
++      if (e.key === "Escape" && back.classList.contains("on")) close();
++    });
++    back.querySelectorAll(".cauth-tab").forEach(function (t) {
++      t.addEventListener("click", function () { setMode(t.getAttribute("data-t")); });
++    });
++    el.foot.addEventListener("click", function (e) {
++      if (e.target.hasAttribute("data-switch")) {
++        e.preventDefault();
++        setMode(mode === "login" ? "register" : "login");
++      }
++    });
++    el.form.addEventListener("submit", submit);
++
++    // Which social buttons this server can actually do
++    fetch("/api/auth/providers")
++      .then(function (r) { return r.json(); })
++      .then(function (d) {
++        var p = (d && d.providers) || {};
++        if (!p.google) el.google.remove();
++        if (!p.apple) el.apple.remove();
++        if (p.google || p.apple) el.social.classList.add("on");
++        syncSocialLinks();
++      })
++      .catch(function () {});
++  }
++
++  function syncSocialLinks() {
++    var n = encodeURIComponent(nextTarget);
++    if (el.google && el.google.isConnected) el.google.href = "/api/auth/google?next=" + n;
++    if (el.apple && el.apple.isConnected) el.apple.href = "/api/auth/apple?next=" + n;
++  }
++
++  function say(text, kind) {
++    el.msg.textContent = text || "";
++    el.msg.className = "cauth-msg" + (text ? " " + (kind || "err") : "");
++  }
++
++  function setMode(next) {
++    mode = next === "register" ? "register" : "login";
++    var reg = mode === "register";
++    el.back.querySelectorAll(".cauth-tab").forEach(function (t) {
++      t.classList.toggle("on", t.getAttribute("data-t") === mode);
++    });
++    el.name.hidden = !reg;
++    el.hint.hidden = !reg;
++    el.title.textContent = reg ? "Create your account" : "Welcome back";
++    el.sub.textContent = reg
++      ? "Free to start — no card needed. The Studio opens right after."
++      : "Log in to open the Studio and your clip library.";
++    el.go.textContent = reg ? "Create account" : "Log in";
++    el.pass.setAttribute("autocomplete", reg ? "new-password" : "current-password");
++    el.foot.innerHTML = reg
++      ? 'Already have an account? <a data-switch>Log in</a>'
++      : 'No account yet? <a data-switch>Create one free</a>';
++    say("");
++  }
++
++  async function submit(e) {
++    e.preventDefault();
++    var email = el.back.querySelector("#cauth-email").value.trim();
++    var pass = el.pass.value;
++    var name = el.back.querySelector("#cauth-name").value.trim();
++
++    if (!email || !pass) return say("Email and password are required.");
++    if (mode === "register" && pass.length < 8) return say("Password must be at least 8 characters.");
++
++    el.go.disabled = true;
++    el.go.textContent = mode === "register" ? "Creating…" : "Logging in…";
++    say("");
++    try {
++      var res = await fetch(mode === "register" ? "/api/auth/register" : "/api/auth/login", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ email: email, password: pass, name: name }),
++      });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) {
++        say(data.error || "Something went wrong. Try again.");
++        el.go.disabled = false;
++        el.go.textContent = mode === "register" ? "Create account" : "Log in";
++        return;
++      }
++      say(mode === "register" ? "Account created — opening Studio…" : "Logged in — opening Studio…", "ok");
++      location.href = nextTarget;
++    } catch (err) {
++      say("Network error. Check your connection and try again.");
++      el.go.disabled = false;
++      el.go.textContent = mode === "register" ? "Create account" : "Log in";
++    }
++  }
++
++  function open(startMode, next) {
++    build();
++    nextTarget = next || nextTarget || "/studio";
++    syncSocialLinks();
++    setMode(startMode || "login");
++    el.back.classList.add("on");
++    document.body.style.overflow = "hidden";
++    setTimeout(function () {
++      var f = el.back.querySelector(mode === "register" ? "#cauth-name" : "#cauth-email");
++      if (f) f.focus();
++    }, 60);
++  }
++
++  function close() {
++    if (!built) return;
++    el.back.classList.remove("on");
++    document.body.style.overflow = "";
++  }
++
++  /**
++   * Any link to /login, /register or a members-only page opens the popup
++   * instead of navigating — but only for guests. Logged-in visitors keep
++   * their normal links.
++   */
++  function wire(isGuest) {
++    if (!isGuest) return;
++    document.addEventListener(
++      "click",
++      function (e) {
++        var a = e.target.closest && e.target.closest("a,button");
++        if (!a) return;
++        var href = a.getAttribute("href") || "";
++        var forced = a.hasAttribute("data-auth") ? a.getAttribute("data-auth") || "login" : null;
++        var isAuthLink = /^\/(login|register)(\?|$)/.test(href);
++        var isMemberLink = /^\/(studio|library|rank)(\?|\/|$)/.test(href);
++        if (!forced && !isAuthLink && !isMemberLink) return;
++
++        e.preventDefault();
++        var wantRegister = forced === "register" || /^\/register/.test(href);
++        open(wantRegister ? "register" : "login", isMemberLink ? href : "/studio");
++      },
++      true
++    );
++  }
++
++  global.CleryAuth = { open: open, close: close, wire: wire };
++
++  // Auto-wire on pages that opt in with <body data-auth-modal>
++  document.addEventListener("DOMContentLoaded", function () {
++    if (!document.body.hasAttribute("data-auth-modal")) return;
++    fetch("/api/auth/me")
++      .then(function (r) { return r.json(); })
++      .then(function (d) { wire(!(d && d.user)); })
++      .catch(function () { wire(true); });
++  });
++})(window);
+diff --git a/clipery/public/auth.js b/clipery/public/auth.js
+new file mode 100644
+index 0000000..31da805
+--- /dev/null
++++ b/clipery/public/auth.js
+@@ -0,0 +1,126 @@
++/* Clipery — login / register page */
++(function () {
++  var form = document.getElementById("auth-form");
++  var msg = document.getElementById("auth-msg");
++  var submit = document.getElementById("auth-submit");
++  var tabLogin = document.getElementById("tab-login");
++  var tabRegister = document.getElementById("tab-register");
++  var fieldName = document.getElementById("field-name");
++  var pwHint = document.getElementById("pw-hint");
++  var title = document.getElementById("auth-title");
++  var sub = document.getElementById("auth-sub");
++  var foot = document.getElementById("auth-foot");
++  var password = document.getElementById("password");
++
++  var mode = "login";
++
++  function nextUrl() {
++    var params = new URLSearchParams(location.search);
++    var next = params.get("next") || "/studio";
++    // only allow same-site paths
++    return next.charAt(0) === "/" && next.charAt(1) !== "/" ? next : "/studio";
++  }
++
++  function say(text, kind) {
++    msg.textContent = text || "";
++    msg.className = "auth-msg" + (text ? " " + (kind || "err") : "");
++  }
++
++  function setMode(next) {
++    mode = next;
++    var reg = mode === "register";
++    tabLogin.classList.toggle("on", !reg);
++    tabRegister.classList.toggle("on", reg);
++    fieldName.hidden = !reg;
++    pwHint.hidden = !reg;
++    title.textContent = reg ? "Create your account" : "Welcome back";
++    sub.textContent = reg
++      ? "Free to start — no card needed. You get the Studio right after."
++      : "Log in to open the Studio and your clip library.";
++    submit.textContent = reg ? "Create account" : "Log in";
++    password.setAttribute("autocomplete", reg ? "new-password" : "current-password");
++    foot.innerHTML = reg
++      ? 'Already have an account? <a href="#" id="switch-link">Log in</a>'
++      : 'No account yet? <a href="#" id="switch-link">Create one free</a>';
++    bindSwitch();
++    say("");
++  }
++
++  function bindSwitch() {
++    var link = document.getElementById("switch-link");
++    if (!link) return;
++    link.addEventListener("click", function (e) {
++      e.preventDefault();
++      setMode(mode === "login" ? "register" : "login");
++    });
++  }
++
++  /* Social buttons: only show the providers this server actually has keys for,
++     and carry the ?next= target through the round-trip. */
++  (function socialSetup() {
++    var box = document.getElementById("social");
++    if (!box) return;
++    fetch("/api/auth/providers")
++      .then(function (r) { return r.json(); })
++      .then(function (d) {
++        var p = (d && d.providers) || {};
++        var google = document.getElementById("btn-google");
++        var apple = document.getElementById("btn-apple");
++        var next = encodeURIComponent(nextUrl());
++        if (p.google) google.href = "/api/auth/google?next=" + next; else google.remove();
++        if (p.apple) apple.href = "/api/auth/apple?next=" + next; else apple.remove();
++        if (p.google || p.apple) box.classList.add("on");
++      })
++      .catch(function () {});
++  })();
++
++  // A failed social round-trip comes back as /login?error=…
++  (function showOauthError() {
++    var err = new URLSearchParams(location.search).get("error");
++    if (err) say(err);
++  })();
++
++  tabLogin.addEventListener("click", function () { setMode("login"); });
++  tabRegister.addEventListener("click", function () { setMode("register"); });
++  bindSwitch();
++
++  // ?mode=register (or landing straight on /register) opens the signup tab
++  if (/register/i.test(location.pathname) || /mode=register/i.test(location.search)) {
++    setMode("register");
++  }
++
++  form.addEventListener("submit", async function (e) {
++    e.preventDefault();
++    var email = document.getElementById("email").value.trim();
++    var pass = password.value;
++    var name = document.getElementById("name").value.trim();
++
++    if (!email || !pass) return say("Email and password are required.");
++    if (mode === "register" && pass.length < 8) return say("Password must be at least 8 characters.");
++
++    submit.disabled = true;
++    submit.textContent = mode === "register" ? "Creating…" : "Logging in…";
++    say("");
++
++    try {
++      var res = await fetch(mode === "register" ? "/api/auth/register" : "/api/auth/login", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ email: email, password: pass, name: name }),
++      });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) {
++        say(data.error || "Something went wrong. Try again.");
++        submit.disabled = false;
++        submit.textContent = mode === "register" ? "Create account" : "Log in";
++        return;
++      }
++      say(mode === "register" ? "Account created — opening Studio…" : "Logged in — opening Studio…", "ok");
++      location.href = nextUrl();
++    } catch (err) {
++      say("Network error. Check your connection and try again.");
++      submit.disabled = false;
++      submit.textContent = mode === "register" ? "Create account" : "Log in";
++    }
++  });
++})();
+diff --git a/clipery/public/favicon.svg b/clipery/public/favicon.svg
+new file mode 100644
+index 0000000..7710d44
+--- /dev/null
++++ b/clipery/public/favicon.svg
+@@ -0,0 +1,13 @@
++<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
++  <defs>
++    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
++      <stop offset="0" stop-color="#ff4d6d" />
++      <stop offset="1" stop-color="#ff8a4c" />
++    </linearGradient>
++  </defs>
++  <rect width="64" height="64" rx="16" fill="url(#g)" />
++  <g transform="translate(10 10) scale(1.8333)">
++    <path d="M4 7.5C4 5.5 5.5 4 7.5 4h3L8 10h4l-5 10 2.5-7H6.5L9 4H7.5C5.5 4 4 5.5 4 7.5z" fill="#ffffff" />
++    <path d="M14 8h6v2h-4v2h3.5v2H16v2h4v2h-6V8z" fill="#ffffff" fill-opacity="0.9" />
++  </g>
++</svg>
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 5e4d863..6ed891c 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -275,7 +275,7 @@
+       }
+     </style>
+   </head>
+-  <body>
++  <body data-auth-modal>
+     <div class="bg-live" aria-hidden="true">
+       <div class="bg-pic"></div>
+       <canvas id="bgfx"></canvas>
+@@ -295,9 +295,9 @@
+           <a href="#pricing">Pricing</a>
+           <a href="https://openart.ai/suite/create-image" title="Image Generator — generate stunning images from text prompts">Images</a>
+         </nav>
+-        <div class="nav-cta">
+-          <a class="btn btn-ghost" href="/waitlist">Waitlist</a>
+-          <a class="btn btn-primary" href="/studio">Start free</a>
++        <div class="nav-cta" id="nav-cta">
++          <a class="btn btn-ghost" href="/login">Log in</a>
++          <a class="btn btn-primary" href="/register">Start free</a>
+         </div>
+       </div>
+     </header>
+@@ -311,7 +311,7 @@
+           cuts them into ranked shorts, and stitches countdown ranking videos from up to 5 sources.
+         </p>
+         <div class="hero-cta">
+-          <a class="btn btn-primary btn-lg" href="/studio">Start clipping free</a>
++          <a class="btn btn-primary btn-lg" href="/register">Start clipping free</a>
+           <a class="btn btn-ghost btn-lg" href="#pricing">View pricing</a>
+         </div>
+       </section>
+@@ -728,5 +728,25 @@
+         boot();
+       })();
+     </script>
++    <script>
++      // Logged in? Swap the landing CTAs for a straight shot into the Studio.
++      fetch("/api/auth/me")
++        .then(function (r) { return r.json(); })
++        .then(function (d) {
++          if (!d || !d.user) return;
++          var cta = document.getElementById("nav-cta");
++          if (cta) {
++            cta.innerHTML =
++              '<a class="btn btn-ghost" href="/library">Library</a>' +
++              '<a class="btn btn-primary" href="/studio">Open Studio</a>';
++          }
++          document.querySelectorAll('a[href="/register"]').forEach(function (a) {
++            a.setAttribute("href", "/studio");
++            if (/start/i.test(a.textContent)) a.textContent = "Open Studio";
++          });
++        })
++        .catch(function () {});
++    </script>
++    <script src="/auth-modal.js"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/login.html b/clipery/public/login.html
+new file mode 100644
+index 0000000..4633050
+--- /dev/null
++++ b/clipery/public/login.html
+@@ -0,0 +1,161 @@
++<!DOCTYPE html>
++<html lang="en">
++  <head>
++    <meta charset="utf-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <title>Log in · Clipery</title>
++    <meta name="theme-color" content="#07070b" />
++    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
++    <link rel="stylesheet" href="/styles.css" />
++    <style>
++      .auth-wrap {
++        min-height: calc(100vh - 90px);
++        display: flex;
++        align-items: center;
++        justify-content: center;
++        padding: 2.5rem 1.1rem 4rem;
++      }
++      .auth-card {
++        width: 100%;
++        max-width: 430px;
++        background: rgba(14, 14, 20, 0.92);
++        border: 1px solid rgba(255, 255, 255, 0.09);
++        border-radius: 20px;
++        padding: 2rem 1.8rem 1.9rem;
++        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55);
++      }
++      .auth-card h1 { font-size: 1.55rem; margin: 0 0 0.35rem; }
++      .auth-sub { color: #9894a6; font-size: 0.92rem; margin: 0 0 1.4rem; }
++      .auth-tabs { display: flex; gap: 0.5rem; margin: 0 0 1.35rem; }
++      .auth-tab {
++        flex: 1; padding: 0.6rem 0.5rem; border-radius: 999px; cursor: pointer;
++        font-family: inherit; font-weight: 700; font-size: 0.9rem;
++        border: 1px solid rgba(255, 255, 255, 0.16); background: transparent; color: #f4f1ea;
++        transition: all 0.15s;
++      }
++      .auth-tab.on {
++        background: linear-gradient(135deg, #ff4d6d, #ff8a4c);
++        border-color: transparent; color: #fff;
++        box-shadow: 0 8px 22px rgba(255, 77, 109, 0.32);
++      }
++      .auth-field { margin: 0 0 0.95rem; }
++      .auth-field label {
++        display: block; font-size: 0.82rem; font-weight: 700;
++        color: #c9c5d8; margin: 0 0 0.35rem;
++      }
++      .auth-field input {
++        width: 100%; padding: 0.78rem 0.9rem; border-radius: 12px;
++        border: 1px solid rgba(255, 255, 255, 0.14); background: rgba(0, 0, 0, 0.4);
++        color: #f4f1ea; font-family: inherit; font-size: 0.95rem;
++      }
++      .auth-field input:focus { outline: none; border-color: #ff4d6d; }
++      .auth-hint { font-size: 0.76rem; color: #66627a; margin: 0.35rem 0 0; }
++      .auth-submit { width: 100%; margin-top: 0.4rem; justify-content: center; }
++      .auth-msg {
++        display: none; margin: 0 0 1rem; padding: 0.7rem 0.85rem; border-radius: 12px;
++        font-size: 0.87rem; line-height: 1.45;
++      }
++      .auth-msg.err { display: block; background: rgba(255, 77, 109, 0.12); border: 1px solid rgba(255, 77, 109, 0.4); color: #ffb3c1; }
++      .auth-msg.ok { display: block; background: rgba(200, 245, 66, 0.1); border: 1px solid rgba(200, 245, 66, 0.35); color: #dcf98d; }
++      .auth-foot { margin: 1.15rem 0 0; text-align: center; font-size: 0.86rem; color: #9894a6; }
++      .auth-foot a { color: #ff8a4c; text-decoration: none; font-weight: 700; }
++      .social { display: none; margin: 0 0 1.25rem; }
++      .social.on { display: block; }
++      .social-btn {
++        width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
++        padding: 0.75rem 1rem; margin: 0 0 0.6rem; border-radius: 12px; cursor: pointer;
++        font-family: inherit; font-size: 0.93rem; font-weight: 700; text-decoration: none;
++        border: 1px solid rgba(255, 255, 255, 0.16); transition: all 0.15s;
++      }
++      .social-btn:hover { transform: translateY(-1px); }
++      .social-google { background: #fff; color: #1f1f1f; border-color: #fff; }
++      .social-apple { background: #000; color: #fff; border-color: rgba(255, 255, 255, 0.35); }
++      .social-btn svg { width: 18px; height: 18px; flex: none; }
++      .or-line {
++        display: flex; align-items: center; gap: 0.75rem;
++        margin: 0 0 1.15rem; color: #66627a; font-size: 0.76rem;
++        text-transform: uppercase; letter-spacing: 0.08em;
++      }
++      .or-line::before, .or-line::after {
++        content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1);
++      }
++      .auth-note {
++        margin: 1.3rem 0 0; padding-top: 1.1rem; border-top: 1px solid rgba(255, 255, 255, 0.07);
++        font-size: 0.78rem; color: #66627a; text-align: center;
++      }
++    </style>
++  </head>
++  <body>
++    <header class="header">
++      <div class="header-inner">
++        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
++        <nav class="nav" aria-label="Primary">
++          <a href="/pricing" data-nav>Pricing</a>
++          <a href="/waitlist" data-nav>Waitlist</a>
++        </nav>
++      </div>
++    </header>
++
++    <main class="auth-wrap">
++      <div class="auth-card">
++        <div class="auth-tabs">
++          <button type="button" class="auth-tab on" id="tab-login">Log in</button>
++          <button type="button" class="auth-tab" id="tab-register">Create account</button>
++        </div>
++
++        <h1 id="auth-title">Welcome back</h1>
++        <p class="auth-sub" id="auth-sub">Log in to open the Studio and your clip library.</p>
++
++        <div class="auth-msg" id="auth-msg" role="alert"></div>
++
++        <div class="social" id="social">
++          <a class="social-btn social-google" id="btn-google" href="/api/auth/google">
++            <svg viewBox="0 0 48 48" aria-hidden="true">
++              <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.2 17.6 9.5 24 9.5z"/>
++              <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.1 5.4-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.4z"/>
++              <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-7.8-6.1C1 16.4 0 20.1 0 24s1 7.6 2.6 10.8l7.8-6.1z"/>
++              <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.3-4.6 2.1-8.8 2.1-6.4 0-11.7-3.7-13.6-8.9l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/>
++            </svg>
++            Continue with Google
++          </a>
++          <a class="social-btn social-apple" id="btn-apple" href="/api/auth/apple">
++            <svg viewBox="0 0 384 512" aria-hidden="true" fill="currentColor">
++              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
++            </svg>
++            Continue with Apple
++          </a>
++          <div class="or-line">or</div>
++        </div>
++
++        <form id="auth-form" novalidate>
++          <div class="auth-field" id="field-name" hidden>
++            <label for="name">Name</label>
++            <input type="text" id="name" name="name" autocomplete="name" placeholder="Your name" />
++          </div>
++
++          <div class="auth-field">
++            <label for="email">Email</label>
++            <input type="email" id="email" name="email" autocomplete="email" placeholder="you@example.com" required />
++          </div>
++
++          <div class="auth-field">
++            <label for="password">Password</label>
++            <input type="password" id="password" name="password" autocomplete="current-password" placeholder="••••••••" required />
++            <p class="auth-hint" id="pw-hint" hidden>At least 8 characters.</p>
++          </div>
++
++          <button type="submit" class="btn btn-primary auth-submit" id="auth-submit">Log in</button>
++        </form>
++
++        <p class="auth-foot" id="auth-foot">
++          No account yet? <a href="#" id="switch-link">Create one free</a>
++        </p>
++
++        <p class="auth-note">Studio, Rank video and Library are for members only.</p>
++      </div>
++    </main>
++
++    <script src="/shared.js"></script>
++    <script src="/auth.js"></script>
++  </body>
++</html>
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index 1cbda85..b2b6714 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -8,7 +8,7 @@
+     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+     <link rel="stylesheet" href="/styles.css" />
+   </head>
+-  <body>
++  <body data-auth-modal>
+     <div class="bg-grid" aria-hidden="true"></div>
+     <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+ 
+@@ -101,5 +101,6 @@
+       </div>
+     </footer>
+     <script src="/shared.js?v=2"></script>
++      <script src="/auth-modal.js"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/shared.js b/clipery/public/shared.js
+index 294c53b..f29c4c4 100644
+--- a/clipery/public/shared.js
++++ b/clipery/public/shared.js
+@@ -237,10 +237,69 @@
+     return { stop };
+   }
+ 
++  /* ------------------------------ account chip ------------------------------ */
++  var currentUser = null;
++
++  async function loadUser() {
++    try {
++      var res = await fetch("/api/auth/me", { headers: { Accept: "application/json" } });
++      var data = await res.json();
++      currentUser = (data && data.user) || null;
++    } catch {
++      currentUser = null;
++    }
++    return currentUser;
++  }
++
++  async function logout() {
++    try {
++      await fetch("/api/auth/logout", { method: "POST" });
++    } catch {}
++    location.href = "/";
++  }
++
++  /** Drop a "you are logged in as…" chip (or Log in button) into the nav. */
++  function renderAccountChip(user) {
++    var nav = document.querySelector(".nav") || document.querySelector(".nav-links");
++    if (!nav || nav.querySelector("[data-account]")) return;
++
++    var wrap = document.createElement("span");
++    wrap.setAttribute("data-account", "");
++    wrap.style.cssText = "display:inline-flex;align-items:center;gap:0.55rem;margin-left:0.4rem";
++
++    if (user) {
++      var who = document.createElement("span");
++      who.textContent = user.name || user.email;
++      who.title = user.email;
++      who.style.cssText =
++        "font-size:0.82rem;font-weight:700;color:#c9c5d8;max-width:150px;overflow:hidden;" +
++        "text-overflow:ellipsis;white-space:nowrap";
++      var out = document.createElement("button");
++      out.type = "button";
++      out.textContent = "Log out";
++      out.style.cssText =
++        "font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;color:#f4f1ea;" +
++        "background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:999px;padding:0.35rem 0.8rem";
++      out.addEventListener("click", logout);
++      wrap.appendChild(who);
++      wrap.appendChild(out);
++    } else {
++      var login = document.createElement("a");
++      login.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
++      login.textContent = "Log in";
++      login.className = "btn btn-primary btn-sm";
++      wrap.appendChild(login);
++    }
++    nav.appendChild(wrap);
++  }
++
+   // Boot common chrome
+   document.addEventListener("DOMContentLoaded", function () {
+     setActiveNav();
+     yearStamp();
++    if (!/^\/login|^\/register/.test(location.pathname)) {
++      loadUser().then(renderAccountChip);
++    }
+   });
+ 
+   global.CF = {
+@@ -255,5 +314,8 @@
+     renderClipCard,
+     renderRankTable,
+     createPoller,
++    loadUser,
++    logout,
++    getUser: function () { return currentUser; },
+   };
+ })(window);
+diff --git a/clipery/public/waitlist.html b/clipery/public/waitlist.html
+index 0fef211..6d03355 100644
+--- a/clipery/public/waitlist.html
++++ b/clipery/public/waitlist.html
+@@ -8,7 +8,7 @@
+     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+     <link rel="stylesheet" href="/styles.css" />
+   </head>
+-  <body>
++  <body data-auth-modal>
+     <div class="bg-grid" aria-hidden="true"></div>
+     <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+ 
+@@ -106,5 +106,6 @@
+ 
+     <script src="/shared.js?v=2"></script>
+     <script src="/waitlist.js"></script>
++      <script src="/auth-modal.js"></script>
+   </body>
+ </html>
+diff --git a/clipery/scripts/claim-jobs.js b/clipery/scripts/claim-jobs.js
+new file mode 100644
+index 0000000..77b4354
+--- /dev/null
++++ b/clipery/scripts/claim-jobs.js
+@@ -0,0 +1,78 @@
++#!/usr/bin/env node
++/**
++ * Give old jobs an owner.
++ *
++ * Clips made before accounts existed have no userId, so they show up in
++ * nobody's library. Run this once to hand them to your account:
++ *
++ *   node scripts/claim-jobs.js you@example.com
++ *
++ * Add --dry to see what would change without touching anything.
++ */
++const fs = require("fs");
++const path = require("path");
++
++const ROOT = path.join(__dirname, "..");
++const JOBS_DIR = path.join(ROOT, "data", "jobs");
++const USERS_FILE = path.join(ROOT, "data", "users.json");
++const LINKS_FILE = path.join(ROOT, "data", "link-rankings.json");
++
++const email = String(process.argv[2] || "").trim().toLowerCase();
++const dry = process.argv.includes("--dry");
++
++if (!email) {
++  console.error("Usage: node scripts/claim-jobs.js you@example.com [--dry]");
++  process.exit(1);
++}
++
++let users = [];
++try {
++  users = JSON.parse(fs.readFileSync(USERS_FILE, "utf8")).users || [];
++} catch {
++  console.error("No accounts yet — register on the site first.");
++  process.exit(1);
++}
++
++const user = users.find((u) => String(u.email).toLowerCase() === email);
++if (!user) {
++  console.error(`No account for ${email}. Accounts: ${users.map((u) => u.email).join(", ") || "(none)"}`);
++  process.exit(1);
++}
++
++let claimed = 0;
++let skipped = 0;
++if (fs.existsSync(JOBS_DIR)) {
++  for (const file of fs.readdirSync(JOBS_DIR).filter((f) => f.endsWith(".json"))) {
++    const full = path.join(JOBS_DIR, file);
++    let job;
++    try {
++      job = JSON.parse(fs.readFileSync(full, "utf8"));
++    } catch {
++      continue;
++    }
++    if (job.userId) {
++      skipped++;
++      continue;
++    }
++    job.userId = user.id;
++    if (!dry) fs.writeFileSync(full, JSON.stringify(job, null, 2));
++    claimed++;
++  }
++}
++
++let boards = 0;
++try {
++  const data = JSON.parse(fs.readFileSync(LINKS_FILE, "utf8"));
++  for (const b of data.boards || []) {
++    if (!b.userId) {
++      b.userId = user.id;
++      boards++;
++    }
++  }
++  if (!dry && boards) fs.writeFileSync(LINKS_FILE, JSON.stringify(data, null, 2));
++} catch {}
++
++console.log(
++  `${dry ? "[dry run] would claim" : "Claimed"} ${claimed} job(s) and ${boards} board(s) for ${user.email}` +
++    (skipped ? ` — ${skipped} already owned` : "")
++);
+diff --git a/clipery/server.js b/clipery/server.js
+index d5a1e57..3ab63f7 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -19,6 +19,31 @@ const {
+   downloadUrl,
+ } = require("./lib/linkVideoEngine");
+ const { normalizeSubStyle } = require("./lib/subtitles");
++const auth = require("./lib/auth");
++const oauth = require("./lib/oauth");
++
++// Load clipery/.env (KEY=value per line) so social login keys can live in a
++// file instead of being exported by hand on every start. Real environment
++// variables always win over the file.
++(function loadDotEnv() {
++  try {
++    const file = path.join(__dirname, ".env");
++    if (!fs.existsSync(file)) return;
++    for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
++      const trimmed = line.trim();
++      if (!trimmed || trimmed.startsWith("#")) continue;
++      const eq = trimmed.indexOf("=");
++      if (eq < 0) continue;
++      const key = trimmed.slice(0, eq).trim();
++      let value = trimmed.slice(eq + 1).trim();
++      if (/^(".*"|'.*')$/s.test(value)) value = value.slice(1, -1);
++      if (!(key in process.env)) process.env[key] = value;
++    }
++    console.log("[env] loaded clipery/.env");
++  } catch (e) {
++    console.warn("[env] could not read .env:", e.message);
++  }
++})();
+ 
+ const PORT = process.env.PORT || 3000;
+ const ROOT = __dirname;
+@@ -73,8 +98,62 @@ const ROUTES = {
+   "/waitlist.html": "waitlist.html",
+   "/job": "job.html",
+   "/job.html": "job.html",
++  "/login": "login.html",
++  "/login.html": "login.html",
++  "/register": "login.html",
++  "/register.html": "login.html",
+ };
+ 
++// Pages that require an account. Everything else stays public.
++const PROTECTED_PAGES = [
++  "/studio",
++  "/studio.html",
++  "/library",
++  "/library.html",
++  "/rank",
++  "/rank.html",
++  "/job",
++  "/job.html",
++];
++const PROTECTED_API = [
++  "/api/clip/upload",
++  "/api/clip/from-url",
++  "/api/clip/sample",
++  "/api/rank/video/links",
++  "/api/rank/video/upload",
++  "/api/rank/links",
++  "/api/jobs",
++];
++
++// Guarded by FILE, not by URL spelling: whatever path a request uses, if it
++// ends up serving one of these it must belong to a logged-in account.
++const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html"]);
++const CLIPS_DIR = path.join(PUBLIC, "clips");
++
++/** Collapse "//studio", "/./studio.html", "%2e", backslashes, trailing "/" … */
++function normalizePath(raw) {
++  let clean = String(raw || "/").split("?")[0];
++  try {
++    clean = decodeURIComponent(clean);
++  } catch {}
++  clean = clean.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
++  clean = path.posix.normalize(clean);
++  if (clean.length > 1) clean = clean.replace(/\/+$/, "");
++  return clean.startsWith("/") ? clean : "/" + clean;
++}
++
++function isProtectedPage(pathname) {
++  if (PROTECTED_PAGES.includes(pathname)) return true;
++  if (/^\/job\/[a-f0-9]+$/i.test(pathname)) return true;
++  if (/^\/board\/[a-f0-9]+$/i.test(pathname)) return true;
++  return false;
++}
++function isProtectedApi(pathname, method) {
++  if (pathname === "/api/rank/links" && method === "GET") return true;
++  if (pathname === "/api/jobs" && method === "GET") return true;
++  return PROTECTED_API.includes(pathname) && method === "POST";
++}
++
+ let busy = false;
+ const queue = [];
+ 
+@@ -157,6 +236,24 @@ function parseMultipart(buf, contentType) {
+ }
+ 
+ function serveFile(req, res, fullPath) {
++  // Last line of defence — every page and every clip funnels through here.
++  // Matching on the resolved FILE name means no URL spelling gets around it
++  // (including Windows' case-insensitive "/STUDIO.HTML").
++  const base = path.basename(fullPath).toLowerCase();
++  const membersOnly = PROTECTED_FILES.has(base);
++  if (membersOnly && !auth.currentUser(req)) {
++    console.log(`[gate] guest blocked from ${req.url} — sent to /login`);
++    const next = encodeURIComponent(req.url || "/studio");
++    res.writeHead(302, { Location: `/login?next=${next}`, "Cache-Control": "no-store" });
++    res.end();
++    return;
++  }
++  if (!canSeeClipFile(req, fullPath)) {
++    console.log(`[gate] blocked clip request ${req.url}`);
++    send(res, 404, { error: "Not found" });
++    return;
++  }
++
+   fs.stat(fullPath, (err, st) => {
+     if (err || !st.isFile()) {
+       // SPA-ish fallback for unknown paths → 404 page
+@@ -193,15 +290,51 @@ function serveFile(req, res, fullPath) {
+       "Content-Type": type,
+       "Content-Length": st.size,
+       "Accept-Ranges": "bytes",
+-      "Cache-Control": CACHEABLE_EXT.has(ext) ? "public, max-age=3600" : "no-cache",
++      "Cache-Control": membersOnly
++        ? "no-store, must-revalidate"
++        : CACHEABLE_EXT.has(ext)
++        ? "public, max-age=3600"
++        : "no-cache",
+     });
+     fs.createReadStream(fullPath).pipe(res);
+   });
+ }
+ 
+-function serveStatic(req, res, pathname) {
+-  // strip query already done by URL
+-  let clean = pathname.split("?")[0];
++/**
++ * Rendered clips live in public/clips/<jobId>/… so ffmpeg can write them and
++ * <video> can stream them — but the URL must not be a public back door.
++ * Checked on the RESOLVED file path, so "//clips/…" or "/a/../clips/…" can't
++ * sneak around it. Your clips, your eyes only; anyone else gets a 404.
++ */
++function canSeeClipFile(req, fullPath) {
++  const rel = path.relative(CLIPS_DIR, fullPath);
++  if (rel.startsWith("..") || path.isAbsolute(rel)) return true; // not a clip
++  const jobId = rel.split(path.sep)[0];
++  if (!jobId) return true;
++  const me = auth.currentUser(req);
++  if (!me) return false;
++  const job = readJob(jobId);
++  return Boolean(job && job.userId === me.id);
++}
++
++function serveStatic(req, res, pathname, search) {
++  // One canonical form, so "//studio" and "/studio" take the same road
++  const clean = normalizePath(pathname);
++
++  // Studio & co. are members-only — bounce guests to the login page and
++  // remember where they were headed so we can send them back after login.
++  if (isProtectedPage(clean) && !auth.currentUser(req)) {
++    const next = encodeURIComponent(clean + (search || ""));
++    res.writeHead(302, { Location: `/login?next=${next}`, "Cache-Control": "no-store" });
++    res.end();
++    return;
++  }
++  // Already signed in? The login page has nothing to offer.
++  if ((clean === "/login" || clean === "/register") && auth.currentUser(req)) {
++    res.writeHead(302, { Location: "/studio", "Cache-Control": "no-store" });
++    res.end();
++    return;
++  }
+   // Studio is the hub — Rank video lives under Studio
+   if (clean === "/rank" || clean === "/rank.html") {
+     res.writeHead(302, { Location: "/studio?tool=rank", "Cache-Control": "no-store" });
+@@ -232,6 +365,7 @@ function serveStatic(req, res, pathname) {
+ function seedJob(jobId, extra = {}) {
+   const jobSeed = {
+     id: jobId,
++    userId: extra.userId || null, // who this belongs to — nobody else may see it
+     status: "queued",
+     stage: "queued",
+     progress: 1,
+@@ -375,6 +509,123 @@ const server = http.createServer(async (req, res) => {
+   }
+ 
+   try {
++    /* ------------------------------ accounts ------------------------------ */
++    // Which social buttons to show (a provider without keys stays hidden)
++    if (pathname === "/api/auth/providers" && req.method === "GET") {
++      return send(res, 200, { ok: true, providers: oauth.providers() });
++    }
++
++    // Kick off Google / Apple sign-in
++    if ((pathname === "/api/auth/google" || pathname === "/api/auth/apple") && req.method === "GET") {
++      const provider = pathname.endsWith("google") ? "google" : "apple";
++      const on = provider === "google" ? oauth.googleConfigured() : oauth.appleConfigured();
++      if (!on) {
++        return send(res, 503, {
++          ok: false,
++          error: `Sign in with ${provider === "google" ? "Google" : "Apple"} is not configured on this server.`,
++        });
++      }
++      const state = oauth.makeState(url.searchParams.get("next"));
++      const target =
++        provider === "google"
++          ? oauth.googleAuthUrl(req, state.token)
++          : oauth.appleAuthUrl(req, state.token);
++      res.writeHead(302, { Location: target, "Set-Cookie": state.cookie, "Cache-Control": "no-store" });
++      return res.end();
++    }
++
++    // Come back from the provider (Google redirects with GET, Apple posts a form)
++    if (
++      (pathname === "/api/auth/google/callback" && req.method === "GET") ||
++      (pathname === "/api/auth/apple/callback" && (req.method === "POST" || req.method === "GET"))
++    ) {
++      const provider = pathname.includes("google") ? "google" : "apple";
++      let params = url.searchParams;
++      let appleUserJson = null;
++      if (req.method === "POST") {
++        const raw = (await parseBody(req, 256 * 1024)).toString("utf8");
++        params = new URLSearchParams(raw);
++        appleUserJson = params.get("user");
++      }
++
++      const fail = (message) => {
++        res.writeHead(302, {
++          Location: `/login?error=${encodeURIComponent(message)}`,
++          "Set-Cookie": oauth.clearState(),
++          "Cache-Control": "no-store",
++        });
++        res.end();
++      };
++
++      if (params.get("error")) return fail("Sign-in was cancelled.");
++
++      const cookies = auth.parseCookies(req);
++      const state = oauth.readState(cookies[oauth.STATE_COOKIE], params.get("state"));
++      if (!state.ok) return fail("Sign-in expired. Please try again.");
++
++      try {
++        const profile =
++          provider === "google"
++            ? await oauth.googleProfile(req, params.get("code"))
++            : await oauth.appleProfile(req, params.get("code"), params.get("id_token"), appleUserJson);
++
++        const result = auth.upsertSocialUser(profile);
++        if (!result.ok) return fail(result.error || "Sign-in failed.");
++
++        const { cookie } = auth.createSession(result.user.id);
++        res.writeHead(302, {
++          Location: state.next || "/studio",
++          "Set-Cookie": [cookie, oauth.clearState()],
++          "Cache-Control": "no-store",
++        });
++        return res.end();
++      } catch (e) {
++        console.error(`[oauth:${provider}]`, e.message);
++        return fail(e.message || "Sign-in failed.");
++      }
++    }
++
++    if (pathname === "/api/auth/register" && req.method === "POST") {
++      let body = {};
++      try {
++        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
++      } catch {
++        return send(res, 400, { ok: false, error: "Invalid request." });
++      }
++      const result = auth.registerUser(body);
++      if (!result.ok) return send(res, result.status || 400, { ok: false, error: result.error });
++      const { cookie } = auth.createSession(result.user.id);
++      return send(res, 201, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
++    }
++
++    if (pathname === "/api/auth/login" && req.method === "POST") {
++      let body = {};
++      try {
++        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
++      } catch {
++        return send(res, 400, { ok: false, error: "Invalid request." });
++      }
++      const result = auth.loginUser(body);
++      if (!result.ok) return send(res, result.status || 401, { ok: false, error: result.error });
++      const { cookie } = auth.createSession(result.user.id);
++      return send(res, 200, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
++    }
++
++    if (pathname === "/api/auth/logout" && req.method === "POST") {
++      auth.destroySession(auth.parseCookies(req)[auth.COOKIE]);
++      return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie() });
++    }
++
++    if (pathname === "/api/auth/me" && req.method === "GET") {
++      const user = auth.currentUser(req);
++      return send(res, 200, { ok: true, user: auth.publicUser(user) });
++    }
++
++    // Locked API: no account, no clipping.
++    if (isProtectedApi(pathname, req.method) && !auth.currentUser(req)) {
++      return send(res, 401, { ok: false, error: "Please log in to use the Studio.", login: "/login" });
++    }
++
+     // Health
+     if (pathname === "/api/health" && req.method === "GET") {
+       return send(res, 200, {
+@@ -461,7 +712,8 @@ const server = http.createServer(async (req, res) => {
+ 
+     // List jobs
+     if (pathname === "/api/jobs" && req.method === "GET") {
+-      const jobs = listJobs(40).map((j) => ({
++      const me = auth.currentUser(req);
++      const jobs = listJobs(40, me.id).map((j) => ({
+         id: j.id,
+         status: j.status,
+         mode: j.mode,
+@@ -498,9 +750,10 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 410, { ok: false, error: "Demo videos removed. Upload your own video." });
+       }
+       const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = auth.currentUser(req);
+       const dest = path.join(UPLOADS, `${jobId}-sample.mp4`);
+       fs.copyFileSync(sample, dest);
+-      seedJob(jobId, {
++      seedJob(jobId, { userId: owner && owner.id,
+         mode,
+         sourceName: `demo-podcast.mp4 (${mode})`,
+       });
+@@ -574,10 +827,12 @@ const server = http.createServer(async (req, res) => {
+       });
+ 
+       const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = auth.currentUser(req);
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.writeFileSync(dest, filePart.body);
+-      seedJob(jobId, { mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
++      seedJob(jobId, { userId: owner && owner.id, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
+       const q = enqueue(dest, {
++        userId: owner && owner.id,
+         jobId, sourceName: orig, mode, subtitles, subStyle,
+         hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+       });
+@@ -610,7 +865,8 @@ const server = http.createServer(async (req, res) => {
+       const hookOpts = readHook((n) => body[n]);
+       const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      seedJob(jobId, {
++      const owner = auth.currentUser(req);
++      seedJob(jobId, { userId: owner && owner.id,
+         mode,
+         sourceName: videoUrl.slice(0, 80),
+         subtitles,
+@@ -623,6 +879,7 @@ const server = http.createServer(async (req, res) => {
+         type: "from-url",
+         url: videoUrl,
+         meta: {
++          userId: owner && owner.id,
+           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
+           hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+         },
+@@ -644,13 +901,19 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 400, { ok: false, error: "Bad job id" });
+       }
+       const job = readJob(id);
+-      if (!job) return send(res, 404, { ok: false, error: "Job not found" });
++      const me = auth.currentUser(req);
++      if (!job || !me || job.userId !== me.id) {
++        return send(res, 404, { ok: false, error: "Job not found" });
++      }
+       return send(res, 200, { ok: true, job });
+     }
+ 
+     // Link ranking boards
+     if (pathname === "/api/rank/links" && req.method === "GET") {
+-      const boards = readLinkBoards().map((b) => ({
++      const me = auth.currentUser(req);
++      const boards = readLinkBoards()
++        .filter((b) => b.userId && me && b.userId === me.id)
++        .map((b) => ({
+         id: b.id,
+         name: b.name,
+         niche: b.niche,
+@@ -690,10 +953,12 @@ const server = http.createServer(async (req, res) => {
+       if (links.length > 40) {
+         return send(res, 400, { ok: false, error: "Max 40 links per board." });
+       }
++      const boardOwner = auth.currentUser(req);
+       const board = createLinkBoard({
+         name: body.name || "Link ranking",
+         niche: body.niche || "general",
+         links,
++        userId: boardOwner && boardOwner.id,
+       });
+       return send(res, 201, {
+         ok: true,
+@@ -704,8 +969,11 @@ const server = http.createServer(async (req, res) => {
+ 
+     if (pathname.startsWith("/api/rank/links/") && req.method === "GET") {
+       const id = pathname.split("/").pop();
++      const viewer = auth.currentUser(req);
+       const board = getLinkBoard(id);
+-      if (!board) return send(res, 404, { ok: false, error: "Board not found" });
++      if (!board || !viewer || board.userId !== viewer.id) {
++        return send(res, 404, { ok: false, error: "Board not found" });
++      }
+       return send(res, 200, { ok: true, board });
+     }
+ 
+@@ -749,7 +1017,8 @@ const server = http.createServer(async (req, res) => {
+       const hookOpts = readHook((n) => body[n]);
+       const trends = readTrends((n) => body[n]);
+       const jobId = crypto.randomBytes(6).toString("hex");
+-      seedJob(jobId, {
++      const owner = auth.currentUser(req);
++      seedJob(jobId, { userId: owner && owner.id,
+         mode: "link-rank-video",
+         modeLabel: "Link ranking video",
+         sourceName: body.name || `${links.length} links → ranking video`,
+@@ -764,6 +1033,7 @@ const server = http.createServer(async (req, res) => {
+         type: "link-rank-video",
+         links,
+         meta: {
++          userId: owner && owner.id,
+           jobId,
+           sourceName: boardTitle,
+           boardTitle,
+@@ -810,6 +1080,7 @@ const server = http.createServer(async (req, res) => {
+         return send(res, 400, { ok: false, error: "Maximum 5 videos." });
+       }
+       const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = auth.currentUser(req);
+       const sources = [];
+       for (let i = 0; i < files.length; i++) {
+         const f = files[i];
+@@ -852,7 +1123,7 @@ const server = http.createServer(async (req, res) => {
+         const p = parts.find((x) => x.name === n);
+         return p ? p.body.toString("utf8") : "";
+       });
+-      seedJob(jobId, {
++      seedJob(jobId, { userId: owner && owner.id,
+         mode: "link-rank-video",
+         modeLabel: "Link ranking video",
+         sourceName: boardTitle,
+@@ -866,6 +1137,7 @@ const server = http.createServer(async (req, res) => {
+         type: "multi-rank",
+         sources,
+         meta: {
++          userId: owner && owner.id,
+           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+           hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, trends: trendsUp,
+         },
+@@ -879,7 +1151,7 @@ const server = http.createServer(async (req, res) => {
+       });
+     }
+ 
+-    serveStatic(req, res, pathname);
++    serveStatic(req, res, pathname, url.search);
+   } catch (e) {
+     console.error(e);
+     send(res, 500, { ok: false, error: e.message || "Server error" });
