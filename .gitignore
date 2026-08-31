@@ -8,3 +8,4 @@ clipery/tmp/*
 # accounts (local only — never commit password hashes or sessions)
 clipery/data/users.json
 clipery/data/sessions.json
+clipery/.env
