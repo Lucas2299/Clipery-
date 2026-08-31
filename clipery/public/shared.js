@@ -237,10 +237,69 @@
     return { stop };
   }
 
+  /* ------------------------------ account chip ------------------------------ */
+  var currentUser = null;
+
+  async function loadUser() {
+    try {
+      var res = await fetch("/api/auth/me", { headers: { Accept: "application/json" } });
+      var data = await res.json();
+      currentUser = (data && data.user) || null;
+    } catch {
+      currentUser = null;
+    }
+    return currentUser;
+  }
+
+  async function logout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    location.href = "/";
+  }
+
+  /** Drop a "you are logged in as…" chip (or Log in button) into the nav. */
+  function renderAccountChip(user) {
+    var nav = document.querySelector(".nav") || document.querySelector(".nav-links");
+    if (!nav || nav.querySelector("[data-account]")) return;
+
+    var wrap = document.createElement("span");
+    wrap.setAttribute("data-account", "");
+    wrap.style.cssText = "display:inline-flex;align-items:center;gap:0.55rem;margin-left:0.4rem";
+
+    if (user) {
+      var who = document.createElement("span");
+      who.textContent = user.name || user.email;
+      who.title = user.email;
+      who.style.cssText =
+        "font-size:0.82rem;font-weight:700;color:#c9c5d8;max-width:150px;overflow:hidden;" +
+        "text-overflow:ellipsis;white-space:nowrap";
+      var out = document.createElement("button");
+      out.type = "button";
+      out.textContent = "Log out";
+      out.style.cssText =
+        "font-family:inherit;font-size:0.8rem;font-weight:700;cursor:pointer;color:#f4f1ea;" +
+        "background:transparent;border:1px solid rgba(255,255,255,0.2);border-radius:999px;padding:0.35rem 0.8rem";
+      out.addEventListener("click", logout);
+      wrap.appendChild(who);
+      wrap.appendChild(out);
+    } else {
+      var login = document.createElement("a");
+      login.href = "/login?next=" + encodeURIComponent(location.pathname + location.search);
+      login.textContent = "Log in";
+      login.className = "btn btn-primary btn-sm";
+      wrap.appendChild(login);
+    }
+    nav.appendChild(wrap);
+  }
+
   // Boot common chrome
   document.addEventListener("DOMContentLoaded", function () {
     setActiveNav();
     yearStamp();
+    if (!/^\/login|^\/register/.test(location.pathname)) {
+      loadUser().then(renderAccountChip);
+    }
   });
 
   global.CF = {
@@ -255,5 +314,8 @@
     renderClipCard,
     renderRankTable,
     createPoller,
+    loadUser,
+    logout,
+    getUser: function () { return currentUser; },
   };
 })(window);
