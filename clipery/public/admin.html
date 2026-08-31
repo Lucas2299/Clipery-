@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Owner dashboard - Clipery</title>
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .adm { max-width: 1180px; margin: 0 auto; padding: 1.6rem 1.1rem 4rem; }
+      .adm h1 { font-size: 1.7rem; margin: 0 0 .3rem; }
+      .adm .lede { color: #9894a6; margin: 0 0 1.6rem; font-size: .93rem; }
+      .adm-tabs { display: flex; gap: .5rem; margin: 0 0 1.4rem; }
+      .adm-tab {
+        padding: .55rem 1.2rem; border-radius: 999px; cursor: pointer; font-family: inherit;
+        font-weight: 700; font-size: .9rem; color: #f4f1ea; background: transparent;
+        border: 1px solid rgba(255,255,255,.16);
+      }
+      .adm-tab.on { background: linear-gradient(135deg,#ff4d6d,#ff8a4c); border-color: transparent; }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: .8rem; margin: 0 0 1.6rem; }
+      .stat { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: .9rem 1rem; }
+      .stat b { display: block; font-size: 1.5rem; font-weight: 800; }
+      .stat span { color: #9894a6; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; }
+      table.adm-t { width: 100%; border-collapse: collapse; font-size: .89rem; }
+      table.adm-t th {
+        text-align: left; color: #9894a6; font-size: .74rem; text-transform: uppercase;
+        letter-spacing: .07em; padding: .5rem .6rem; border-bottom: 1px solid rgba(255,255,255,.1);
+      }
+      table.adm-t td { padding: .65rem .6rem; border-bottom: 1px solid rgba(255,255,255,.06); vertical-align: middle; }
+      table.adm-t tr:hover td { background: rgba(255,255,255,.03); }
+      .pill { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 800; }
+      .pill.free { background: rgba(255,255,255,.1); color: #c9c5d8; }
+      .pill.plus { background: rgba(139,124,255,.2); color: #b9aeff; }
+      .pill.pro { background: rgba(255,138,76,.2); color: #ffc09a; }
+      .pill.unlimited { background: rgba(200,245,66,.16); color: #dcf98d; }
+      .pill.owner { background: rgba(255,77,109,.2); color: #ffb3c1; }
+      select, .adm input[type="number"] {
+        background: rgba(0,0,0,.45); color: #f4f1ea; border: 1px solid rgba(255,255,255,.16);
+        border-radius: 9px; padding: .35rem .5rem; font-family: inherit; font-size: .85rem;
+      }
+      .adm input[type="number"] { width: 66px; }
+      .mini {
+        padding: .35rem .7rem; border-radius: 999px; cursor: pointer; font-family: inherit;
+        font-weight: 700; font-size: .78rem; color: #fff; border: none;
+        background: linear-gradient(135deg,#ff4d6d,#ff8a4c);
+      }
+      .mini.ghost { background: transparent; border: 1px solid rgba(255,255,255,.2); color: #f4f1ea; }
+      .bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; width: 96px; }
+      .bar i { display: block; height: 100%; background: linear-gradient(90deg,#c8f542,#ff8a4c); }
+      .vids { display: grid; grid-template-columns: repeat(auto-fill,minmax(190px,1fr)); gap: .9rem; }
+      .vid { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; overflow: hidden; }
+      .vid video { width: 100%; display: block; background: #000; aspect-ratio: 9/16; object-fit: cover; }
+      .vid .meta { padding: .55rem .7rem .7rem; }
+      .vid .who { font-size: .76rem; color: #ff8a4c; font-weight: 800; word-break: break-all; }
+      .vid .nm { font-size: .8rem; margin: .15rem 0 .3rem; word-break: break-word; }
+      .vid .sc { font-size: .72rem; color: #9894a6; }
+      .empty { color: #66627a; padding: 2rem 0; text-align: center; }
+      .flash {
+        position: fixed; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+        background: #16161f; border: 1px solid rgba(200,245,66,.4); color: #dcf98d;
+        padding: .7rem 1.1rem; border-radius: 12px; font-size: .87rem; display: none; z-index: 50;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/studio" data-nav>Studio</a>
+          <a href="/library" data-nav>Library</a>
+          <a href="/admin" data-nav class="active">Dashboard</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="adm">
+      <h1>Owner dashboard</h1>
+      <p class="lede">Everything made on this install, and who is allowed to make how much.</p>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="adm-tabs">
+        <button type="button" class="adm-tab on" data-tab="people">People</button>
+        <button type="button" class="adm-tab" data-tab="videos">All videos</button>
+      </div>
+
+      <section id="tab-people">
+        <table class="adm-t">
+          <thead>
+            <tr>
+              <th>Account</th><th>Plan</th><th>Used this month</th>
+              <th>Bonus</th><th>Change plan</th><th>Give videos</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="people"></tbody>
+        </table>
+      </section>
+
+      <section id="tab-videos" hidden>
+        <div class="vids" id="videos"></div>
+      </section>
+    </main>
+
+    <div class="flash" id="flash"></div>
+
+    <script src="/shared.js"></script>
+    <script src="/admin.js"></script>
+  </body>
+</html>

@@ -223,6 +223,132 @@ function currentUser(req) {
 
 const clearCookie = () => sessionCookie("", 0);
 
+
+/* ---------------------------------- plans ---------------------------------- */
+
+/**
+ * What each plan may do per calendar month. "videos" is how many jobs the
+ * account can start (uploads, links, ranking videos - anything that renders).
+ * The owner can change a plan or hand out bonus videos from the dashboard.
+ */
+const PLANS = {
+  free: { id: "free", label: "Free", videos: 5 },
+  plus: { id: "plus", label: "Plus", videos: 50 },
+  pro: { id: "pro", label: "Pro", videos: 200 },
+  unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity },
+};
+
+const currentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM
+
+function planOf(user) {
+  return PLANS[(user && user.plan) || "free"] || PLANS.free;
+}
+
+/** Usage for this month, reset automatically when the month rolls over. */
+function usageOf(user) {
+  const month = currentMonth();
+  if (!user.usage || user.usage.month !== month) {
+    user.usage = { month, videos: 0 };
+  }
+  return user.usage;
+}
+
+/** How many videos this account may still make right now. */
+function remainingVideos(user) {
+  if (!user) return 0;
+  const limit = planOf(user).videos + (Number(user.bonusVideos) || 0);
+  const used = usageOf(user).videos;
+  return limit === Infinity ? Infinity : Math.max(0, limit - used);
+}
+
+/** Count one rendered video against the account. Returns false when out. */
+function consumeVideo(userId) {
+  const users = readUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return { ok: false, error: "Account not found." };
+  if (remainingVideos(user) <= 0) {
+    return {
+      ok: false,
+      status: 402,
+      error: `You have used all ${planOf(user).videos + (Number(user.bonusVideos) || 0)} videos on the ${planOf(user).label} plan this month.`,
+    };
+  }
+  usageOf(user).videos += 1;
+  writeUsers(users);
+  return { ok: true, remaining: remainingVideos(user) };
+}
+
+/* ---------------------------------- owner ---------------------------------- */
+
+/**
+ * Who runs this install. Either listed in ADMIN_EMAILS, or - so a fresh
+ * install is never locked out - the very first account created.
+ */
+function isAdmin(user) {
+  if (!user) return false;
+  if (user.role === "owner") return true;
+  const list = String(process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (list.includes(normalizeEmail(user.email))) return true;
+  const users = readUsers();
+  return users.length > 0 && users[0].id === user.id;
+}
+
+/** Everyone, with the numbers the dashboard needs. */
+function listUsers() {
+  return readUsers().map((u) => {
+    const limit = planOf(u).videos + (Number(u.bonusVideos) || 0);
+    return {
+      ...publicUser(u),
+      role: isAdmin(u) ? "owner" : "member",
+      bonusVideos: Number(u.bonusVideos) || 0,
+      planLabel: planOf(u).label,
+      used: usageOf(u).videos,
+      limit: limit === Infinity ? null : limit,
+      remaining: remainingVideos(u) === Infinity ? null : remainingVideos(u),
+    };
+  });
+}
+
+/** Owner action: move somebody to another plan. */
+function setPlan(userId, plan) {
+  if (!PLANS[plan]) return { ok: false, status: 400, error: "Unknown plan." };
+  const users = readUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return { ok: false, status: 404, error: "Account not found." };
+  user.plan = plan;
+  writeUsers(users);
+  return { ok: true, user: publicUser(user) };
+}
+
+/** Owner action: hand out extra videos on top of the plan. */
+function addBonusVideos(userId, amount) {
+  const n = Math.round(Number(amount) || 0);
+  if (!n) return { ok: false, status: 400, error: "Give a number of videos." };
+  const users = readUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return { ok: false, status: 404, error: "Account not found." };
+  user.bonusVideos = Math.max(0, (Number(user.bonusVideos) || 0) + n);
+  writeUsers(users);
+  return { ok: true, bonusVideos: user.bonusVideos };
+}
+
+/** Owner action: wipe this month's usage for one account. */
+function resetUsage(userId) {
+  const users = readUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return { ok: false, status: 404, error: "Account not found." };
+  user.usage = { month: currentMonth(), videos: 0 };
+  writeUsers(users);
+  return { ok: true };
+}
+
+function findUserById(id) {
+  return readUsers().find((u) => u.id === id) || null;
+}
+
 module.exports = {
   COOKIE,
   registerUser,
@@ -235,4 +361,14 @@ module.exports = {
   parseCookies,
   clearCookie,
   isValidEmail,
+  PLANS,
+  planOf,
+  remainingVideos,
+  consumeVideo,
+  isAdmin,
+  listUsers,
+  setPlan,
+  addBonusVideos,
+  resetUsage,
+  findUserById,
 };
