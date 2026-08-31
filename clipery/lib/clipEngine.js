@@ -503,7 +503,12 @@ function writeJob(job) {
   fs.writeFileSync(jobPath(job.id), JSON.stringify(job, null, 2));
 }
 
-function listJobs(limit = 50) {
+/**
+ * Jobs on disk, newest first.
+ * Pass a userId to get only that account's jobs — a library is private, so
+ * everything without a matching owner is filtered out.
+ */
+function listJobs(limit = 50, userId) {
   if (!fs.existsSync(JOBS_DIR)) return [];
   const files = fs
     .readdirSync(JOBS_DIR)
@@ -516,6 +521,7 @@ function listJobs(limit = 50) {
       }
     })
     .filter(Boolean)
+    .filter((j) => (userId ? j.userId === userId : true))
     .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
   return files.slice(0, limit);
 }
@@ -574,6 +580,8 @@ async function processVideo(sourcePath, options = {}) {
 
   const job = {
     id,
+    // keep the owner stamped by the seed so the job stays in ONE library
+    userId: options.userId || (readJob(id) || {}).userId || null,
     status: "processing",
     stage: "probing",
     progress: 4,
@@ -882,7 +890,7 @@ function scoreLinkEntry(entry, index) {
   };
 }
 
-function createLinkBoard({ name, links, niche }) {
+function createLinkBoard({ name, links, niche, userId }) {
   const id = crypto.randomBytes(5).toString("hex");
   const scored = (links || [])
     .filter((l) => l && l.url)
@@ -915,6 +923,7 @@ function createLinkBoard({ name, links, niche }) {
 
   const board = {
     id,
+    userId: userId || null, // boards belong to the account that made them
     name: name || "Link ranking board",
     niche: niche || "general",
     createdAt: new Date().toISOString(),

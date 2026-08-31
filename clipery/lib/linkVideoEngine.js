@@ -517,6 +517,7 @@ async function processMultiRank(sources, options = {}) {
 
   const job = {
     id,
+    userId: (options && options.userId) || (readJob(id) || {}).userId || null,
     status: "processing",
     stage: "scoring_sources",
     progress: 5,
@@ -725,6 +726,7 @@ async function processLinksToRankingVideo(links, options = {}) {
   // seed job early
   const job = {
     id,
+    userId: (options && options.userId) || (readJob(id) || {}).userId || null,
     status: "processing",
     stage: "downloading",
     progress: 2,
