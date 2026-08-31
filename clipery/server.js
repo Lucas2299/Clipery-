@@ -400,6 +400,11 @@ function chargeVideo(req, res) {
     });
     return null;
   }
+  me.planLimits = {
+    planLabel: auth.planOf(me).label,
+    maxMinutes: auth.planOf(me).maxMinutes,
+    maxClips: auth.planOf(me).maxClips,
+  };
   return me;
 }
 
@@ -668,6 +673,8 @@ const server = http.createServer(async (req, res) => {
           isOwner: auth.isAdmin(user),
           planLabel: auth.planOf(user).label,
           videosLeft: left === Infinity ? null : left,
+          maxMinutes: auth.planOf(user).maxMinutes,
+          maxClipsPerVideo: auth.planOf(user).maxClips,
         },
       });
     }
@@ -866,7 +873,7 @@ const server = http.createServer(async (req, res) => {
       if (!owner) return;
       const dest = path.join(UPLOADS, `${jobId}-sample.mp4`);
       fs.copyFileSync(sample, dest);
-      seedJob(jobId, { userId: owner && owner.id,
+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits,
         mode,
         sourceName: `demo-podcast.mp4 (${mode})`,
       });
@@ -944,9 +951,10 @@ const server = http.createServer(async (req, res) => {
       if (!owner) return;
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
-      seedJob(jobId, { userId: owner && owner.id, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
       const q = enqueue(dest, {
         userId: owner && owner.id,
+        ...owner.planLimits,
         jobId, sourceName: orig, mode, subtitles, subStyle,
         hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
       });
@@ -981,7 +989,7 @@ const server = http.createServer(async (req, res) => {
       const jobId = crypto.randomBytes(6).toString("hex");
       const owner = chargeVideo(req, res);
       if (!owner) return;
-      seedJob(jobId, { userId: owner && owner.id,
+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits,
         mode,
         sourceName: videoUrl.slice(0, 80),
         subtitles,
@@ -995,6 +1003,7 @@ const server = http.createServer(async (req, res) => {
         url: videoUrl,
         meta: {
           userId: owner && owner.id,
+          ...owner.planLimits,
           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
           hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
         },
@@ -1134,7 +1143,7 @@ const server = http.createServer(async (req, res) => {
       const jobId = crypto.randomBytes(6).toString("hex");
       const owner = chargeVideo(req, res);
       if (!owner) return;
-      seedJob(jobId, { userId: owner && owner.id,
+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits,
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: body.name || `${links.length} links -> ranking video`,
@@ -1150,6 +1159,7 @@ const server = http.createServer(async (req, res) => {
         links,
         meta: {
           userId: owner && owner.id,
+          ...owner.planLimits,
           jobId,
           sourceName: boardTitle,
           boardTitle,
@@ -1240,7 +1250,7 @@ const server = http.createServer(async (req, res) => {
         const p = parts.find((x) => x.name === n);
         return p ? p.body.toString("utf8") : "";
       });
-      seedJob(jobId, { userId: owner && owner.id,
+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits,
         mode: "link-rank-video",
         modeLabel: "Link ranking video",
         sourceName: boardTitle,
@@ -1255,6 +1265,7 @@ const server = http.createServer(async (req, res) => {
         sources,
         meta: {
           userId: owner && owner.id,
+          ...owner.planLimits,
           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
           hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, trends: trendsUp,
         },
