@@ -163,10 +163,42 @@ async function sampleEnergy(file, start, end) {
   }
 }
 
+/** How many moments we analyze per job (scales with length, capped for speed). */
+const MAX_CANDIDATES = 24;
+
+/**
+ * Keep `limit` windows SPREAD OVER THE WHOLE TIMELINE instead of just taking
+ * the first N. The timeline is split into `limit` buckets and we round-robin
+ * through them, so round 1 already guarantees coverage from start to finish.
+ */
+function spreadSelect(list, duration, limit) {
+  if (list.length <= limit) return list.slice();
+  const bucketSize = Math.max(1, duration / limit);
+  const buckets = new Map();
+  for (const c of list) {
+    const b = Math.min(limit - 1, Math.floor(c.start / bucketSize));
+    if (!buckets.has(b)) buckets.set(b, []);
+    buckets.get(b).push(c);
+  }
+  const out = [];
+  for (let round = 0; out.length < limit; round++) {
+    let added = false;
+    for (let b = 0; b < limit && out.length < limit; b++) {
+      const arr = buckets.get(b);
+      if (arr && arr[round]) {
+        out.push(arr[round]);
+        added = true;
+      }
+    }
+    if (!added) break;
+  }
+  return out.sort((a, b) => a.start - b.start);
+}
+
 function buildCandidates(duration, sceneTimes, mode) {
   const MIN = mode.targetMin;   // never shorter than this
   const MAX = mode.targetMax;   // soft cap ("can be more" lives up to here)
-  const IDEAL = mode.ideal;     // the sweet spot (~60s)
+  const IDEAL = mode.ideal;     // the sweet spot
   const bounds = [0, ...sceneTimes.filter((t) => t > 0.5 && t < duration - 1), duration].sort((a, b) => a - b);
   const raw = [];
 
@@ -177,10 +209,15 @@ function buildCandidates(duration, sceneTimes, mode) {
     if (end - start >= MIN) raw.push({ start, end });
   }
 
-  // Sliding starts every ~20s so nothing between scene cuts is missed
-  for (let s = 20; s + MIN <= duration; s += 20) {
-    raw.push({ start: s, end: Math.min(s + IDEAL, duration) });
+  // Sliding starts across the FULL duration. The step scales with the video so
+  // a 20 min source is swept end-to-end, not just its first few minutes.
+  const step = Math.min(45, Math.max(12, (duration - MIN) / MAX_CANDIDATES));
+  for (let s = step; s + MIN <= duration; s += step) {
+    raw.push({ start: +s.toFixed(2), end: Math.min(s + IDEAL, duration) });
   }
+
+  // Always consider the tail of the video too (endings/payoffs live there)
+  if (duration - MIN > 0) raw.push({ start: Math.max(0, duration - IDEAL), end: duration });
 
   // One longer variant ("can be more") from each scene start
   for (const start of bounds) {
@@ -197,21 +234,63 @@ function buildCandidates(duration, sceneTimes, mode) {
   }
 
   raw.sort((a, b) => a.start - b.start || (a.end - a.start) - (b.end - b.start));
-  const out = [];
+  const deduped = [];
   for (const c of raw) {
     const start = Math.max(0, +c.start.toFixed(2));
     const end = Math.min(duration, +c.end.toFixed(2));
     if (end - start < MIN && end < duration) continue; // never ship under 30s
-    if (out.some((o) => Math.abs(o.start - start) < 6 && Math.abs((o.end - o.start) - (end - start)) < 12)) continue;
-    out.push({ start, end });
+    if (deduped.some((o) => Math.abs(o.start - start) < 6 && Math.abs((o.end - o.start) - (end - start)) < 12)) continue;
+    deduped.push({ start, end });
   }
-  return out.slice(0, 16);
+  // Spread instead of truncating the head — this is what stopped every clip
+  // from being taken out of the first minutes of the source.
+  return spreadSelect(deduped, duration, MAX_CANDIDATES);
 }
 
-function scoreDimensions(c, duration, energy, mode, index) {
+/**
+ * Choose the final clips: best score first, but never overlapping and never
+ * bunched together, so the set covers the whole video.
+ */
+function pickDiverse(scoredDesc, limit, duration) {
+  const overlaps = (c, o) => c.start < o.end && o.start < c.end;
+  const minGap = Math.min(120, Math.max(20, duration / Math.max(limit, 1)));
+  const chosen = [];
+
+  for (const c of scoredDesc) {
+    if (chosen.length >= limit) break;
+    if (chosen.some((o) => overlaps(c, o))) continue;
+    if (chosen.some((o) => Math.abs(c.start - o.start) < minGap)) continue;
+    chosen.push(c);
+  }
+  // Relax the spacing rule if the video is too short to fill the quota
+  if (chosen.length < limit) {
+    for (const c of scoredDesc) {
+      if (chosen.length >= limit) break;
+      if (chosen.includes(c)) continue;
+      if (chosen.some((o) => overlaps(c, o))) continue;
+      chosen.push(c);
+    }
+  }
+  // Last resort (very short sources): allow a small overlap rather than
+  // shipping near-duplicate cuts or too few clips.
+  if (chosen.length < limit) {
+    const overlapAmount = (c, o) => Math.max(0, Math.min(c.end, o.end) - Math.max(c.start, o.start));
+    for (const c of scoredDesc) {
+      if (chosen.length >= limit) break;
+      if (chosen.includes(c)) continue;
+      const worst = Math.max(0, ...chosen.map((o) => overlapAmount(c, o) / (c.end - c.start)));
+      if (worst > 0.35) continue;
+      chosen.push(c);
+    }
+  }
+  return chosen.sort((a, b) => b.score - a.score);
+}
+
+function scoreDimensions(c, duration, energy, mode, index, stats) {
   const len = c.end - c.start;
   const mid = (c.start + c.end) / 2;
   const pos = mid / Math.max(duration, 1);
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
   // Length fit — testing mode: 30s minimum, ~40s sweet spot, max ~50s (PC-friendly)
   let length = 30;
@@ -220,17 +299,29 @@ function scoreDimensions(c, duration, energy, mode, index) {
   else if (len > mode.targetMax && len <= 60) length = 68;
   else if (len >= 20) length = 45;
 
-  // Hook / cold-open strength (first seconds win the algorithm)
-  let hook = 70;
-  if (pos < 0.08) hook = 99;
-  else if (pos < 0.15) hook = mode.id === "viral" ? 96 : 90;
-  else if (pos < 0.3) hook = 88;
-  else if (pos < 0.55) hook = 76;
-  else if (pos > 0.88) hook = mode.id === "ranking" ? 84 : 68;
-  else hook = 72;
+  // Hook strength is driven by what the moment SOUNDS like (punch + energy
+  // relative to the rest of the video), not by where it sits in the timeline.
+  // Position only nudges it, so mid/late moments can win.
+  const avgPunch = stats ? stats.avgPunch : 50;
+  const avgEnergy = stats ? stats.avgEnergy : 50;
+  let posBonus = 0;
+  if (pos < 0.06) posBonus = 7;                                   // cold open
+  else if (pos < 0.15) posBonus = mode.id === "viral" ? 4 : 3;
+  else if (pos > 0.9) posBonus = mode.id === "ranking" ? 5 : 2;   // payoff/CTA
+  const hook = Math.round(
+    clamp(
+      68 + (energy.punch - avgPunch) * 0.55 + (energy.energy - avgEnergy) * 0.3 + posBonus,
+      40,
+      99
+    )
+  );
 
-  // Pacing / energy from audio
-  const pacing = Math.round(energy.energy * 0.55 + energy.punch * 0.45);
+  // Pacing / energy from audio, boosted when this moment stands out from the
+  // video's own average (a loud beat in a calm video is what goes viral).
+  const rel = (energy.energy - avgEnergy) * 0.5 + (energy.punch - avgPunch) * 0.5;
+  const pacing = Math.round(
+    clamp(energy.energy * 0.55 + energy.punch * 0.45 + clamp(rel * 0.6, -10, 14), 0, 100)
+  );
 
   // Retention proxy
   let retention = Math.round(
@@ -535,12 +626,26 @@ async function processVideo(sourcePath, options = {}) {
     const trendSet = videoWords ? new Set(options.trends) : null;
 
     const scored = [];
+    // Pass 1 — measure every candidate so we know what "loud" means for THIS video
+    const energies = [];
     for (let i = 0; i < candidates.length; i++) {
       const c = candidates[i];
-      const energy = meta.hasAudio
-        ? await sampleEnergy(sourcePath, c.start, c.end)
-        : { energy: 55, punch: 55 };
-      const dims = scoreDimensions(c, meta.duration, energy, mode, i);
+      energies.push(
+        meta.hasAudio ? await sampleEnergy(sourcePath, c.start, c.end) : { energy: 55, punch: 55 }
+      );
+      job.progress = 28 + Math.round(((i + 1) / candidates.length) * 14);
+      writeJob(job);
+    }
+    const stats = {
+      avgEnergy: energies.reduce((a, e) => a + e.energy, 0) / (energies.length || 1),
+      avgPunch: energies.reduce((a, e) => a + e.punch, 0) / (energies.length || 1),
+    };
+
+    // Pass 2 — score each moment against the video's own baseline
+    for (let i = 0; i < candidates.length; i++) {
+      const c = candidates[i];
+      const energy = energies[i];
+      const dims = scoreDimensions(c, meta.duration, energy, mode, i, stats);
       if (trendSet) {
         let hits = 0;
         for (const w of videoWords) {
@@ -556,11 +661,15 @@ async function processVideo(sourcePath, options = {}) {
         dimensions: dims,
         title: titleForClip(c, meta.duration, dims, mode, i),
       });
-      job.progress = 28 + Math.round(((i + 1) / candidates.length) * 22);
+      job.progress = 42 + Math.round(((i + 1) / candidates.length) * 8);
       writeJob(job);
     }
 
     scored.sort((a, b) => b.score - a.score);
+
+    // The clips we will actually ship (score-ranked, non-overlapping, spread
+    // across the whole source) — also used for the post-order preview.
+    const previewTop = pickDiverse(scored, Math.min(mode.maxClips, scored.length), meta.duration);
 
     // Full viral leaderboard (all analyzed moments)
     job.rankings = scored.map((c, i) => ({
@@ -581,7 +690,7 @@ async function processVideo(sourcePath, options = {}) {
       analyzed: scored.length,
       topViralScore: scored[0]?.score || 0,
       likelyViral: scored.filter((c) => (c.dimensions.viralScore || c.score) >= 82).length,
-      postOrder: scored.slice(0, Math.min(mode.maxClips, scored.length)).map((c, i) => ({
+      postOrder: previewTop.map((c, i) => ({
         rank: i + 1,
         title: c.title,
         viralScore: c.score,
@@ -594,7 +703,9 @@ async function processVideo(sourcePath, options = {}) {
     };
 
     const topN = Math.min(mode.maxClips, scored.length);
-    const top = scored.slice(0, topN);
+    // Best scores first, but non-overlapping and spread across the source so
+    // the clip set represents the whole video instead of its opening minutes.
+    const top = previewTop;
 
     // Speech-aware cutting: nudge cut points to natural pauses so nobody
     // gets chopped mid-sentence. Falls back silently to original cuts.
