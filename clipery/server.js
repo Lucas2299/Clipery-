@@ -125,6 +125,23 @@ const PROTECTED_API = [
   "/api/jobs",
 ];
 
+// Guarded by FILE, not by URL spelling: whatever path a request uses, if it
+// ends up serving one of these it must belong to a logged-in account.
+const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html"]);
+const CLIPS_DIR = path.join(PUBLIC, "clips");
+
+/** Collapse "//studio", "/./studio.html", "%2e", backslashes, trailing "/" … */
+function normalizePath(raw) {
+  let clean = String(raw || "/").split("?")[0];
+  try {
+    clean = decodeURIComponent(clean);
+  } catch {}
+  clean = clean.replace(/\\/g, "/").replace(/\/{2,}/g, "/");
+  clean = path.posix.normalize(clean);
+  if (clean.length > 1) clean = clean.replace(/\/+$/, "");
+  return clean.startsWith("/") ? clean : "/" + clean;
+}
+
 function isProtectedPage(pathname) {
   if (PROTECTED_PAGES.includes(pathname)) return true;
   if (/^\/job\/[a-f0-9]+$/i.test(pathname)) return true;
@@ -219,6 +236,24 @@ function parseMultipart(buf, contentType) {
 }
 
 function serveFile(req, res, fullPath) {
+  // Last line of defence — every page and every clip funnels through here.
+  // Matching on the resolved FILE name means no URL spelling gets around it
+  // (including Windows' case-insensitive "/STUDIO.HTML").
+  const base = path.basename(fullPath).toLowerCase();
+  const membersOnly = PROTECTED_FILES.has(base);
+  if (membersOnly && !auth.currentUser(req)) {
+    console.log(`[gate] guest blocked from ${req.url} — sent to /login`);
+    const next = encodeURIComponent(req.url || "/studio");
+    res.writeHead(302, { Location: `/login?next=${next}`, "Cache-Control": "no-store" });
+    res.end();
+    return;
+  }
+  if (!canSeeClipFile(req, fullPath)) {
+    console.log(`[gate] blocked clip request ${req.url}`);
+    send(res, 404, { error: "Not found" });
+    return;
+  }
+
   fs.stat(fullPath, (err, st) => {
     if (err || !st.isFile()) {
       // SPA-ish fallback for unknown paths → 404 page
@@ -255,7 +290,11 @@ function serveFile(req, res, fullPath) {
       "Content-Type": type,
       "Content-Length": st.size,
       "Accept-Ranges": "bytes",
-      "Cache-Control": CACHEABLE_EXT.has(ext) ? "public, max-age=3600" : "no-cache",
+      "Cache-Control": membersOnly
+        ? "no-store, must-revalidate"
+        : CACHEABLE_EXT.has(ext)
+        ? "public, max-age=3600"
+        : "no-cache",
     });
     fs.createReadStream(fullPath).pipe(res);
   });
@@ -264,27 +303,23 @@ function serveFile(req, res, fullPath) {
 /**
  * Rendered clips live in public/clips/<jobId>/… so ffmpeg can write them and
  * <video> can stream them — but the URL must not be a public back door.
- * Every hit is checked against the job's owner: your clips, your eyes only.
- * Guessing a job id gets you a 404, same as a job that doesn't exist.
+ * Checked on the RESOLVED file path, so "//clips/…" or "/a/../clips/…" can't
+ * sneak around it. Your clips, your eyes only; anyone else gets a 404.
  */
-function canSeeClip(req, clean) {
-  const m = /^\/clips\/([a-z0-9]+)\//i.exec(clean);
-  if (!m) return true; // not a clip path — nothing to guard here
+function canSeeClipFile(req, fullPath) {
+  const rel = path.relative(CLIPS_DIR, fullPath);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return true; // not a clip
+  const jobId = rel.split(path.sep)[0];
+  if (!jobId) return true;
   const me = auth.currentUser(req);
   if (!me) return false;
-  const job = readJob(m[1]);
-  if (!job) return false;
-  return job.userId === me.id;
+  const job = readJob(jobId);
+  return Boolean(job && job.userId === me.id);
 }
 
 function serveStatic(req, res, pathname, search) {
-  // strip query already done by URL
-  let clean = pathname.split("?")[0];
-
-  if (!canSeeClip(req, clean)) {
-    send(res, 404, { error: "Not found" });
-    return;
-  }
+  // One canonical form, so "//studio" and "/studio" take the same road
+  const clean = normalizePath(pathname);
 
   // Studio & co. are members-only — bounce guests to the login page and
   // remember where they were headed so we can send them back after login.
