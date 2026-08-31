@@ -1,0 +1,1014 @@
+{
+  "id": "b2693c0bae84",
+  "userId": "a5fdcea12490c893",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-08-31T13:53:25.266Z",
+  "sourceName": "b2693c0bae84-src.mp4.part",
+  "subtitles": true,
+  "hook": false,
+  "hookMode": "intro",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 86,
+      "viralScore": 86,
+      "verdict": "Strong viral chance",
+      "verdictKey": "strong",
+      "reasons": [
+        "High energy / audio punch",
+        "Ideal short-form length",
+        "High retention signal",
+        "Likely rewatch / share"
+      ],
+      "title": "High-potential cut",
+      "start": 178.05,
+      "end": 218.05,
+      "duration": 40,
+      "dimensions": {
+        "total": 86,
+        "viralScore": 86,
+        "verdict": "Strong viral chance",
+        "verdictKey": "strong",
+        "reasons": [
+          "High energy / audio punch",
+          "Ideal short-form length",
+          "High retention signal",
+          "Likely rewatch / share"
+        ],
+        "hook": 79,
+        "length": 98,
+        "pacing": 83,
+        "retention": 92,
+        "cta": 45,
+        "replay": 83,
+        "energy": 63,
+        "punch": 92
+      },
+      "url": "/clips/b2693c0bae84/clip-1.mp4",
+      "downloadName": "viral-86-rank1-b2693c0bae84.mp4",
+      "postTip": "Post this first - highest viral chance"
+    },
+    {
+      "rank": 2,
+      "score": 81,
+      "viralScore": 81,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal",
+        "Early in source (fresh context)"
+      ],
+      "title": "Cold-open hook",
+      "start": 50.18,
+      "end": 89.32,
+      "duration": 39.14,
+      "dimensions": {
+        "total": 81,
+        "viralScore": 81,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal",
+          "Early in source (fresh context)"
+        ],
+        "hook": 75,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 45,
+        "replay": 77,
+        "energy": 56,
+        "punch": 82
+      },
+      "url": "/clips/b2693c0bae84/clip-2.mp4",
+      "downloadName": "viral-81-rank2-b2693c0bae84.mp4",
+      "postTip": "Strong follow-up post"
+    },
+    {
+      "rank": 3,
+      "score": 81,
+      "viralScore": 81,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 346.51,
+      "end": 385.85,
+      "duration": 39.34,
+      "dimensions": {
+        "total": 81,
+        "viralScore": 81,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 71,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 58,
+        "punch": 82
+      },
+      "url": "/clips/b2693c0bae84/clip-3.mp4",
+      "downloadName": "viral-81-rank3-b2693c0bae84.mp4",
+      "postTip": "Strong follow-up post"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 86,
+      "viralScore": 86,
+      "verdict": "Strong viral chance",
+      "verdictKey": "strong",
+      "reasons": [
+        "High energy / audio punch",
+        "Ideal short-form length",
+        "High retention signal",
+        "Likely rewatch / share"
+      ],
+      "title": "High-potential cut",
+      "start": 178.05,
+      "end": 218.05,
+      "duration": 40,
+      "dimensions": {
+        "total": 86,
+        "viralScore": 86,
+        "verdict": "Strong viral chance",
+        "verdictKey": "strong",
+        "reasons": [
+          "High energy / audio punch",
+          "Ideal short-form length",
+          "High retention signal",
+          "Likely rewatch / share"
+        ],
+        "hook": 79,
+        "length": 98,
+        "pacing": 83,
+        "retention": 92,
+        "cta": 45,
+        "replay": 83,
+        "energy": 63,
+        "punch": 92
+      }
+    },
+    {
+      "rank": 2,
+      "score": 81,
+      "viralScore": 81,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal",
+        "Early in source (fresh context)"
+      ],
+      "title": "Cold-open hook",
+      "start": 50.18,
+      "end": 90.18,
+      "duration": 40,
+      "dimensions": {
+        "total": 81,
+        "viralScore": 81,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal",
+          "Early in source (fresh context)"
+        ],
+        "hook": 75,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 45,
+        "replay": 77,
+        "energy": 56,
+        "punch": 82
+      }
+    },
+    {
+      "rank": 3,
+      "score": 81,
+      "viralScore": 81,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 140.47,
+      "end": 180.47,
+      "duration": 40,
+      "dimensions": {
+        "total": 81,
+        "viralScore": 81,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 72,
+        "retention": 88,
+        "cta": 45,
+        "replay": 77,
+        "energy": 60,
+        "punch": 81
+      }
+    },
+    {
+      "rank": 4,
+      "score": 81,
+      "viralScore": 81,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 346.51,
+      "end": 386.51,
+      "duration": 40,
+      "dimensions": {
+        "total": 81,
+        "viralScore": 81,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 71,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 58,
+        "punch": 82
+      }
+    },
+    {
+      "rank": 5,
+      "score": 81,
+      "viralScore": 81,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 464.13,
+      "end": 504.13,
+      "duration": 40,
+      "dimensions": {
+        "total": 81,
+        "viralScore": 81,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 45,
+        "replay": 78,
+        "energy": 64,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 6,
+      "score": 81,
+      "viralScore": 81,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 535.74,
+      "end": 575.74,
+      "duration": 40,
+      "dimensions": {
+        "total": 81,
+        "viralScore": 81,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 71,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 59,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 7,
+      "score": 80,
+      "viralScore": 80,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Cold-open hook",
+      "start": 108.94,
+      "end": 148.94,
+      "duration": 40,
+      "dimensions": {
+        "total": 80,
+        "viralScore": 80,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 76,
+        "length": 98,
+        "pacing": 72,
+        "retention": 88,
+        "cta": 45,
+        "replay": 78,
+        "energy": 60,
+        "punch": 81
+      }
+    },
+    {
+      "rank": 8,
+      "score": 80,
+      "viralScore": 80,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 279.65,
+      "end": 319.65,
+      "duration": 40,
+      "dimensions": {
+        "total": 80,
+        "viralScore": 80,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 71,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 58,
+        "punch": 81
+      }
+    },
+    {
+      "rank": 9,
+      "score": 80,
+      "viralScore": 80,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 759.05,
+      "end": 799.05,
+      "duration": 40,
+      "dimensions": {
+        "total": 80,
+        "viralScore": 80,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 70,
+        "replay": 75,
+        "energy": 58,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 10,
+      "score": 79,
+      "viralScore": 79,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal",
+        "Early in source (fresh context)"
+      ],
+      "title": "Cold-open hook",
+      "start": 0,
+      "end": 40,
+      "duration": 40,
+      "dimensions": {
+        "total": 79,
+        "viralScore": 79,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal",
+          "Early in source (fresh context)"
+        ],
+        "hook": 79,
+        "length": 98,
+        "pacing": 71,
+        "retention": 88,
+        "cta": 45,
+        "replay": 79,
+        "energy": 59,
+        "punch": 81
+      }
+    },
+    {
+      "rank": 11,
+      "score": 79,
+      "viralScore": 79,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 577.28,
+      "end": 617.28,
+      "duration": 40,
+      "dimensions": {
+        "total": 79,
+        "viralScore": 79,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 71,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 59,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 12,
+      "score": 79,
+      "viralScore": 79,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 662,
+      "end": 702,
+      "duration": 40,
+      "dimensions": {
+        "total": 79,
+        "viralScore": 79,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 70,
+        "length": 98,
+        "pacing": 69,
+        "retention": 87,
+        "cta": 70,
+        "replay": 75,
+        "energy": 57,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 13,
+      "score": 79,
+      "viralScore": 79,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal",
+        "Strong closer / CTA zone"
+      ],
+      "title": "Closer punch",
+      "start": 875.71,
+      "end": 915.71,
+      "duration": 40,
+      "dimensions": {
+        "total": 79,
+        "viralScore": 79,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 69,
+        "retention": 87,
+        "cta": 90,
+        "replay": 75,
+        "energy": 57,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 14,
+      "score": 78,
+      "viralScore": 78,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 386.18,
+      "end": 426.18,
+      "duration": 40,
+      "dimensions": {
+        "total": 78,
+        "viralScore": 78,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 45,
+        "replay": 75,
+        "energy": 58,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 15,
+      "score": 77,
+      "viralScore": 77,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 300.01,
+      "end": 340.01,
+      "duration": 40,
+      "dimensions": {
+        "total": 77,
+        "viralScore": 77,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 45,
+        "replay": 75,
+        "energy": 58,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 16,
+      "score": 77,
+      "viralScore": 77,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 414.33,
+      "end": 454.33,
+      "duration": 40,
+      "dimensions": {
+        "total": 77,
+        "viralScore": 77,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 71,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 59,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 17,
+      "score": 77,
+      "viralScore": 77,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal",
+        "Strong closer / CTA zone"
+      ],
+      "title": "Viral angle",
+      "start": 797.34,
+      "end": 837.34,
+      "duration": 40,
+      "dimensions": {
+        "total": 77,
+        "viralScore": 77,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 70,
+        "length": 98,
+        "pacing": 68,
+        "retention": 86,
+        "cta": 90,
+        "replay": 74,
+        "energy": 56,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 18,
+      "score": 76,
+      "viralScore": 76,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 221.72,
+      "end": 261.72,
+      "duration": 40,
+      "dimensions": {
+        "total": 76,
+        "viralScore": 76,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 45,
+        "replay": 75,
+        "energy": 58,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 19,
+      "score": 76,
+      "viralScore": 76,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 505.8,
+      "end": 545.8,
+      "duration": 40,
+      "dimensions": {
+        "total": 76,
+        "viralScore": 76,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 70,
+        "length": 98,
+        "pacing": 68,
+        "retention": 86,
+        "cta": 45,
+        "replay": 74,
+        "energy": 56,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 20,
+      "score": 76,
+      "viralScore": 76,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 632.76,
+      "end": 672.76,
+      "duration": 40,
+      "dimensions": {
+        "total": 76,
+        "viralScore": 76,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 71,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 70,
+        "replay": 75,
+        "energy": 58,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 21,
+      "score": 75,
+      "viralScore": 75,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Good pacing",
+        "Ideal short-form length",
+        "High retention signal",
+        "Strong closer / CTA zone"
+      ],
+      "title": "Closer punch",
+      "start": 838.95,
+      "end": 878.95,
+      "duration": 40,
+      "dimensions": {
+        "total": 75,
+        "viralScore": 75,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Good pacing",
+          "Ideal short-form length",
+          "High retention signal",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 70,
+        "length": 98,
+        "pacing": 67,
+        "retention": 86,
+        "cta": 90,
+        "replay": 74,
+        "energy": 55,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 22,
+      "score": 73,
+      "viralScore": 73,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "title": "Viral angle",
+      "start": 719.1,
+      "end": 759.1,
+      "duration": 40,
+      "dimensions": {
+        "total": 73,
+        "viralScore": 73,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 68,
+        "length": 98,
+        "pacing": 62,
+        "retention": 84,
+        "cta": 70,
+        "replay": 71,
+        "energy": 49,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 23,
+      "score": 50,
+      "viralScore": 50,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "title": "Closer punch",
+      "start": 948.8,
+      "end": 988.798549,
+      "duration": 40,
+      "dimensions": {
+        "total": 50,
+        "viralScore": 50,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 40,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 90,
+        "replay": 43,
+        "energy": 20,
+        "punch": 33
+      }
+    },
+    {
+      "rank": 24,
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "title": "Closer punch",
+      "start": 918.85,
+      "end": 958.85,
+      "duration": 40,
+      "dimensions": {
+        "total": 48,
+        "viralScore": 48,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 40,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 90,
+        "replay": 43,
+        "energy": 20,
+        "punch": 33
+      }
+    }
+  ],
+  "error": null,
+  "duration": 988.8,
+  "candidateCount": 24,
+  "sceneCount": 62,
+  "viralAnalysis": {
+    "analyzed": 24,
+    "topViralScore": 86,
+    "likelyViral": 1,
+    "postOrder": [
+      {
+        "rank": 1,
+        "title": "High-potential cut",
+        "viralScore": 86,
+        "verdict": "Strong viral chance"
+      },
+      {
+        "rank": 2,
+        "title": "Cold-open hook",
+        "viralScore": 81,
+        "verdict": "Good to post"
+      },
+      {
+        "rank": 3,
+        "title": "Viral angle",
+        "viralScore": 81,
+        "verdict": "Good to post"
+      }
+    ],
+    "summary": "AI found 1 high-viral clip(s). Post #1 first (score 86)."
+  },
+  "subtitlesApplied": true,
+  "completedAt": "2026-08-31T13:58:30.470Z"
+}
