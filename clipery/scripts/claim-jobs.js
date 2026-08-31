@@ -29,7 +29,7 @@ let users = [];
 try {
   users = JSON.parse(fs.readFileSync(USERS_FILE, "utf8")).users || [];
 } catch {
-  console.error("No accounts yet — register on the site first.");
+  console.error("No accounts yet - register on the site first.");
   process.exit(1);
 }
 
@@ -74,5 +74,5 @@ try {
 
 console.log(
   `${dry ? "[dry run] would claim" : "Claimed"} ${claimed} job(s) and ${boards} board(s) for ${user.email}` +
-    (skipped ? ` — ${skipped} already owned` : "")
+    (skipped ? ` - ${skipped} already owned` : "")
 );

@@ -51,7 +51,7 @@
       complete: "Done",
       processing: "Processing",
     };
-    return map[stage] || stage || "Working…";
+    return map[stage] || stage || "Working...";
   }
 
   function setActiveNav() {
@@ -133,9 +133,9 @@
       "</h4>" +
       '<div class="meta">' +
       formatTime(c.start) +
-      " → " +
+      " -> " +
       formatTime(c.end) +
-      " · " +
+      " - " +
       c.duration +
       "s</div>" +
       dimBars(c.dimensions) +
@@ -158,10 +158,10 @@
       .map(function (r) {
         const timeCell =
           r.start != null && r.end != null
-            ? formatTime(r.start) + "–" + formatTime(r.end)
+            ? formatTime(r.start) + "-" + formatTime(r.end)
             : r.sourceUrl
               ? "link"
-              : "—";
+              : "-";
         return (
           "<tr>" +
           "<td><strong>#" +
@@ -177,17 +177,17 @@
           timeCell +
           "</td>" +
           "<td>" +
-          (r.duration != null ? r.duration + "s" : "—") +
+          (r.duration != null ? r.duration + "s" : "-") +
           "</td>" +
           "<td>" +
           (r.dimensions
             ? "H" +
               r.dimensions.hook +
-              " · E" +
+              " - E" +
               r.dimensions.pacing +
-              " · R" +
+              " - R" +
               r.dimensions.retention
-            : "—") +
+            : "-") +
           "</td>" +
           "</tr>"
         );
@@ -258,7 +258,7 @@
     location.href = "/";
   }
 
-  /** Drop a "you are logged in as…" chip (or Log in button) into the nav. */
+  /** Drop a "you are logged in as..." chip (or Log in button) into the nav. */
   function renderAccountChip(user) {
     var nav = document.querySelector(".nav") || document.querySelector(".nav-links");
     if (!nav || nav.querySelector("[data-account]")) return;

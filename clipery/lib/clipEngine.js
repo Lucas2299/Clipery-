@@ -35,7 +35,7 @@ const MODES = {
   ranking: {
     id: "ranking",
     label: "Ranking analysis",
-    description: "Score every moment with a full breakdown — post order ready",
+    description: "Score every moment with a full breakdown - post order ready",
     targetMin: 30,
     targetMax: 50,
     ideal: 40,
@@ -67,7 +67,7 @@ async function faceCenterX(source, start, end) {
       return r.x;
     }
     if (r && r.ok) console.log(`[face-follow][clipEngine] no clear face -> centre crop (faces=${r.faces || 0})`);
-    else if (r && r.reason === "no-cv2") console.warn("[face-follow][clipEngine] off — run: pip install opencv-python-headless");
+    else if (r && r.reason === "no-cv2") console.warn("[face-follow][clipEngine] off - run: pip install opencv-python-headless");
     else console.warn(`[face-follow][clipEngine] detector problem: ${(r && r.error) || "unknown"} -> centre crop`);
   } catch (e) {
     console.warn(`[face-follow][clipEngine] failed: ${e.message} -> centre crop`);
@@ -154,7 +154,7 @@ async function sampleEnergy(file, start, end) {
     const max = /max_volume:\s*([-\d.]+)/.exec(text);
     const meanV = mean ? parseFloat(mean[1]) : -40;
     const maxV = max ? parseFloat(max[1]) : -20;
-    // map dB (-60..0) → 0..100
+    // map dB (-60..0) -> 0..100
     const energy = Math.min(100, Math.max(0, ((meanV + 50) / 50) * 100));
     const punch = Math.min(100, Math.max(0, ((maxV + 30) / 30) * 100));
     return { energy: Math.round(energy), punch: Math.round(punch) };
@@ -242,7 +242,7 @@ function buildCandidates(duration, sceneTimes, mode) {
     if (deduped.some((o) => Math.abs(o.start - start) < 6 && Math.abs((o.end - o.start) - (end - start)) < 12)) continue;
     deduped.push({ start, end });
   }
-  // Spread instead of truncating the head — this is what stopped every clip
+  // Spread instead of truncating the head - this is what stopped every clip
   // from being taken out of the first minutes of the source.
   return spreadSelect(deduped, duration, MAX_CANDIDATES);
 }
@@ -292,7 +292,7 @@ function scoreDimensions(c, duration, energy, mode, index, stats) {
   const pos = mid / Math.max(duration, 1);
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
-  // Length fit — testing mode: 30s minimum, ~40s sweet spot, max ~50s (PC-friendly)
+  // Length fit - testing mode: 30s minimum, ~40s sweet spot, max ~50s (PC-friendly)
   let length = 30;
   if (len >= 36 && len <= 44) length = 98;
   else if (len >= mode.targetMin && len <= mode.targetMax) length = 92;
@@ -337,7 +337,7 @@ function scoreDimensions(c, duration, energy, mode, index, stats) {
     Math.min(99, pacing * 0.4 + hook * 0.35 + (len >= 30 && len <= 55 ? 90 : 55) * 0.25)
   );
 
-  // AI viral prediction (weighted for “will this go viral?”)
+  // AI viral prediction (weighted for "will this go viral?")
   let viralRaw;
   if (mode.id === "viral") {
     viralRaw =
@@ -505,7 +505,7 @@ function writeJob(job) {
 
 /**
  * Jobs on disk, newest first.
- * Pass a userId to get only that account's jobs — a library is private, so
+ * Pass a userId to get only that account's jobs - a library is private, so
  * everything without a matching owner is filtered out.
  */
 function listJobs(limit = 50, userId) {
@@ -568,7 +568,7 @@ function snapCutsToSilence(sils, start, end, totalDur) {
   if (cand !== null && cand - ns >= 6) ne = cand;
 
   ne = Math.min(ne, totalDur);
-  if (ne - ns < 6) return { start, end }; // too risky — keep original cut
+  if (ne - ns < 6) return { start, end }; // too risky - keep original cut
   return { start: +ns.toFixed(2), end: +ne.toFixed(2) };
 }
 
@@ -621,7 +621,7 @@ async function processVideo(sourcePath, options = {}) {
     writeJob(job);
 
     // Trend keywords: transcribe the source once, then boost moments that
-    // actually SAY the hot words (whisper brain → better hits).
+    // actually SAY the hot words (whisper brain -> better hits).
     let videoWords = null;
     if (Array.isArray(options.trends) && options.trends.length) {
       const tmpWords = path.join(JOBS_DIR, `${id}.trendwords.json`);
@@ -634,7 +634,7 @@ async function processVideo(sourcePath, options = {}) {
     const trendSet = videoWords ? new Set(options.trends) : null;
 
     const scored = [];
-    // Pass 1 — measure every candidate so we know what "loud" means for THIS video
+    // Pass 1 - measure every candidate so we know what "loud" means for THIS video
     const energies = [];
     for (let i = 0; i < candidates.length; i++) {
       const c = candidates[i];
@@ -649,7 +649,7 @@ async function processVideo(sourcePath, options = {}) {
       avgPunch: energies.reduce((a, e) => a + e.punch, 0) / (energies.length || 1),
     };
 
-    // Pass 2 — score each moment against the video's own baseline
+    // Pass 2 - score each moment against the video's own baseline
     for (let i = 0; i < candidates.length; i++) {
       const c = candidates[i];
       const energy = energies[i];
@@ -676,7 +676,7 @@ async function processVideo(sourcePath, options = {}) {
     scored.sort((a, b) => b.score - a.score);
 
     // The clips we will actually ship (score-ranked, non-overlapping, spread
-    // across the whole source) — also used for the post-order preview.
+    // across the whole source) - also used for the post-order preview.
     const previewTop = pickDiverse(scored, Math.min(mode.maxClips, scored.length), meta.duration);
 
     // Full viral leaderboard (all analyzed moments)
@@ -707,7 +707,7 @@ async function processVideo(sourcePath, options = {}) {
       summary:
         scored[0] && scored[0].score >= 82
           ? `AI found ${scored.filter((c) => c.score >= 82).length} high-viral clip(s). Post #1 first (score ${scored[0].score}).`
-          : `AI analyzed ${scored.length} moments. Best clip scored ${scored[0]?.score || 0} — still worth testing.`,
+          : `AI analyzed ${scored.length} moments. Best clip scored ${scored[0]?.score || 0} - still worth testing.`,
     };
 
     const topN = Math.min(mode.maxClips, scored.length);
@@ -778,7 +778,7 @@ async function processVideo(sourcePath, options = {}) {
         downloadName: `viral-${vScore}-rank${i + 1}-${id}.mp4`,
         postTip:
           i === 0
-            ? "Post this first — highest viral chance"
+            ? "Post this first - highest viral chance"
             : i < 3
               ? "Strong follow-up post"
               : "Schedule later / A-B test",
@@ -869,7 +869,7 @@ function scoreLinkEntry(entry, index) {
 
   const patterns = [];
   if (hookLen && hookLen < 60) patterns.push("Tight hook text");
-  if (dur >= 15 && dur <= 28) patterns.push("Sweet-spot length (15–28s)");
+  if (dur >= 15 && dur <= 28) patterns.push("Sweet-spot length (15-28s)");
   if (platform === "tiktok") patterns.push("TikTok-native format");
   if (/question/.test(tags) || /\?/.test(entry.hook || "")) patterns.push("Question hook");
   if (/list|3 |three|tips/.test(tags + entry.hook)) patterns.push("List / tips structure");

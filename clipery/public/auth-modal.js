@@ -1,5 +1,5 @@
 /**
- * Clipery — login / register popup.
+ * Clipery - login / register popup.
  *
  * Drops a modal on any page. Guests clicking "Log in", "Start free" or
  * anything pointing at the Studio get the card right there instead of being
@@ -7,7 +7,7 @@
  * (and for people who land on it directly).
  *
  *   window.CleryAuth.open("register")   // force the signup tab
- *   <a href="/login" data-auth>…</a>    // any element opens it
+ *   <a href="/login" data-auth>...</a>    // any element opens it
  */
 (function (global) {
   var CSS = `
@@ -89,7 +89,7 @@
     back.setAttribute("aria-modal", "true");
     back.innerHTML =
       '<div class="cauth-card">' +
-      '<button type="button" class="cauth-x" aria-label="Close">✕</button>' +
+      '<button type="button" class="cauth-x" aria-label="Close">&times;</button>' +
       '<div class="cauth-tabs">' +
       '<button type="button" class="cauth-tab on" data-t="login">Log in</button>' +
       '<button type="button" class="cauth-tab" data-t="register">Create account</button>' +
@@ -108,7 +108,7 @@
       '<div class="cauth-f"><label for="cauth-email">Email</label>' +
       '<input type="email" id="cauth-email" autocomplete="email" placeholder="you@example.com" required /></div>' +
       '<div class="cauth-f"><label for="cauth-pass">Password</label>' +
-      '<input type="password" id="cauth-pass" autocomplete="current-password" placeholder="••••••••" required />' +
+      '<input type="password" id="cauth-pass" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" required />' +
       '<p class="cauth-hint" hidden>At least 8 characters.</p></div>' +
       '<button type="submit" class="cauth-go">Log in</button>' +
       "</form>" +
@@ -183,7 +183,7 @@
     el.hint.hidden = !reg;
     el.title.textContent = reg ? "Create your account" : "Welcome back";
     el.sub.textContent = reg
-      ? "Free to start — no card needed. The Studio opens right after."
+      ? "Free to start - no card needed. The Studio opens right after."
       : "Log in to open the Studio and your clip library.";
     el.go.textContent = reg ? "Create account" : "Log in";
     el.pass.setAttribute("autocomplete", reg ? "new-password" : "current-password");
@@ -203,7 +203,7 @@
     if (mode === "register" && pass.length < 8) return say("Password must be at least 8 characters.");
 
     el.go.disabled = true;
-    el.go.textContent = mode === "register" ? "Creating…" : "Logging in…";
+    el.go.textContent = mode === "register" ? "Creating..." : "Logging in...";
     say("");
     try {
       var res = await fetch(mode === "register" ? "/api/auth/register" : "/api/auth/login", {
@@ -218,7 +218,7 @@
         el.go.textContent = mode === "register" ? "Create account" : "Log in";
         return;
       }
-      say(mode === "register" ? "Account created — opening Studio…" : "Logged in — opening Studio…", "ok");
+      say(mode === "register" ? "Account created - opening Studio..." : "Logged in - opening Studio...", "ok");
       location.href = nextTarget;
     } catch (err) {
       say("Network error. Check your connection and try again.");
@@ -248,7 +248,7 @@
 
   /**
    * Any link to /login, /register or a members-only page opens the popup
-   * instead of navigating — but only for guests. Logged-in visitors keep
+   * instead of navigating - but only for guests. Logged-in visitors keep
    * their normal links.
    */
   function wire(isGuest) {

@@ -43,7 +43,7 @@ async function faceCenterX(source, start, end) {
       return r.x;
     }
     if (r && r.ok) console.log(`[face-follow][linkVideoEngine] no clear face -> centre crop (faces=${r.faces || 0})`);
-    else if (r && r.reason === "no-cv2") console.warn("[face-follow][linkVideoEngine] off — run: pip install opencv-python-headless");
+    else if (r && r.reason === "no-cv2") console.warn("[face-follow][linkVideoEngine] off - run: pip install opencv-python-headless");
     else console.warn(`[face-follow][linkVideoEngine] detector problem: ${(r && r.error) || "unknown"} -> centre crop`);
   } catch (e) {
     console.warn(`[face-follow][linkVideoEngine] failed: ${e.message} -> centre crop`);
@@ -173,7 +173,7 @@ async function downloadUrl(url, outBase) {
   }
 
   if (platform === "tiktok") {
-    // Try anyway — may work on some hosts
+    // Try anyway - may work on some hosts
     const errHint =
       "TikTok blocked downloads from this server IP. Use Upload videos instead (save TikToks to your phone/PC and upload), or paste YouTube Shorts URLs.";
     try {
@@ -263,11 +263,11 @@ function buildRankingOverlay({
   const filters = [
     `scale=${W}:${H}:force_original_aspect_ratio=increase`,
     crop,
-    // Title — yellow, top center (no background box)
+    // Title - yellow, top center (no background box)
     `drawtext=text='${titleText}':fontsize=50:fontcolor=0xFFE600:borderw=5:bordercolor=black:x=(w-text_w)/2:y=42:font=Sans`,
   ];
 
-  // Left-side numbers only (1. 2. 3. …)
+  // Left-side numbers only (1. 2. 3. ...)
   const startY = 160;
   const gap = Math.min(72, Math.floor(700 / Math.max(total, 1)));
   for (let n = 1; n <= total; n++) {
@@ -583,8 +583,8 @@ async function processMultiRank(sources, options = {}) {
     // Board title like "Dog Videos" / "Top Videos"
     const boardTitle =
       (options.boardTitle || options.sourceName || "Top Videos")
-        .replace(/\s*→.*$/, "")
-        .replace(/^Ranking\s*[·•-]?\s*/i, "")
+        .replace(/\s*->.*$/, "")
+        .replace(/^Ranking\s*[-&bull;-]?\s*/i, "")
         .trim()
         .slice(0, 28) || "Top Videos";
 
@@ -632,7 +632,7 @@ async function processMultiRank(sources, options = {}) {
       writeJob(job);
     }
 
-    // Compilation: intro list → countdown #N … #1 (same layout as the photo)
+    // Compilation: intro list -> countdown #N ... #1 (same layout as the photo)
     job.stage = "building_compilation";
     job.progress = 80;
     writeJob(job);
@@ -650,7 +650,7 @@ async function processMultiRank(sources, options = {}) {
     );
     parts.push(intro);
 
-    // last place → first place (countdown reveal)
+    // last place -> first place (countdown reveal)
     for (let i = scored.length - 1; i >= 0; i--) {
       const rank = i + 1;
       parts.push(path.join(outDir, `rank-${rank}.mp4`));
@@ -689,7 +689,7 @@ async function processMultiRank(sources, options = {}) {
     job.compilation = {
       url: `/clips/${id}/${compName}`,
       downloadName: `ranking-video-${id}.mp4`,
-      title: `${boardTitle} — ranking countdown`,
+      title: `${boardTitle} - ranking countdown`,
       style: "tiktok-list-countdown",
     };
     job.boardTitle = boardTitle;
@@ -749,7 +749,7 @@ async function processLinksToRankingVideo(links, options = {}) {
     if (!url) continue;
     job.stage = "downloading";
     job.progress = 2 + Math.round((i / links.length) * 30);
-    job.downloadStatus = `Fetching ${i + 1}/${links.length}…`;
+    job.downloadStatus = `Fetching ${i + 1}/${links.length}...`;
     writeJob(job);
 
     const outBase = path.join(dlDir, `src-${i}`);
@@ -770,7 +770,7 @@ async function processLinksToRankingVideo(links, options = {}) {
     const tiktokOnly = links.every((l) => detectPlatform(l.url || l) === "tiktok");
     job.status = "error";
     job.error = tiktokOnly
-      ? "Could not download TikTok links from this server (TikTok blocks the IP). Use “Upload videos” on the Rank page: save each TikTok and upload them — we’ll still make one ranked clip per video + a countdown ranking video."
+      ? "Could not download TikTok links from this server (TikTok blocks the IP). Use the 'Upload videos' option on the Rank page: save each TikTok and upload them - we'll still make one ranked clip per video + a countdown ranking video."
       : "Could not download any links. Try YouTube Shorts URLs, sample pack, or upload video files.";
     job.progress = 0;
     writeJob(job);
