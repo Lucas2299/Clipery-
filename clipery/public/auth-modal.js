@@ -1,0 +1,285 @@
+/**
+ * Clipery — login / register popup.
+ *
+ * Drops a modal on any page. Guests clicking "Log in", "Start free" or
+ * anything pointing at the Studio get the card right there instead of being
+ * sent to /login. The standalone /login page still exists as a fallback
+ * (and for people who land on it directly).
+ *
+ *   window.CleryAuth.open("register")   // force the signup tab
+ *   <a href="/login" data-auth>…</a>    // any element opens it
+ */
+(function (global) {
+  var CSS = `
+  .cauth-back{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;
+    background:rgba(4,4,8,.78);backdrop-filter:blur(6px);padding:1.1rem;animation:cauthFade .18s ease}
+  .cauth-back.on{display:flex}
+  @keyframes cauthFade{from{opacity:0}to{opacity:1}}
+  @keyframes cauthPop{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:none}}
+  .cauth-card{width:100%;max-width:420px;max-height:92vh;overflow:auto;position:relative;
+    background:#0e0e14;border:1px solid rgba(255,255,255,.1);border-radius:20px;
+    padding:1.9rem 1.7rem 1.6rem;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:cauthPop .2s ease;
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#f4f1ea}
+  .cauth-x{position:absolute;top:.85rem;right:.9rem;width:32px;height:32px;border-radius:50%;cursor:pointer;
+    border:1px solid rgba(255,255,255,.14);background:transparent;color:#9894a6;font-size:1.1rem;line-height:1;
+    display:flex;align-items:center;justify-content:center}
+  .cauth-x:hover{color:#fff;border-color:rgba(255,255,255,.35)}
+  .cauth-tabs{display:flex;gap:.5rem;margin:0 0 1.3rem}
+  .cauth-tab{flex:1;padding:.6rem .5rem;border-radius:999px;cursor:pointer;font-family:inherit;font-weight:700;
+    font-size:.9rem;border:1px solid rgba(255,255,255,.16);background:transparent;color:#f4f1ea;transition:all .15s}
+  .cauth-tab.on{background:linear-gradient(135deg,#ff4d6d,#ff8a4c);border-color:transparent;color:#fff;
+    box-shadow:0 8px 22px rgba(255,77,109,.32)}
+  .cauth-card h2{font-size:1.45rem;margin:0 0 .3rem;font-weight:800;letter-spacing:-.01em}
+  .cauth-sub{color:#9894a6;font-size:.9rem;margin:0 0 1.3rem;line-height:1.5}
+  .cauth-social{display:none;margin:0 0 1.15rem}
+  .cauth-social.on{display:block}
+  .cauth-sbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:.6rem;padding:.72rem 1rem;
+    margin:0 0 .55rem;border-radius:12px;cursor:pointer;font-family:inherit;font-size:.92rem;font-weight:700;
+    text-decoration:none;border:1px solid rgba(255,255,255,.16);transition:transform .15s}
+  .cauth-sbtn:hover{transform:translateY(-1px)}
+  .cauth-google{background:#fff;color:#1f1f1f;border-color:#fff}
+  .cauth-apple{background:#000;color:#fff;border-color:rgba(255,255,255,.35)}
+  .cauth-sbtn svg{width:18px;height:18px;flex:none}
+  .cauth-or{display:flex;align-items:center;gap:.75rem;margin:0 0 1.1rem;color:#66627a;font-size:.74rem;
+    text-transform:uppercase;letter-spacing:.08em}
+  .cauth-or::before,.cauth-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.1)}
+  .cauth-f{margin:0 0 .9rem}
+  .cauth-f label{display:block;font-size:.8rem;font-weight:700;color:#c9c5d8;margin:0 0 .32rem}
+  .cauth-f input{width:100%;padding:.75rem .9rem;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.4);color:#f4f1ea;font-family:inherit;font-size:.94rem;box-sizing:border-box}
+  .cauth-f input:focus{outline:none;border-color:#ff4d6d}
+  .cauth-hint{font-size:.75rem;color:#66627a;margin:.3rem 0 0}
+  .cauth-go{width:100%;margin-top:.35rem;padding:.8rem 1rem;border:none;border-radius:999px;cursor:pointer;
+    font-family:inherit;font-size:.96rem;font-weight:800;color:#fff;
+    background:linear-gradient(135deg,#ff4d6d,#ff8a4c);box-shadow:0 10px 26px rgba(255,77,109,.32)}
+  .cauth-go:disabled{opacity:.6;cursor:default}
+  .cauth-msg{display:none;margin:0 0 1rem;padding:.7rem .85rem;border-radius:12px;font-size:.86rem;line-height:1.45}
+  .cauth-msg.err{display:block;background:rgba(255,77,109,.12);border:1px solid rgba(255,77,109,.4);color:#ffb3c1}
+  .cauth-msg.ok{display:block;background:rgba(200,245,66,.1);border:1px solid rgba(200,245,66,.35);color:#dcf98d}
+  .cauth-foot{margin:1.05rem 0 0;text-align:center;font-size:.85rem;color:#9894a6}
+  .cauth-foot a{color:#ff8a4c;text-decoration:none;font-weight:700;cursor:pointer}
+  `;
+
+  var GOOGLE_SVG =
+    '<svg viewBox="0 0 48 48" aria-hidden="true">' +
+    '<path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.2 17.6 9.5 24 9.5z"/>' +
+    '<path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.1 5.4-4.6 7l7.1 5.5c4.2-3.9 6.6-9.6 6.6-16.4z"/>' +
+    '<path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.7s.3-3.3.8-4.7l-7.8-6.1C1 16.4 0 20.1 0 24s1 7.6 2.6 10.8l7.8-6.1z"/>' +
+    '<path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.3-4.6 2.1-8.8 2.1-6.4 0-11.7-3.7-13.6-8.9l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/></svg>';
+  var APPLE_SVG =
+    '<svg viewBox="0 0 384 512" aria-hidden="true" fill="currentColor">' +
+    '<path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>';
+
+  var el = {};
+  var mode = "login";
+  var nextTarget = "/studio";
+  var built = false;
+
+  function build() {
+    if (built) return;
+    built = true;
+
+    var style = document.createElement("style");
+    style.textContent = CSS;
+    document.head.appendChild(style);
+
+    var back = document.createElement("div");
+    back.className = "cauth-back";
+    back.setAttribute("role", "dialog");
+    back.setAttribute("aria-modal", "true");
+    back.innerHTML =
+      '<div class="cauth-card">' +
+      '<button type="button" class="cauth-x" aria-label="Close">✕</button>' +
+      '<div class="cauth-tabs">' +
+      '<button type="button" class="cauth-tab on" data-t="login">Log in</button>' +
+      '<button type="button" class="cauth-tab" data-t="register">Create account</button>' +
+      "</div>" +
+      '<h2 class="cauth-title">Welcome back</h2>' +
+      '<p class="cauth-sub">Log in to open the Studio and your clip library.</p>' +
+      '<div class="cauth-msg" role="alert"></div>' +
+      '<div class="cauth-social">' +
+      '<a class="cauth-sbtn cauth-google" data-p="google">' + GOOGLE_SVG + "Continue with Google</a>" +
+      '<a class="cauth-sbtn cauth-apple" data-p="apple">' + APPLE_SVG + "Continue with Apple</a>" +
+      '<div class="cauth-or">or</div>' +
+      "</div>" +
+      "<form novalidate>" +
+      '<div class="cauth-f cauth-name" hidden><label for="cauth-name">Name</label>' +
+      '<input type="text" id="cauth-name" autocomplete="name" placeholder="Your name" /></div>' +
+      '<div class="cauth-f"><label for="cauth-email">Email</label>' +
+      '<input type="email" id="cauth-email" autocomplete="email" placeholder="you@example.com" required /></div>' +
+      '<div class="cauth-f"><label for="cauth-pass">Password</label>' +
+      '<input type="password" id="cauth-pass" autocomplete="current-password" placeholder="••••••••" required />' +
+      '<p class="cauth-hint" hidden>At least 8 characters.</p></div>' +
+      '<button type="submit" class="cauth-go">Log in</button>' +
+      "</form>" +
+      '<p class="cauth-foot">No account yet? <a data-switch>Create one free</a></p>' +
+      "</div>";
+    document.body.appendChild(back);
+
+    el.back = back;
+    el.card = back.querySelector(".cauth-card");
+    el.title = back.querySelector(".cauth-title");
+    el.sub = back.querySelector(".cauth-sub");
+    el.msg = back.querySelector(".cauth-msg");
+    el.social = back.querySelector(".cauth-social");
+    el.google = back.querySelector('[data-p="google"]');
+    el.apple = back.querySelector('[data-p="apple"]');
+    el.form = back.querySelector("form");
+    el.name = back.querySelector(".cauth-name");
+    el.hint = back.querySelector(".cauth-hint");
+    el.go = back.querySelector(".cauth-go");
+    el.foot = back.querySelector(".cauth-foot");
+    el.pass = back.querySelector("#cauth-pass");
+
+    back.addEventListener("click", function (e) {
+      if (e.target === back) close();
+    });
+    back.querySelector(".cauth-x").addEventListener("click", close);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && back.classList.contains("on")) close();
+    });
+    back.querySelectorAll(".cauth-tab").forEach(function (t) {
+      t.addEventListener("click", function () { setMode(t.getAttribute("data-t")); });
+    });
+    el.foot.addEventListener("click", function (e) {
+      if (e.target.hasAttribute("data-switch")) {
+        e.preventDefault();
+        setMode(mode === "login" ? "register" : "login");
+      }
+    });
+    el.form.addEventListener("submit", submit);
+
+    // Which social buttons this server can actually do
+    fetch("/api/auth/providers")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var p = (d && d.providers) || {};
+        if (!p.google) el.google.remove();
+        if (!p.apple) el.apple.remove();
+        if (p.google || p.apple) el.social.classList.add("on");
+        syncSocialLinks();
+      })
+      .catch(function () {});
+  }
+
+  function syncSocialLinks() {
+    var n = encodeURIComponent(nextTarget);
+    if (el.google && el.google.isConnected) el.google.href = "/api/auth/google?next=" + n;
+    if (el.apple && el.apple.isConnected) el.apple.href = "/api/auth/apple?next=" + n;
+  }
+
+  function say(text, kind) {
+    el.msg.textContent = text || "";
+    el.msg.className = "cauth-msg" + (text ? " " + (kind || "err") : "");
+  }
+
+  function setMode(next) {
+    mode = next === "register" ? "register" : "login";
+    var reg = mode === "register";
+    el.back.querySelectorAll(".cauth-tab").forEach(function (t) {
+      t.classList.toggle("on", t.getAttribute("data-t") === mode);
+    });
+    el.name.hidden = !reg;
+    el.hint.hidden = !reg;
+    el.title.textContent = reg ? "Create your account" : "Welcome back";
+    el.sub.textContent = reg
+      ? "Free to start — no card needed. The Studio opens right after."
+      : "Log in to open the Studio and your clip library.";
+    el.go.textContent = reg ? "Create account" : "Log in";
+    el.pass.setAttribute("autocomplete", reg ? "new-password" : "current-password");
+    el.foot.innerHTML = reg
+      ? 'Already have an account? <a data-switch>Log in</a>'
+      : 'No account yet? <a data-switch>Create one free</a>';
+    say("");
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    var email = el.back.querySelector("#cauth-email").value.trim();
+    var pass = el.pass.value;
+    var name = el.back.querySelector("#cauth-name").value.trim();
+
+    if (!email || !pass) return say("Email and password are required.");
+    if (mode === "register" && pass.length < 8) return say("Password must be at least 8 characters.");
+
+    el.go.disabled = true;
+    el.go.textContent = mode === "register" ? "Creating…" : "Logging in…";
+    say("");
+    try {
+      var res = await fetch(mode === "register" ? "/api/auth/register" : "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: pass, name: name }),
+      });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) {
+        say(data.error || "Something went wrong. Try again.");
+        el.go.disabled = false;
+        el.go.textContent = mode === "register" ? "Create account" : "Log in";
+        return;
+      }
+      say(mode === "register" ? "Account created — opening Studio…" : "Logged in — opening Studio…", "ok");
+      location.href = nextTarget;
+    } catch (err) {
+      say("Network error. Check your connection and try again.");
+      el.go.disabled = false;
+      el.go.textContent = mode === "register" ? "Create account" : "Log in";
+    }
+  }
+
+  function open(startMode, next) {
+    build();
+    nextTarget = next || nextTarget || "/studio";
+    syncSocialLinks();
+    setMode(startMode || "login");
+    el.back.classList.add("on");
+    document.body.style.overflow = "hidden";
+    setTimeout(function () {
+      var f = el.back.querySelector(mode === "register" ? "#cauth-name" : "#cauth-email");
+      if (f) f.focus();
+    }, 60);
+  }
+
+  function close() {
+    if (!built) return;
+    el.back.classList.remove("on");
+    document.body.style.overflow = "";
+  }
+
+  /**
+   * Any link to /login, /register or a members-only page opens the popup
+   * instead of navigating — but only for guests. Logged-in visitors keep
+   * their normal links.
+   */
+  function wire(isGuest) {
+    if (!isGuest) return;
+    document.addEventListener(
+      "click",
+      function (e) {
+        var a = e.target.closest && e.target.closest("a,button");
+        if (!a) return;
+        var href = a.getAttribute("href") || "";
+        var forced = a.hasAttribute("data-auth") ? a.getAttribute("data-auth") || "login" : null;
+        var isAuthLink = /^\/(login|register)(\?|$)/.test(href);
+        var isMemberLink = /^\/(studio|library|rank)(\?|\/|$)/.test(href);
+        if (!forced && !isAuthLink && !isMemberLink) return;
+
+        e.preventDefault();
+        var wantRegister = forced === "register" || /^\/register/.test(href);
+        open(wantRegister ? "register" : "login", isMemberLink ? href : "/studio");
+      },
+      true
+    );
+  }
+
+  global.CleryAuth = { open: open, close: close, wire: wire };
+
+  // Auto-wire on pages that opt in with <body data-auth-modal>
+  document.addEventListener("DOMContentLoaded", function () {
+    if (!document.body.hasAttribute("data-auth-modal")) return;
+    fetch("/api/auth/me")
+      .then(function (r) { return r.json(); })
+      .then(function (d) { wire(!(d && d.user)); })
+      .catch(function () { wire(true); });
+  });
+})(window);
