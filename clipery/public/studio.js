@@ -323,7 +323,19 @@
       "</div>" +
       (verdict ? '<div class="viral-verdict ' + badgeClass + '">' + esc(verdict) + "</div>" : "") +
       "<h4>" + esc(c.title || "Clip") + "</h4>" +
-      '<div class="meta">' + esc(c.postTip || "") + "</div>" +
+      (c.quote
+        ? '<p class="clip-quote" style="margin:.35rem 0 .5rem;font-size:.82rem;color:#c9c4d4;font-style:italic">&ldquo;' +
+          esc(c.quote) + '&rdquo;</p>'
+        : "") +
+      '<div class="meta">' + esc(c.postTip || "") +
+      (c.reframe && c.reframe !== "center"
+        ? ' &middot; ' + esc(
+            c.reframe === "follow" ? "camera follows the speaker"
+              : c.reframe === "wide" ? "zoomed out to fit everyone"
+              : "locked on the speaker"
+          )
+        : "") +
+      "</div>" +
       (reasons.length
         ? '<ul class="viral-reasons">' +
           reasons.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") +

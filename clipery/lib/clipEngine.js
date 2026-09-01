@@ -4,6 +4,8 @@ const path = require("path");
 const { promisify } = require("util");
 const crypto = require("crypto");
 const { tryEnhanceClip, transcribeToWords } = require("./subtitles");
+const brain = require("./brain");
+const { reframeFilter } = require("./reframe");
 
 const execFileAsync = promisify(execFile);
 
@@ -57,22 +59,34 @@ function run(cmd, args, opts = {}) {
 const PY = process.env.PYTHON || "python3";
 const FACE_PY = path.join(__dirname, "facedetect.py");
 
-/** Median face-centre X (0..1) for a time window, or null (centre crop). */
-async function faceCenterX(source, start, end) {
+/**
+ * Face track for a time window: where the speaker is, moment by moment.
+ * Returns {x, track:[{t,x,faces}], speakers, spread} or null (centre crop).
+ */
+async function faceTrack(source, start, end) {
   try {
-    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 90000 });
+    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 120000 });
     const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
-    if (r && r.ok && typeof r.x === "number" && r.x >= 0.12 && r.x <= 0.88) {
-      console.log(`[face-follow][clipEngine] speaker face at x=${r.x.toFixed(2)} (${r.faces || 0} faces)`);
-      return r.x;
+    if (r && r.ok && Array.isArray(r.track) && r.track.length) {
+      console.log(
+        `[reframe] ${r.speakers || 1} speaker(s), spread ${((r.spread || 0) * 100).toFixed(0)}% of width, ` +
+        `${r.faces}/${r.samples} samples with a face`
+      );
+      return r;
     }
-    if (r && r.ok) console.log(`[face-follow][clipEngine] no clear face -> centre crop (faces=${r.faces || 0})`);
-    else if (r && r.reason === "no-cv2") console.warn("[face-follow][clipEngine] off - run: pip install opencv-python-headless");
-    else console.warn(`[face-follow][clipEngine] detector problem: ${(r && r.error) || "unknown"} -> centre crop`);
+    if (r && r.ok) console.log("[reframe] no clear face -> centre crop");
+    else if (r && r.reason === "no-cv2") console.warn("[reframe] off - run: pip install opencv-python-headless");
+    else console.warn(`[reframe] detector problem: ${(r && r.error) || (r && r.reason) || "unknown"} -> centre crop`);
   } catch (e) {
-    console.warn(`[face-follow][clipEngine] failed: ${e.message} -> centre crop`);
+    console.warn(`[reframe] failed: ${e.message} -> centre crop`);
   }
   return null;
+}
+
+/** Old single-point helper, kept for callers that only need one X. */
+async function faceCenterX(source, start, end) {
+  const r = await faceTrack(source, start, end);
+  return r && typeof r.x === "number" && r.x >= 0.05 && r.x <= 0.95 ? r.x : null;
 }
 
 async function probe(file) {
@@ -432,57 +446,87 @@ function escapeDrawtext(s) {
     .replace(/%/g, "%%");
 }
 
-async function renderClip(source, outFile, start, end, label, sublabel, mode) {
+async function renderClip(source, outFile, start, end, label, sublabel, mode, srcMeta) {
   const dur = Math.max(0.5, end - start);
   const targetW = 608;
   const targetH = 1080;
 
-  // Face-follow: lock the portrait frame onto the speaker (centre crop fallback)
-  const faceX = await faceCenterX(source, start, end);
-  const crop = faceX
-    ? `crop=${targetW}:${targetH}:x='clip(iw*${faceX}-${targetW / 2}\\,0\\,iw-${targetW})'`
-    : `crop=${targetW}:${targetH}`;
+  // Smart reframing: follow the speaker instead of cropping dead centre.
+  // Track times come back relative to the clip start, which is exactly what
+  // the crop expression needs (ffmpeg `t` restarts at 0 for the cut).
+  const det = await faceTrack(source, start, end);
+  const rf = reframeFilter({
+    samples: (det && det.track) || [],
+    srcW: (srcMeta && srcMeta.width) || 1920,
+    srcH: (srcMeta && srcMeta.height) || 1080,
+    outW: targetW,
+    outH: targetH,
+  });
+  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)`);
 
-  const vf = [
-    `scale=${targetW}:${targetH}:force_original_aspect_ratio=increase`,
-    crop,
+  const extras = [
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
-  ].join(",");
+  ];
 
-  await run(
-    "ffmpeg",
-    [
-      "-y",
-      "-hide_banner",
-      "-loglevel",
-      "error",
-      "-ss",
-      String(start),
-      "-i",
-      source,
-      "-t",
-      String(dur),
+  // The zoom-out layout needs split/overlay, so it must go through
+  // -filter_complex; the simple crop chains stay on -vf exactly as before.
+  const graph = [rf.filter, ...extras].join(",");
+  const flag = rf.filter.includes("split=") ? "-filter_complex" : "-vf";
+
+  const encode = (filterFlag, filterGraph) =>
+    run(
+      "ffmpeg",
+      [
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-ss",
+        String(start),
+        "-i",
+        source,
+        "-t",
+        String(dur),
+        filterFlag,
+        filterGraph,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "veryfast",
+        "-crf",
+        "24",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "128k",
+        "-movflags",
+        "+faststart",
+        outFile,
+      ],
+      { timeout: 200000 }
+    );
+
+  try {
+    await encode(flag, graph);
+  } catch (e) {
+    // Never fail a clip over a fancy filter: fall back to the plain,
+    // never-zoomed centre crop that every ffmpeg build can do.
+    console.warn(`[reframe] ${rf.layout} layout failed (${e.message.split("\n")[0]}) -> centre crop`);
+    const cropW = Math.min(
+      (srcMeta && srcMeta.width) || 1920,
+      Math.round((((srcMeta && srcMeta.height) || 1080) * targetW) / targetH)
+    );
+    await encode(
       "-vf",
-      vf,
-      "-c:v",
-      "libx264",
-      "-preset",
-      "veryfast",
-      "-crf",
-      "24",
-      "-pix_fmt",
-      "yuv420p",
-      "-c:a",
-      "aac",
-      "-b:a",
-      "128k",
-      "-movflags",
-      "+faststart",
-      outFile,
-    ],
-    { timeout: 200000 }
-  );
+      [`crop=${cropW}:ih:x=(iw-${cropW})/2:y=0`, `scale=${targetW}:${targetH}`, ...extras].join(",")
+    );
+    return "center";
+  }
+
+  return rf.layout;
 }
 
 function jobPath(id) {
@@ -625,18 +669,35 @@ async function processVideo(sourcePath, options = {}) {
     job.progress = 28;
     writeJob(job);
 
-    // Trend keywords: transcribe the source once, then boost moments that
-    // actually SAY the hot words (whisper brain -> better hits).
+    // Transcribe the source ONCE. The brain reads these words to judge what is
+    // actually being said - story, payoff, surprise, hook strength - instead of
+    // guessing from loudness alone. Trend keywords reuse the same transcript.
     let videoWords = null;
-    if (Array.isArray(options.trends) && options.trends.length) {
-      const tmpWords = path.join(JOBS_DIR, `${id}.trendwords.json`);
-      await transcribeToWords(sourcePath, tmpWords);
+    if (meta.hasAudio) {
+      job.stage = "listening";
+      writeJob(job);
+      const tmpWords = path.join(JOBS_DIR, `${id}.words.json`);
+      const n = await transcribeToWords(sourcePath, tmpWords);
       try {
-        videoWords = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
+        if (n > 0) videoWords = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
       } catch {}
       try { fs.unlinkSync(tmpWords); } catch {}
+      job.transcribed = !!(videoWords && videoWords.length);
+      if (!job.transcribed) job.brainNote = "no transcript - scored on audio and visuals only";
+      writeJob(job);
     }
-    const trendSet = videoWords ? new Set(options.trends) : null;
+    const trendSet =
+      videoWords && Array.isArray(options.trends) && options.trends.length
+        ? new Set(options.trends)
+        : null;
+
+    // Cheap visual pass: how many faces are on screen across the video, so the
+    // scorer can spot reactions and people entering or leaving the frame.
+    let visualTrack = null;
+    if (videoWords || scenes.length) {
+      const det = await faceTrack(sourcePath, 0, Math.min(meta.duration, 20 * 60));
+      visualTrack = (det && det.track) || null;
+    }
 
     const scored = [];
     // Pass 1 - measure every candidate so we know what "loud" means for THIS video
@@ -658,7 +719,44 @@ async function processVideo(sourcePath, options = {}) {
     for (let i = 0; i < candidates.length; i++) {
       const c = candidates[i];
       const energy = energies[i];
+
+      // Start the clip on a clean sentence, preferring the strongest opening
+      // line nearby - no more clips that begin mid-word.
+      if (videoWords) {
+        const snapped = brain.snapToSentence(videoWords, c.start, c.end);
+        if (snapped !== c.start && c.end - snapped >= mode.targetMin * 0.9) c.start = snapped;
+      }
+
       const dims = scoreDimensions(c, meta.duration, energy, mode, i, stats);
+
+      // The brain: content + speech + visuals + hook, read off the transcript.
+      const read = brain.analyzeMoment({
+        words: videoWords,
+        start: c.start,
+        end: c.end,
+        energy,
+        stats,
+        sceneTimes: scenes,
+        faceTrack: visualTrack,
+        mode,
+      });
+      if (read) {
+        dims.content = read.content;
+        dims.speech = read.speech;
+        dims.visual = read.visual;
+        dims.hookText = read.hook;
+        dims.quote = read.quote;
+        dims.wpm = read.wpm;
+        // Transcript understanding outweighs raw loudness.
+        dims.total = Math.min(99, Math.max(30, Math.round(dims.total * 0.35 + read.brain * 0.65)));
+        dims.viralScore = dims.total;
+        dims.hook = Math.round(dims.hook * 0.35 + read.hook * 0.65);
+        dims.reasons = [...read.reasons, ...(dims.reasons || [])].slice(0, 4);
+        dims.verdictKey =
+          dims.total >= 90 ? "viral" : dims.total >= 82 ? "strong" : dims.total >= 72 ? "good" : dims.total >= 60 ? "okay" : "low";
+        dims.verdict =
+          { viral: "Likely to go viral", strong: "Strong viral chance", good: "Good to post", okay: "Okay / test it", low: "Low priority" }[dims.verdictKey];
+      }
       if (trendSet) {
         let hits = 0;
         for (const w of videoWords) {
@@ -694,6 +792,7 @@ async function processVideo(sourcePath, options = {}) {
       verdict: c.dimensions.verdict,
       verdictKey: c.dimensions.verdictKey,
       reasons: c.dimensions.reasons || [],
+      quote: c.dimensions.quote || null,
       title: c.title,
       start: c.start,
       end: c.end,
@@ -752,7 +851,7 @@ async function processVideo(sourcePath, options = {}) {
       const vScore = c.dimensions.viralScore || c.score;
       const label = `#${i + 1} VIRAL ${vScore}`;
       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
-      await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode);
+      const layout = await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode, meta);
       if (options.subtitles || options.hook) {
         const er = await tryEnhanceClip(outFile, {
           clipDur: +(c.end - c.start).toFixed(2),
@@ -771,11 +870,13 @@ async function processVideo(sourcePath, options = {}) {
       }
       clips.push({
         rank: i + 1,
+        reframe: layout,
         score: c.score,
         viralScore: vScore,
         verdict: c.dimensions.verdict,
         verdictKey: c.dimensions.verdictKey,
         reasons: c.dimensions.reasons || [],
+        quote: c.dimensions.quote || null,
         title: c.title,
         start: c.start,
         end: c.end,
