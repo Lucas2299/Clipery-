@@ -1,0 +1,287 @@
+/**
+ * Story structure - the difference between "a sentence that sounded good" and
+ * "a clip that makes sense on its own".
+ *
+ * A moment that works as a short has a shape:
+ *
+ *     SETUP  ->  TENSION  ->  STATEMENT  ->  PAYOFF
+ *   "we had     "then the    "I lost a     "and that's why
+ *    six weeks   client        hundred        I read every
+ *    of runway"  pulled out"   grand"         contract now"
+ *
+ * The old flow picked the STATEMENT and cut a fixed 40 seconds around it, which
+ * is why clips opened mid-thought and ended before the punchline landed.
+ *
+ * This module:
+ *   1. labels every sentence in the transcript with its role in the arc
+ *   2. grows a window backwards until the viewer has the context to care
+ *   3. grows it forwards until the payoff has actually landed
+ *   4. reports how complete the result is, so incomplete clips score lower
+ *
+ * Pure text analysis - no model, no API key, runs offline.
+ */
+
+"use strict";
+
+const { wordsIn, textOf, sentences } = require("./brain");
+
+/* ------------------------------------------------------------------ *
+ * Sentence roles
+ * ------------------------------------------------------------------ */
+
+const ROLE_PATTERNS = [
+  // The resolution. What the whole thing was building to.
+  { role: "payoff", pts: 3, re: /\b(and that('s| is) (why|how|when|what)|so the (lesson|point|answer|result)|(it )?turn(s|ed) out|in the end|ended up|which is why|the moral|that('s| is) the (reason|lesson|point)|long story short|bottom line|what i learned)\b/i },
+  // Something at stake, going wrong, building pressure.
+  { role: "tension", pts: 2, re: /\b(but|however|until|suddenly|then (he|she|they|it|we|i)|the problem (was|is)|went wrong|realised|realized|found out|had no idea|didn't know|couldn't|almost|nearly|about to|worst part)\b/i },
+  // The quotable line itself.
+  { role: "statement", pts: 2, re: /\$\s?\d|\b\d+([.,]\d+)?\s?(k|m|%|percent|million|billion|thousand|dollars)\b|\b(hundred|thousand|million|billion)\b|\b(never|always|nobody|everyone|the (biggest|worst|best|only))\b|\b(i (lost|made|quit|failed|fired|blew|spent))\b/i },
+  // Background the viewer needs before any of it means anything.
+  { role: "setup", pts: 1, re: /\b(so (i|we|there)|back (then|in)|at the time|when i (was|started|joined|launched|built)|a few (years|months|weeks)|i was working|i (hired|started|built|launched) \\w+|the idea was|for context|basically what happened|let me explain)\b/i },
+];
+
+/**
+ * Podcast plumbing. These sentences are about the SHOW, not the story, so they
+ * are never worth keeping - they just burn the first seconds of a clip.
+ */
+const META_TALK = /\b(welcome (back|to)|before the break|after the break|this episode|the show|our sponsor|link in the (bio|description)|where were we|what (do|did) you think about|let's move on|next question)\b/i;
+
+/** Sentences that reference something the viewer has not been told yet. */
+// "So when I started my second company..." is fine - it explains itself.
+// "So then he said that..." is not: who is he, what did he say before?
+// Only the second shape counts as dangling.
+const DANGLING_START = /^((and|but|so|because|which|then|also|plus)\s+(he|she|they|it|that|this|those|these|there)\b|(he|she|they|it|this|that|those|these)\s|(and|but|because|which)\s+(the|his|her|their)\b)/i;
+const DANGLING_REF = /\b(that (thing|guy|one|part|idea)|as i (said|mentioned)|like i said|the one i (just )?(mentioned|talked about)|going back to)\b/i;
+
+/**
+ * Label every sentence in a window (or the whole transcript).
+ * @returns Array<{start,end,text,role,weight}>
+ */
+function beats(words, from = 0, to = Infinity) {
+  const list = wordsIn(words, from, to);
+  return sentences(list)
+    .filter((s) => s.length)
+    .map((s) => {
+      const text = textOf(s);
+      let role = "filler";
+      let weight = 0;
+      for (const p of ROLE_PATTERNS) {
+        if (p.re.test(text) && p.pts > weight) {
+          role = p.role;
+          weight = p.pts;
+        }
+      }
+      // A question is tension: it makes you wait for the answer.
+      if (role === "filler" && /\?/.test(text)) {
+        role = "tension";
+        weight = 2;
+      }
+      // Show plumbing is not story.
+      if (META_TALK.test(text)) {
+        role = "filler";
+        weight = 0;
+      }
+      // Very short acknowledgements are never a beat.
+      if (s.length <= 3) {
+        role = "filler";
+        weight = 0;
+      }
+      return {
+        start: Number(s[0].s),
+        end: Number(s[s.length - 1].e || s[s.length - 1].s),
+        text,
+        words: s.length,
+        role,
+        weight,
+      };
+    });
+}
+
+/* ------------------------------------------------------------------ *
+ * Context check - would a stranger understand this clip?
+ * ------------------------------------------------------------------ */
+
+/**
+ * Score how self-contained a window is, 0..100, plus what is missing.
+ */
+function contextCheck(words, start, end) {
+  const list = wordsIn(words, start, end);
+  if (list.length < 6) return { score: 40, complete: false, missing: ["too little speech"] };
+
+  const arc = beats(words, start, end);
+  const roles = new Set(arc.filter((b) => b.role !== "filler").map((b) => b.role));
+  const first = arc[0];
+  const last = arc[arc.length - 1];
+  const missing = [];
+  let score = 55;
+
+  // Does it open on something the viewer can follow?
+  if (first && DANGLING_START.test(first.text)) {
+    score -= 14;
+    missing.push("opens mid-thought");
+  }
+  if (first && DANGLING_REF.test(first.text)) {
+    score -= 12;
+    missing.push("refers to something not shown");
+  }
+
+  // The arc itself.
+  if (roles.has("setup")) score += 10;
+  if (roles.has("tension")) score += 12;
+  if (roles.has("statement")) score += 12;
+  if (roles.has("payoff")) score += 18;
+  else {
+    missing.push("no payoff");
+    score -= 6;
+  }
+
+  // Does it end on a finished sentence, or get chopped off?
+  const tail = list[list.length - 1];
+  const endsClean = tail && /[.!?]"?$/.test(String(tail.w || ""));
+  if (!endsClean) {
+    score -= 10;
+    missing.push("cut off at the end");
+  }
+  // A question left hanging at the very end is a broken clip, not a cliffhanger.
+  if (last && /\?$/.test(last.text) && arc.length > 1) {
+    score -= 8;
+    missing.push("ends on an unanswered question");
+  }
+
+  return {
+    score: Math.max(5, Math.min(99, Math.round(score))),
+    complete: !missing.length,
+    missing,
+    roles: [...roles],
+    beats: arc.length,
+  };
+}
+
+/* ------------------------------------------------------------------ *
+ * Exact start / end from the arc
+ * ------------------------------------------------------------------ */
+
+/**
+ * Given a rough window, find the real edges of the story it contains.
+ *
+ * Walks backwards from the strongest line to pick up the setup the viewer
+ * needs, then forwards until the payoff lands - while staying inside the
+ * mode's length rules.
+ *
+ * @returns {{start,end,anchor,context,reasons}}
+ */
+function findArc(words, start, end, opts = {}) {
+  const minLen = opts.min || 30;
+  const maxLen = opts.max || 50;
+  const hardStart = Math.max(0, start - (opts.lookBack != null ? opts.lookBack : 25));
+  const hardEnd = Math.min(opts.duration || end + 25, end + (opts.lookAhead != null ? opts.lookAhead : 25));
+
+  const arc = beats(words, hardStart, hardEnd);
+  if (arc.length < 2) return { start, end, anchor: null, context: contextCheck(words, start, end), reasons: [] };
+
+  // The anchor: the strongest beat that actually sits inside the original
+  // window - that is the moment the scorer liked.
+  const inside = arc.filter((b) => b.start >= start - 1 && b.end <= end + 1);
+  const pool = inside.length ? inside : arc;
+  const anchor = pool.reduce((best, b) => {
+    const rank = b.weight * 10 + Math.min(20, b.words) / 10;
+    const bestRank = best ? best.weight * 10 + Math.min(20, best.words) / 10 : -1;
+    return rank > bestRank ? b : best;
+  }, null);
+  if (!anchor) return { start, end, anchor: null, context: contextCheck(words, start, end), reasons: [] };
+
+  const ai = arc.indexOf(anchor);
+  const reasons = [];
+
+  // ---- backwards: collect setup until the clip makes sense on its own ----
+  let i = ai;
+  let needContext = DANGLING_START.test(anchor.text) || DANGLING_REF.test(anchor.text);
+  while (i > 0) {
+    const prev = arc[i - 1];
+    const wouldBe = anchor.end - prev.start;
+    if (wouldBe > maxLen) break;
+    const useful = prev.role === "setup" || prev.role === "tension" || needContext;
+    if (!useful && wouldBe > minLen) break;
+    // Never open the clip on filler ("Alright, so, um, where were we") or on
+    // show plumbing. If the clip ends up short, we pad it forwards instead -
+    // a wasted first second is the most expensive second in a short.
+    if (prev.role === "filler" && !needContext) break;
+    // Do not open on a dangling sentence either - keep walking back if we can.
+    i--;
+    needContext = DANGLING_START.test(prev.text) || DANGLING_REF.test(prev.text);
+    if (prev.role === "setup") reasons.push("kept the setup");
+    if (prev.role === "tension") reasons.push("kept the build-up");
+  }
+
+  // ---- forwards: run on until the payoff lands ----
+  let j = ai;
+  let sawPayoff = anchor.role === "payoff";
+  while (j < arc.length - 1) {
+    const next = arc[j + 1];
+    const wouldBe = next.end - arc[i].start;
+    if (wouldBe > maxLen) break;
+    if (sawPayoff && wouldBe > minLen && next.role === "filler") break;
+    j++;
+    if (next.role === "payoff") {
+      sawPayoff = true;
+      reasons.push("ran on to the payoff");
+    }
+  }
+
+  // ---- still too short? pad with whatever neighbouring speech exists ----
+  let s = arc[i].start;
+  let e = arc[j].end;
+  while (e - s < minLen && (i > 0 || j < arc.length - 1)) {
+    // Grow forwards first: extra seconds at the end cost nothing, extra
+    // seconds at the front cost the hook.
+    const canFwd = j < arc.length - 1 && arc[j + 1].end - s <= maxLen;
+    const canBack = i > 0 && arc[i - 1].role !== "filler" && anchor.end - arc[i - 1].start <= maxLen;
+    if (canFwd) {
+      j++;
+      e = arc[j].end;
+    } else if (canBack) {
+      i--;
+      s = arc[i].start;
+    } else break;
+  }
+
+  // Trim trailing "right, yeah, exactly" - end on the payoff, not on the
+  // other host agreeing.
+  while (j > ai && arc[j].role === "filler" && arc[j - 1].end - arc[i].start >= minLen * 0.8) j--;
+  e = arc[j].end;
+
+  // Breathing room: a beat before the first word, a beat after the last -
+  // but never far enough to catch the start of the NEXT sentence, which would
+  // make the clip look chopped off.
+  const prevBeat = arc[i - 1];
+  const nextBeat = arc[j + 1];
+  const headroom = prevBeat ? Math.min(0.25, Math.max(0, (s - prevBeat.end) / 2)) : 0.25;
+  const tailroom = nextBeat ? Math.min(0.45, Math.max(0, (nextBeat.start - e) * 0.8)) : 0.45;
+  s = Math.max(0, +(s - headroom).toFixed(2));
+  e = +Math.min(opts.duration || e + tailroom, e + tailroom).toFixed(2);
+  if (e - s > maxLen) e = +(s + maxLen).toFixed(2);
+
+  return {
+    start: s,
+    end: e,
+    anchor: { start: anchor.start, end: anchor.end, text: anchor.text, role: anchor.role },
+    context: contextCheck(words, s, e),
+    reasons: [...new Set(reasons)],
+  };
+}
+
+/**
+ * Arc quality as a 0..100 dimension: does this window tell a whole little
+ * story, or is it a fragment?
+ */
+function arcScore(words, start, end) {
+  const ctx = contextCheck(words, start, end);
+  const roles = new Set(ctx.roles || []);
+  let score = ctx.score;
+  // Full shape present = the good stuff.
+  if (roles.has("tension") && roles.has("payoff")) score += 8;
+  if (roles.has("setup") && roles.has("statement") && roles.has("payoff")) score += 6;
+  return { score: Math.max(5, Math.min(99, Math.round(score))), ...ctx };
+}
+
+module.exports = { beats, contextCheck, findArc, arcScore };

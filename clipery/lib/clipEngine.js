@@ -5,6 +5,7 @@ const { promisify } = require("util");
 const crypto = require("crypto");
 const { tryEnhanceClip, transcribeToWords } = require("./subtitles");
 const brain = require("./brain");
+const story = require("./story");
 const { reframeFilter } = require("./reframe");
 
 const execFileAsync = promisify(execFile);
@@ -529,6 +530,16 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
   return rf.layout;
 }
 
+/** Clips per source video for this account (plan limit, capped by the mode). */
+function clipBudgetFor(mode, options) {
+  return Math.max(1, Math.min(mode.maxClips, Number(options && options.maxClips) || mode.maxClips));
+}
+
+/** "kept the setup" -> "Kept the setup" */
+function cap(s) {
+  return String(s).charAt(0).toUpperCase() + String(s).slice(1);
+}
+
 function jobPath(id) {
   return path.join(JOBS_DIR, `${id}.json`);
 }
@@ -740,6 +751,12 @@ async function processVideo(sourcePath, options = {}) {
         faceTrack: visualTrack,
         mode,
       });
+      const arc = videoWords ? story.arcScore(videoWords, c.start, c.end) : null;
+      if (arc) {
+        dims.arc = arc.score;
+        dims.complete = arc.complete;
+        dims.missing = arc.missing;
+      }
       if (read) {
         dims.content = read.content;
         dims.speech = read.speech;
@@ -748,10 +765,18 @@ async function processVideo(sourcePath, options = {}) {
         dims.quote = read.quote;
         dims.wpm = read.wpm;
         // Transcript understanding outweighs raw loudness.
-        dims.total = Math.min(99, Math.max(30, Math.round(dims.total * 0.35 + read.brain * 0.65)));
+        const blended = arc
+          ? dims.total * 0.28 + read.brain * 0.52 + arc.score * 0.2
+          : dims.total * 0.35 + read.brain * 0.65;
+        dims.total = Math.min(99, Math.max(30, Math.round(blended)));
         dims.viralScore = dims.total;
         dims.hook = Math.round(dims.hook * 0.35 + read.hook * 0.65);
-        dims.reasons = [...read.reasons, ...(dims.reasons || [])].slice(0, 4);
+        const arcWhy = [];
+        if (arc && arc.roles) {
+          if (arc.roles.includes("payoff")) arcWhy.push("Complete story with a payoff");
+          else if (arc.roles.includes("tension")) arcWhy.push("Builds tension");
+        }
+        dims.reasons = [...arcWhy, ...read.reasons, ...(dims.reasons || [])].slice(0, 4);
         dims.verdictKey =
           dims.total >= 90 ? "viral" : dims.total >= 82 ? "strong" : dims.total >= 72 ? "good" : dims.total >= 60 ? "okay" : "low";
         dims.verdict =
@@ -778,10 +803,64 @@ async function processVideo(sourcePath, options = {}) {
 
     scored.sort((a, b) => b.score - a.score);
 
+    // ---- Context pass -------------------------------------------------
+    // Take the strongest candidates and work out their REAL edges: walk back
+    // far enough that the viewer understands why the moment matters, and run
+    // on far enough that the payoff actually lands. Then re-score, because a
+    // clip that now tells a whole story deserves a better number than the
+    // fragment we started with.
+    if (videoWords) {
+      job.stage = "checking_context";
+      writeJob(job);
+      const shortlist = scored.slice(0, Math.max(10, clipBudgetFor(mode, options) * 3));
+      for (const c of shortlist) {
+        const arc = story.findArc(videoWords, c.start, c.end, {
+          min: mode.targetMin,
+          max: mode.targetMax,
+          duration: meta.duration,
+        });
+        if (!arc || arc.end - arc.start < mode.targetMin * 0.85) continue;
+
+        const before = c.dimensions.arc || 0;
+        const after = story.arcScore(videoWords, arc.start, arc.end);
+        if (after.score + 2 < before) continue; // the trim made it worse, keep the original
+
+        c.start = arc.start;
+        c.end = arc.end;
+        c.dimensions.arc = after.score;
+        c.dimensions.complete = after.complete;
+        c.dimensions.missing = after.missing;
+        c.dimensions.anchor = arc.anchor ? arc.anchor.text : null;
+        const read = brain.analyzeMoment({
+          words: videoWords,
+          start: arc.start,
+          end: arc.end,
+          energy: { energy: stats.avgEnergy, punch: stats.avgPunch },
+          stats,
+          sceneTimes: scenes,
+          faceTrack: visualTrack,
+          mode,
+        });
+        if (read) {
+          c.dimensions.quote = read.quote;
+          c.dimensions.hook = Math.round(c.dimensions.hook * 0.4 + read.hook * 0.6);
+          c.score = c.dimensions.total = Math.min(
+            99,
+            Math.max(30, Math.round(c.dimensions.total * 0.45 + read.brain * 0.35 + after.score * 0.2))
+          );
+          c.dimensions.viralScore = c.score;
+          if (arc.reasons.length) {
+            c.dimensions.reasons = [...arc.reasons.map(cap), ...(c.dimensions.reasons || [])].slice(0, 4);
+          }
+        }
+      }
+      scored.sort((a, b) => b.score - a.score);
+    }
+
     // The clips we will actually ship (score-ranked, non-overlapping, spread
     // across the whole source) - also used for the post-order preview.
     // How many clips this account gets out of one source video
-    const clipBudget = Math.max(1, Math.min(mode.maxClips, Number(options.maxClips) || mode.maxClips));
+    const clipBudget = clipBudgetFor(mode, options);
     const previewTop = pickDiverse(scored, Math.min(clipBudget, scored.length), meta.duration);
 
     // Full viral leaderboard (all analyzed moments)
