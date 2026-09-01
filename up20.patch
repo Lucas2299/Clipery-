@@ -1,15 +1,3 @@
-diff --git a/clipery/package.json b/clipery/package.json
-index d3ab4a0..25ff7f1 100644
---- a/clipery/package.json
-+++ b/clipery/package.json
-@@ -4,6 +4,7 @@
-   "description": "Clipery — AI long-form to ranked viral clips",
-   "main": "server.js",
-   "scripts": {
-+    "doctor": "node scripts/doctor.js",
-     "start": "node server.js",
-     "dev": "node server.js"
-   },
 diff --git a/clipery/scripts/doctor.js b/clipery/scripts/doctor.js
 new file mode 100644
 index 0000000..c13e001
