@@ -10,14 +10,21 @@ if ! command -v node >/dev/null || [ "$(node -v | cut -dv -f2 | cut -d. -f1)" -l
 fi
 node -v
 
-echo "== 2/4 Video tools (ffmpeg, ffprobe) =="
-apt-get update && apt-get install -y ffmpeg python3 python3-pip
+echo "== 2/4 Video tools (ffmpeg, ffprobe, fonts) =="
+apt-get update && apt-get install -y ffmpeg python3 python3-pip \
+  fonts-dejavu-core fontconfig libglib2.0-0
 
-echo "== 3/4 Downloader + subtitle engine (yt-dlp, PocketSphinx) =="
-pip3 install --break-system-packages yt-dlp pocketsphinx 2>/dev/null \
-  || pip3 install yt-dlp pocketsphinx
+echo "== 3/4 Brains (yt-dlp, whisper transcript, OpenCV face tracking) =="
+# faster-whisper       -> transcript: hooks, story beats, payoff, captions
+# opencv-python-headless -> smart reframing: the crop follows the speaker
+# yt-dlp               -> paste-a-link downloads
+# pocketsphinx         -> tiny fallback if whisper is unavailable
+PKGS="yt-dlp faster-whisper opencv-python-headless pocketsphinx"
+pip3 install --break-system-packages $PKGS 2>/dev/null \
+  || pip3 install $PKGS
 
-echo "== 4/4 Done =="
+echo "== 4/4 Checking what made it =="
+node clipery/scripts/doctor.js 2>/dev/null || node scripts/doctor.js 2>/dev/null || true
 echo ""
 echo "Now run your site:"
 echo "  cd clipery"

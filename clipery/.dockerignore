@@ -3,3 +3,11 @@ node_modules
 tmp
 *.log
 .DS_Store
+
+# User content - these belong on a mounted volume, not baked into the image
+data/jobs
+data/users.json
+data/sessions.json
+public/clips
+uploads
+.env
