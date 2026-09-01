@@ -728,15 +728,17 @@ index 755db6e..8987e09 100644
          start: c.start,
          end: c.end,
 diff --git a/clipery/lib/facedetect.py b/clipery/lib/facedetect.py
-index ee72a31..c09a4e4 100644
+index ee72a31..27bae6a 100644
 --- a/clipery/lib/facedetect.py
 +++ b/clipery/lib/facedetect.py
-@@ -5,8 +5,17 @@ Usage: facedetect.py <media> <start_sec> <end_sec>
- Prints JSON: {"ok": true, "x": 0.62, "faces": 9}  — median face centre fraction,
+@@ -6,7 +6,20 @@ Prints JSON: {"ok": true, "x": 0.62, "faces": 9}  — median face centre fractio
  or {"ok": false, "reason": "..."} when there is nothing to lock onto.
  
--The crop in clipEngine then centres the 9:16 frame on that point, so the
+ The crop in clipEngine then centres the 9:16 frame on that point, so the
 -camera quietly follows the speaker instead of cropping dead centre.
++camera follows whoever is talking (A -> B -> A) instead of staying nailed
++to the centre of the frame.
++
 +The full answer also carries a TRACK, so the crop can move over time:
 +
 +  {"ok": true,
@@ -751,7 +753,7 @@ index ee72a31..c09a4e4 100644
  
  Requires: pip install opencv-python-headless
  """
-@@ -14,8 +23,24 @@ import json
+@@ -14,8 +27,24 @@ import json
  import sys
  
  
@@ -776,7 +778,7 @@ index ee72a31..c09a4e4 100644
      try:
          import cv2
      except Exception:
-@@ -27,10 +52,19 @@ def main() -> None:
+@@ -27,10 +56,19 @@ def main() -> None:
          print(json.dumps({"ok": False, "reason": "open-failed"}))
          return
  
@@ -799,7 +801,7 @@ index ee72a31..c09a4e4 100644
      t = start
      while t < end:
          cap.set(cv2.CAP_PROP_POS_MSEC, t * 1000)
-@@ -38,21 +72,75 @@ def main() -> None:
+@@ -38,21 +76,75 @@ def main() -> None:
          if not ok:
              t += step
              continue
