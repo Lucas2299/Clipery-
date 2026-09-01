@@ -1,11 +1,12 @@
 {
   "name": "clipery",
   "version": "1.0.0",
-  "description": "Clipery — AI long-form to ranked viral clips",
+  "description": "Clipery \u2014 AI long-form to ranked viral clips",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "doctor": "node scripts/doctor.js"
   },
   "engines": {
     "node": ">=18"
