@@ -16,6 +16,11 @@ services:
       - "3000:3000"
     environment:
       PORT: 3000
+      # Your public address once you have a domain - also switches the login
+      # cookie to Secure and fixes the Google redirect URI.
+      # BASE_URL: https://yourdomain.com
+      # Delete clips older than this many days (0 = keep forever)
+      CLIPERY_RETENTION_DAYS: 30
       # Owner accounts for the dashboard (comma separated).
       # ADMIN_EMAILS: you@example.com
       # Google sign-in, if you use it:

@@ -102,7 +102,25 @@ function parseCookies(req) {
   return out;
 }
 
-function sessionCookie(token, maxAgeSec) {
+/**
+ * Is this request coming in over HTTPS? Behind a host's load balancer the app
+ * itself still speaks plain HTTP, so the only honest signal is the proxy
+ * header (or BASE_URL, which you set when you deploy).
+ */
+function isSecureRequest(req) {
+  if (String(process.env.BASE_URL || "").startsWith("https://")) return true;
+  if (!req) return false;
+  const proto = String(req.headers["x-forwarded-proto"] || "").split(",")[0].trim();
+  if (proto) return proto === "https";
+  return !!(req.socket && req.socket.encrypted);
+}
+
+/**
+ * The session cookie. On HTTPS it gets the Secure flag so browsers refuse to
+ * send it over plain HTTP - without that, anyone on the same network can lift
+ * a login. On localhost it must stay off, or you could never log in locally.
+ */
+function sessionCookie(token, maxAgeSec, req) {
   const bits = [
     `${COOKIE}=${token}`,
     "Path=/",
@@ -110,6 +128,7 @@ function sessionCookie(token, maxAgeSec) {
     "SameSite=Lax",
     `Max-Age=${maxAgeSec}`,
   ];
+  if (isSecureRequest(req)) bits.push("Secure");
   return bits.join("; ");
 }
 
@@ -192,7 +211,7 @@ function loginUser({ email, password }) {
 
 /* --------------------------------- sessions -------------------------------- */
 
-function createSession(userId) {
+function createSession(userId, req) {
   const token = crypto.randomBytes(32).toString("hex");
   const maxAgeSec = SESSION_DAYS * 24 * 60 * 60;
   const sessions = readSessions();
@@ -203,7 +222,7 @@ function createSession(userId) {
     expires: Date.now() + maxAgeSec * 1000,
   });
   writeSessions(sessions);
-  return { token, cookie: sessionCookie(token, maxAgeSec) };
+  return { token, cookie: sessionCookie(token, maxAgeSec, req) };
 }
 
 function destroySession(token) {
@@ -221,7 +240,7 @@ function currentUser(req) {
   return user || null;
 }
 
-const clearCookie = () => sessionCookie("", 0);
+const clearCookie = (req) => sessionCookie("", 0, req);
 
 
 /* ---------------------------------- plans ---------------------------------- */
@@ -365,6 +384,7 @@ module.exports = {
   publicUser,
   parseCookies,
   clearCookie,
+  isSecureRequest,
   isValidEmail,
   PLANS,
   planOf,
