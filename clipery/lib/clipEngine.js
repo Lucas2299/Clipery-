@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const { promisify } = require("util");
 const crypto = require("crypto");
-const { tryEnhanceClip, transcribeToWords } = require("./subtitles");
+const { prepareClipAss, transcribeToWords } = require("./subtitles");
 const brain = require("./brain");
 const story = require("./story");
 const { reframeFilter } = require("./reframe");
@@ -486,7 +486,19 @@ function escapeDrawtext(s) {
     .replace(/%/g, "%%");
 }
 
-async function renderClip(source, outFile, start, end, label, sublabel, mode, srcMeta) {
+// One switch for old or low-power machines: CLIPERY_FAST=1 picks the quick
+// end of every trade-off (tiny speech model, fastest encoder preset).
+const FAST_MODE = process.env.CLIPERY_FAST === "1";
+if (FAST_MODE && !process.env.CLIPERY_WHISPER_MODEL) {
+  process.env.CLIPERY_WHISPER_MODEL = "tiny";
+}
+
+// Encoder speed knobs for slow machines. "ultrafast" roughly halves encode
+// time again at the cost of a bigger file; "veryfast" is the balanced default.
+const ENCODE_PRESET = process.env.CLIPERY_PRESET || (FAST_MODE ? "ultrafast" : "veryfast");
+const ENCODE_CRF = String(process.env.CLIPERY_CRF || (FAST_MODE ? 26 : 24));
+
+async function renderClip(source, outFile, start, end, label, sublabel, mode, srcMeta, subOpts) {
   const dur = Math.max(0.5, end - start);
   const targetW = 608;
   const targetH = 1080;
@@ -509,9 +521,21 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
   ];
 
+  // Captions are prepared from the source audio BEFORE the encode so they can
+  // ride along in this same filter chain. Two encodes per clip became one.
+  let sub = null;
+  if (subOpts) {
+    try {
+      sub = await prepareClipAss(source, start, dur, outFile, subOpts);
+    } catch (e) {
+      console.warn("[subtitles] prepare failed:", e.message);
+    }
+  }
+  const subFilter = sub ? [sub.filter] : [];
+
   // The zoom-out layout needs split/overlay, so it must go through
   // -filter_complex; the simple crop chains stay on -vf exactly as before.
-  const graph = [rf.filter, ...extras].join(",");
+  const graph = [rf.filter, ...extras, ...subFilter].join(",");
   const flag = rf.filter.includes("split=") ? "-filter_complex" : "-vf";
 
   const encode = (filterFlag, filterGraph) =>
@@ -533,9 +557,9 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
         "-c:v",
         "libx264",
         "-preset",
-        "veryfast",
+        ENCODE_PRESET,
         "-crf",
-        "24",
+        ENCODE_CRF,
         "-pix_fmt",
         "yuv420p",
         "-c:a",
@@ -549,6 +573,19 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
       { timeout: 200000 }
     );
 
+  const dropAss = () => {
+    if (sub && sub.assPath) {
+      try { fs.unlinkSync(sub.assPath); } catch {}
+    }
+  };
+
+  const result = (layout) => ({
+    layout,
+    subtitlesApplied: !!(sub && sub.subtitlesApplied),
+    hookApplied: !!(sub && sub.hookApplied),
+    hookText: sub ? sub.hookText : null,
+  });
+
   try {
     await encode(flag, graph);
   } catch (e) {
@@ -559,14 +596,22 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
       (srcMeta && srcMeta.width) || 1920,
       Math.round((((srcMeta && srcMeta.height) || 1080) * targetW) / targetH)
     );
-    await encode(
-      "-vf",
-      [`crop=${cropW}:ih:x=(iw-${cropW})/2:y=0`, `scale=${targetW}:${targetH}`, ...extras].join(",")
-    );
-    return "center";
+    const plain = [`crop=${cropW}:ih:x=(iw-${cropW})/2:y=0`, `scale=${targetW}:${targetH}`, ...extras];
+    try {
+      await encode("-vf", [...plain, ...subFilter].join(","));
+    } catch (e2) {
+      // Last resort: no captions rather than no clip.
+      console.warn(`[subtitles] burn-in failed (${e2.message.split("\n")[0]}) -> plain clip`);
+      await encode("-vf", plain.join(","));
+      dropAss();
+      sub = null;
+    }
+    dropAss();
+    return result("center");
   }
 
-  return rf.layout;
+  dropAss();
+  return result(rf.layout);
 }
 
 /** Clips per source video for this account (plan limit, capped by the mode). */
@@ -996,21 +1041,34 @@ async function processVideo(sourcePath, options = {}) {
       const vScore = c.dimensions.viralScore || c.score;
       const label = `#${i + 1} VIRAL ${vScore}`;
       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
-      const layout = await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode, meta);
-      if (options.subtitles || options.hook) {
-        const er = await tryEnhanceClip(outFile, {
-          clipDur: +(c.end - c.start).toFixed(2),
-          subStyle: options.subtitles ? options.subStyle : null,
-          hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
-          trends: options.trends,
-        });
-        if (er.subtitlesApplied) job.subtitlesApplied = true;
-        if (er.hookApplied) {
+      const wantExtras = !!(options.subtitles || options.hook);
+      const rendered = await renderClip(
+        sourcePath,
+        outFile,
+        c.start,
+        c.end,
+        label,
+        sub,
+        mode,
+        meta,
+        wantExtras
+          ? {
+              clipDur: +(c.end - c.start).toFixed(2),
+              subStyle: options.subtitles ? options.subStyle : null,
+              hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+              trends: options.trends,
+            }
+          : null
+      );
+      const layout = rendered.layout;
+      if (wantExtras) {
+        if (rendered.subtitlesApplied) job.subtitlesApplied = true;
+        if (rendered.hookApplied) {
           job.hookApplied = true;
-          if (er.hookText && !job.hookText) job.hookText = er.hookText;
+          if (rendered.hookText && !job.hookText) job.hookText = rendered.hookText;
         }
-        if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
-          job.subtitlesNote = `captions skipped (${er.reason})`;
+        if (!rendered.subtitlesApplied && !rendered.hookApplied) {
+          job.subtitlesNote = "captions skipped (no speech detected)";
         }
       }
       clips.push({
