@@ -1,0 +1,30 @@
+# Run the whole thing with one command:  docker compose up --build
+# Then open http://localhost:3000
+#
+# Everything - ffmpeg, yt-dlp, the whisper transcript engine and the OpenCV
+# face tracker - is installed inside the image. Nothing to install on your PC
+# except Docker itself.
+
+services:
+  clipery:
+    build:
+      context: .
+      args:
+        # tiny = fastest, base = good balance, small = most accurate
+        WHISPER_MODEL: base
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      # Owner accounts for the dashboard (comma separated).
+      # ADMIN_EMAILS: you@example.com
+      # Google sign-in, if you use it:
+      # GOOGLE_CLIENT_ID: ""
+      # GOOGLE_CLIENT_SECRET: ""
+    volumes:
+      # Accounts, jobs and rendered clips survive a rebuild because they live
+      # on the host, not inside the container.
+      - ./data:/app/data
+      - ./public/clips:/app/public/clips
+      - ./uploads:/app/uploads
+    restart: unless-stopped
