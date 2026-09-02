@@ -1,0 +1,1714 @@
+{
+  "id": "e09eddcedf9c",
+  "userId": "a5fdcea12490c893",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-09-02T17:34:34.514Z",
+  "sourceName": "e09eddcedf9c-src.mp4",
+  "subtitles": true,
+  "hook": false,
+  "hookMode": "intro",
+  "clips": [
+    {
+      "rank": 1,
+      "reframe": "follow",
+      "score": 72,
+      "viralScore": 72,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Surprising turn",
+        "Useful takeaway",
+        "Fast, energetic delivery"
+      ],
+      "quote": "How do we break that pattern in a way that actually makes it different than is easy eno...",
+      "title": "Cold-open hook",
+      "start": 24.18,
+      "end": 65.71,
+      "duration": 41.53,
+      "dimensions": {
+        "total": 72,
+        "viralScore": 72,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Surprising turn",
+          "Useful takeaway",
+          "Fast, energetic delivery"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 45,
+        "replay": 79,
+        "energy": 61,
+        "punch": 92,
+        "arc": 73,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 89,
+        "speech": 60,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "How do we break that pattern in a way that actually makes it different than is easy eno...",
+        "wpm": 189,
+        "anchor": "How do we break that pattern in a way that actually makes it different than is easy enough as a starting point?"
+      },
+      "url": "/clips/e09eddcedf9c/clip-1.mp4",
+      "downloadName": "viral-72-rank1-e09eddcedf9c.mp4",
+      "postTip": "Post this first - highest viral chance"
+    },
+    {
+      "rank": 2,
+      "reframe": "follow",
+      "score": 69,
+      "viralScore": 69,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Hook: opens with a question",
+        "Asks a question",
+        "Question then answer"
+      ],
+      "quote": "How bad does it have to get?",
+      "title": "High-energy cut",
+      "start": 562.25,
+      "end": 601.83,
+      "duration": 39.58,
+      "dimensions": {
+        "total": 69,
+        "viralScore": 69,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Hook: opens with a question",
+          "Asks a question",
+          "Question then answer"
+        ],
+        "hook": 68,
+        "length": 98,
+        "pacing": 77,
+        "retention": 90,
+        "cta": 45,
+        "replay": 77,
+        "energy": 62,
+        "punch": 93,
+        "arc": 65,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "content": 63,
+        "speech": 60,
+        "visual": 66,
+        "hookText": 67,
+        "quote": "How bad does it have to get?",
+        "wpm": 190
+      },
+      "url": "/clips/e09eddcedf9c/clip-2.mp4",
+      "downloadName": "viral-69-rank2-e09eddcedf9c.mp4",
+      "postTip": "Strong follow-up post"
+    },
+    {
+      "rank": 3,
+      "reframe": "follow",
+      "score": 68,
+      "viralScore": 68,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Complete story with a payoff",
+        "Tells a story",
+        "Dramatic pause",
+        "Visually active"
+      ],
+      "quote": "Then you get good at it and gets to be instrumental, gets to be fun.",
+      "title": "High-energy cut",
+      "start": 733.7,
+      "end": 761.74,
+      "duration": 28.04,
+      "dimensions": {
+        "total": 68,
+        "viralScore": 68,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Complete story with a payoff",
+          "Tells a story",
+          "Dramatic pause",
+          "Visually active"
+        ],
+        "hook": 55,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 45,
+        "replay": 77,
+        "energy": 60,
+        "punch": 94,
+        "arc": 85,
+        "complete": true,
+        "missing": [],
+        "content": 58,
+        "speech": 58,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "Then you get good at it and gets to be instrumental, gets to be fun.",
+        "wpm": 161,
+        "anchor": "And that's what I want for everybody."
+      },
+      "url": "/clips/e09eddcedf9c/clip-3.mp4",
+      "downloadName": "viral-68-rank3-e09eddcedf9c.mp4",
+      "postTip": "Strong follow-up post"
+    },
+    {
+      "rank": 4,
+      "reframe": "follow",
+      "score": 68,
+      "viralScore": 68,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "Builds tension",
+        "Surprising turn",
+        "Asks a question"
+      ],
+      "quote": "how could I involve my experience?",
+      "title": "Viral angle",
+      "start": 983.43,
+      "end": 1026.61,
+      "duration": 43.18,
+      "dimensions": {
+        "total": 68,
+        "viralScore": 68,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "Builds tension",
+          "Surprising turn",
+          "Asks a question"
+        ],
+        "hook": 69,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 90,
+        "replay": 77,
+        "energy": 60,
+        "punch": 93,
+        "arc": 65,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "content": 70,
+        "speech": 68,
+        "visual": 70,
+        "hookText": 52,
+        "quote": "how could I involve my experience?",
+        "wpm": 188,
+        "anchor": "Now, you may have to search for some answers of the best model to build, or you may actually have a long contemplation and start to go, the next time that happens, I think I'm going to do this or I'm going to do that or I'm going to plan my behaviors,"
+      },
+      "url": "/clips/e09eddcedf9c/clip-4.mp4",
+      "downloadName": "viral-68-rank4-e09eddcedf9c.mp4",
+      "postTip": "Schedule later / A-B test"
+    },
+    {
+      "rank": 5,
+      "reframe": "follow",
+      "score": 68,
+      "viralScore": 68,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Strong claim",
+        "Dramatic pause",
+        "Visually active"
+      ],
+      "quote": "You had to call it the void where there's just not a lot of happening.",
+      "title": "High-energy cut",
+      "start": 821.99,
+      "end": 861.12,
+      "duration": 39.13,
+      "dimensions": {
+        "total": 68,
+        "viralScore": 68,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Strong claim",
+          "Dramatic pause",
+          "Visually active"
+        ],
+        "hook": 61,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 70,
+        "replay": 77,
+        "energy": 61,
+        "punch": 93,
+        "arc": 71,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 57,
+        "speech": 61,
+        "visual": 70,
+        "hookText": 57,
+        "quote": "You had to call it the void where there's just not a lot of happening.",
+        "wpm": 154
+      },
+      "url": "/clips/e09eddcedf9c/clip-5.mp4",
+      "downloadName": "viral-68-rank5-e09eddcedf9c.mp4",
+      "postTip": "Schedule later / A-B test"
+    },
+    {
+      "rank": 6,
+      "reframe": "follow",
+      "score": 65,
+      "viralScore": 65,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Fast, energetic delivery",
+        "Visually active",
+        "Good pacing"
+      ],
+      "quote": "was those moments that got them to this moment.",
+      "title": "High-energy cut",
+      "start": 1181.99,
+      "end": 1224.52,
+      "duration": 42.53,
+      "dimensions": {
+        "total": 65,
+        "viralScore": 65,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Fast, energetic delivery",
+          "Visually active",
+          "Good pacing"
+        ],
+        "hook": 64,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 90,
+        "replay": 78,
+        "energy": 61,
+        "punch": 93,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 50,
+        "speech": 63,
+        "visual": 62,
+        "hookText": 60,
+        "quote": "was those moments that got them to this moment.",
+        "wpm": 178
+      },
+      "url": "/clips/e09eddcedf9c/clip-6.mp4",
+      "downloadName": "viral-65-rank6-e09eddcedf9c.mp4",
+      "postTip": "Schedule later / A-B test"
+    },
+    {
+      "rank": 7,
+      "reframe": "follow",
+      "score": 62,
+      "viralScore": 62,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Tells a story",
+        "Concrete numbers",
+        "Fast, energetic delivery"
+      ],
+      "quote": "Well, the stronger the emotion you feel from reaction from that event, the more altered...",
+      "title": "Viral angle",
+      "start": 238.86,
+      "end": 266.45,
+      "duration": 27.59,
+      "dimensions": {
+        "total": 62,
+        "viralScore": 62,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Tells a story",
+          "Concrete numbers",
+          "Fast, energetic delivery"
+        ],
+        "hook": 55,
+        "length": 98,
+        "pacing": 72,
+        "retention": 87,
+        "cta": 45,
+        "replay": 75,
+        "energy": 57,
+        "punch": 92,
+        "arc": 51,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "content": 85,
+        "speech": 66,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "Well, the stronger the emotion you feel from reaction from that event, the more altered...",
+        "wpm": 188,
+        "anchor": "Well, the stronger the emotion you feel from reaction from that event, the more altered you feel inside of you, the more the brain narrows its focus and frees is the image and takes a snapshot, and that's called the memory, right?"
+      },
+      "url": "/clips/e09eddcedf9c/clip-7.mp4",
+      "downloadName": "viral-62-rank7-e09eddcedf9c.mp4",
+      "postTip": "Schedule later / A-B test"
+    },
+    {
+      "rank": 8,
+      "reframe": "follow",
+      "score": 60,
+      "viralScore": 60,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: opens with a question",
+        "Asks a question",
+        "Question then answer",
+        "Fast, energetic delivery"
+      ],
+      "quote": "Why?",
+      "title": "Viral angle",
+      "start": 379.99,
+      "end": 406.36,
+      "duration": 26.37,
+      "dimensions": {
+        "total": 60,
+        "viralScore": 60,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: opens with a question",
+          "Asks a question",
+          "Question then answer",
+          "Fast, energetic delivery"
+        ],
+        "hook": 64,
+        "length": 98,
+        "pacing": 74,
+        "retention": 89,
+        "cta": 45,
+        "replay": 76,
+        "energy": 59,
+        "punch": 92,
+        "arc": 49,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 64,
+        "speech": 63,
+        "visual": 58,
+        "hookText": 63,
+        "quote": "Why?",
+        "wpm": 184,
+        "anchor": "Because it's not enough to just have a great meditation and get up and get on the free way and get in traffic and get in stress."
+      },
+      "url": "/clips/e09eddcedf9c/clip-8.mp4",
+      "downloadName": "viral-60-rank8-e09eddcedf9c.mp4",
+      "postTip": "Schedule later / A-B test"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 72,
+      "viralScore": 72,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Surprising turn",
+        "Useful takeaway",
+        "Fast, energetic delivery"
+      ],
+      "quote": "How do we break that pattern in a way that actually makes it different than is easy eno...",
+      "title": "Cold-open hook",
+      "start": 24.18,
+      "end": 65.71,
+      "duration": 41.53,
+      "dimensions": {
+        "total": 72,
+        "viralScore": 72,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Surprising turn",
+          "Useful takeaway",
+          "Fast, energetic delivery"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 45,
+        "replay": 79,
+        "energy": 61,
+        "punch": 92,
+        "arc": 73,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 89,
+        "speech": 60,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "How do we break that pattern in a way that actually makes it different than is easy eno...",
+        "wpm": 189,
+        "anchor": "How do we break that pattern in a way that actually makes it different than is easy enough as a starting point?"
+      }
+    },
+    {
+      "rank": 2,
+      "score": 69,
+      "viralScore": 69,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Hook: opens with a question",
+        "Asks a question",
+        "Question then answer"
+      ],
+      "quote": "How bad does it have to get?",
+      "title": "High-energy cut",
+      "start": 562.25,
+      "end": 601.83,
+      "duration": 39.58,
+      "dimensions": {
+        "total": 69,
+        "viralScore": 69,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Hook: opens with a question",
+          "Asks a question",
+          "Question then answer"
+        ],
+        "hook": 68,
+        "length": 98,
+        "pacing": 77,
+        "retention": 90,
+        "cta": 45,
+        "replay": 77,
+        "energy": 62,
+        "punch": 93,
+        "arc": 65,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "content": 63,
+        "speech": 60,
+        "visual": 66,
+        "hookText": 67,
+        "quote": "How bad does it have to get?",
+        "wpm": 190
+      }
+    },
+    {
+      "rank": 3,
+      "score": 68,
+      "viralScore": 68,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Complete story with a payoff",
+        "Tells a story",
+        "Dramatic pause",
+        "Visually active"
+      ],
+      "quote": "Then you get good at it and gets to be instrumental, gets to be fun.",
+      "title": "High-energy cut",
+      "start": 733.7,
+      "end": 761.74,
+      "duration": 28.04,
+      "dimensions": {
+        "total": 68,
+        "viralScore": 68,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Complete story with a payoff",
+          "Tells a story",
+          "Dramatic pause",
+          "Visually active"
+        ],
+        "hook": 55,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 45,
+        "replay": 77,
+        "energy": 60,
+        "punch": 94,
+        "arc": 85,
+        "complete": true,
+        "missing": [],
+        "content": 58,
+        "speech": 58,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "Then you get good at it and gets to be instrumental, gets to be fun.",
+        "wpm": 161,
+        "anchor": "And that's what I want for everybody."
+      }
+    },
+    {
+      "rank": 4,
+      "score": 68,
+      "viralScore": 68,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Strong claim",
+        "Dramatic pause",
+        "Visually active"
+      ],
+      "quote": "You had to call it the void where there's just not a lot of happening.",
+      "title": "High-energy cut",
+      "start": 821.99,
+      "end": 861.12,
+      "duration": 39.13,
+      "dimensions": {
+        "total": 68,
+        "viralScore": 68,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Strong claim",
+          "Dramatic pause",
+          "Visually active"
+        ],
+        "hook": 61,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 70,
+        "replay": 77,
+        "energy": 61,
+        "punch": 93,
+        "arc": 71,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 57,
+        "speech": 61,
+        "visual": 70,
+        "hookText": 57,
+        "quote": "You had to call it the void where there's just not a lot of happening.",
+        "wpm": 154
+      }
+    },
+    {
+      "rank": 5,
+      "score": 68,
+      "viralScore": 68,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "Builds tension",
+        "Surprising turn",
+        "Asks a question"
+      ],
+      "quote": "how could I involve my experience?",
+      "title": "Viral angle",
+      "start": 983.43,
+      "end": 1026.61,
+      "duration": 43.18,
+      "dimensions": {
+        "total": 68,
+        "viralScore": 68,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "Builds tension",
+          "Surprising turn",
+          "Asks a question"
+        ],
+        "hook": 69,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 90,
+        "replay": 77,
+        "energy": 60,
+        "punch": 93,
+        "arc": 65,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "content": 70,
+        "speech": 68,
+        "visual": 70,
+        "hookText": 52,
+        "quote": "how could I involve my experience?",
+        "wpm": 188,
+        "anchor": "Now, you may have to search for some answers of the best model to build, or you may actually have a long contemplation and start to go, the next time that happens, I think I'm going to do this or I'm going to do that or I'm going to plan my behaviors,"
+      }
+    },
+    {
+      "rank": 6,
+      "score": 65,
+      "viralScore": 65,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Fast, energetic delivery",
+        "Visually active",
+        "Good pacing"
+      ],
+      "quote": "was those moments that got them to this moment.",
+      "title": "High-energy cut",
+      "start": 1181.99,
+      "end": 1224.52,
+      "duration": 42.53,
+      "dimensions": {
+        "total": 65,
+        "viralScore": 65,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Fast, energetic delivery",
+          "Visually active",
+          "Good pacing"
+        ],
+        "hook": 64,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 90,
+        "replay": 78,
+        "energy": 61,
+        "punch": 93,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 50,
+        "speech": 63,
+        "visual": 62,
+        "hookText": 60,
+        "quote": "was those moments that got them to this moment.",
+        "wpm": 178
+      }
+    },
+    {
+      "rank": 7,
+      "score": 65,
+      "viralScore": 65,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "Builds tension",
+        "Asks a question",
+        "Question then answer"
+      ],
+      "quote": "Where'd you fall from grace?",
+      "title": "Viral angle",
+      "start": 955.08,
+      "end": 990.55,
+      "duration": 35.47,
+      "dimensions": {
+        "total": 65,
+        "viralScore": 65,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "Builds tension",
+          "Asks a question",
+          "Question then answer"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 74,
+        "retention": 89,
+        "cta": 70,
+        "replay": 76,
+        "energy": 61,
+        "punch": 90,
+        "arc": 63,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "content": 64,
+        "speech": 60,
+        "visual": 70,
+        "hookText": 53,
+        "quote": "Where'd you fall from grace?",
+        "wpm": 195,
+        "anchor": "What, what, what was it that caused you to go unconscious for the rest of the day?"
+      }
+    },
+    {
+      "rank": 8,
+      "score": 64,
+      "viralScore": 64,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Tells a story",
+        "Concrete numbers",
+        "Fast, energetic delivery",
+        "Visually active"
+      ],
+      "quote": "And you think 60 to 70 thousand thoughts in one day and 90 percent of those thoughts ar...",
+      "title": "Cold-open hook",
+      "start": 58.17,
+      "end": 91.53,
+      "duration": 33.36,
+      "dimensions": {
+        "total": 64,
+        "viralScore": 64,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Tells a story",
+          "Concrete numbers",
+          "Fast, energetic delivery",
+          "Visually active"
+        ],
+        "hook": 61,
+        "length": 98,
+        "pacing": 71,
+        "retention": 87,
+        "cta": 45,
+        "replay": 77,
+        "energy": 57,
+        "punch": 91,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 65,
+        "speech": 66,
+        "visual": 70,
+        "hookText": 65,
+        "quote": "And you think 60 to 70 thousand thoughts in one day and 90 percent of those thoughts ar...",
+        "wpm": 175,
+        "anchor": "And you think 60 to 70 thousand thoughts in one day and 90 percent of those thoughts are the same thoughts as the day before."
+      }
+    },
+    {
+      "rank": 9,
+      "score": 64,
+      "viralScore": 64,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Fast, energetic delivery",
+        "Visually active",
+        "Good pacing"
+      ],
+      "quote": "But if you teach people there's something on the other side, they won't give up on them...",
+      "title": "Viral angle",
+      "start": 495.55,
+      "end": 523.18,
+      "duration": 27.63,
+      "dimensions": {
+        "total": 64,
+        "viralScore": 64,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Fast, energetic delivery",
+          "Visually active",
+          "Good pacing"
+        ],
+        "hook": 52,
+        "length": 98,
+        "pacing": 73,
+        "retention": 88,
+        "cta": 45,
+        "replay": 75,
+        "energy": 58,
+        "punch": 92,
+        "arc": 83,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 45,
+        "speech": 66,
+        "visual": 70,
+        "hookText": 65,
+        "quote": "But if you teach people there's something on the other side, they won't give up on them...",
+        "wpm": 191,
+        "anchor": "But if you teach people there's something on the other side, they won't give up on themselves, they'll keep going."
+      }
+    },
+    {
+      "rank": 10,
+      "score": 64,
+      "viralScore": 64,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Hook: direct advice",
+        "Fast, energetic delivery",
+        "Good pacing"
+      ],
+      "quote": "You can't tell me you had a turbulent past, or that you're too overweight, or too under...",
+      "title": "Viral angle",
+      "start": 507.72,
+      "end": 554.98,
+      "duration": 47.26,
+      "dimensions": {
+        "total": 64,
+        "viralScore": 64,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Hook: direct advice",
+          "Fast, energetic delivery",
+          "Good pacing"
+        ],
+        "hook": 66,
+        "length": 98,
+        "pacing": 74,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 60,
+        "punch": 92,
+        "arc": 73,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 45,
+        "speech": 63,
+        "visual": 54,
+        "hookText": 67,
+        "quote": "You can't tell me you had a turbulent past, or that you're too overweight, or too under...",
+        "wpm": 182,
+        "anchor": "In fact, some of our greatest scans, or people who just have never meditated before, are not trying to do anything."
+      }
+    },
+    {
+      "rank": 11,
+      "score": 63,
+      "viralScore": 63,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "Builds tension",
+        "Surprising turn",
+        "Asks a question"
+      ],
+      "quote": "And when you're catching yourself, what are you doing?",
+      "title": "Viral angle",
+      "start": 880.54,
+      "end": 925.44,
+      "duration": 44.9,
+      "dimensions": {
+        "total": 63,
+        "viralScore": 63,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "Builds tension",
+          "Surprising turn",
+          "Asks a question"
+        ],
+        "hook": 52,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 70,
+        "replay": 76,
+        "energy": 61,
+        "punch": 91,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 74,
+        "speech": 65,
+        "visual": 54,
+        "hookText": 65,
+        "quote": "And when you're catching yourself, what are you doing?",
+        "wpm": 200,
+        "anchor": "Practically, what is someone having to do to once they catch it, then how do you deal with that emotion and anxiety in the moment that feels?"
+      }
+    },
+    {
+      "rank": 12,
+      "score": 62,
+      "viralScore": 62,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Tells a story",
+        "Concrete numbers",
+        "Fast, energetic delivery"
+      ],
+      "quote": "Well, the stronger the emotion you feel from reaction from that event, the more altered...",
+      "title": "Viral angle",
+      "start": 238.86,
+      "end": 266.45,
+      "duration": 27.59,
+      "dimensions": {
+        "total": 62,
+        "viralScore": 62,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Tells a story",
+          "Concrete numbers",
+          "Fast, energetic delivery"
+        ],
+        "hook": 55,
+        "length": 98,
+        "pacing": 72,
+        "retention": 87,
+        "cta": 45,
+        "replay": 75,
+        "energy": 57,
+        "punch": 92,
+        "arc": 51,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "content": 85,
+        "speech": 66,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "Well, the stronger the emotion you feel from reaction from that event, the more altered...",
+        "wpm": 188,
+        "anchor": "Well, the stronger the emotion you feel from reaction from that event, the more altered you feel inside of you, the more the brain narrows its focus and frees is the image and takes a snapshot, and that's called the memory, right?"
+      }
+    },
+    {
+      "rank": 13,
+      "score": 62,
+      "viralScore": 62,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Tells a story",
+        "Fast, energetic delivery",
+        "Visually active"
+      ],
+      "quote": "And so you see people say, excuse me, one minute, I just couldn't even minute.",
+      "title": "Closer punch",
+      "start": 1075.14,
+      "end": 1104.99,
+      "duration": 29.85,
+      "dimensions": {
+        "total": 62,
+        "viralScore": 62,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Tells a story",
+          "Fast, energetic delivery",
+          "Visually active"
+        ],
+        "hook": 46,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 90,
+        "replay": 77,
+        "energy": 60,
+        "punch": 93,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "content": 63,
+        "speech": 68,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "And so you see people say, excuse me, one minute, I just couldn't even minute.",
+        "wpm": 188,
+        "anchor": "And so you see people say, excuse me, one minute, I just couldn't even minute."
+      }
+    },
+    {
+      "rank": 14,
+      "score": 62,
+      "viralScore": 62,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Strong claim",
+        "Fast, energetic delivery",
+        "Visually active"
+      ],
+      "quote": "and then we have to begin to look at the emotions that we live by every single day.",
+      "title": "Cold-open hook",
+      "start": 131.08,
+      "end": 166.81,
+      "duration": 35.73,
+      "dimensions": {
+        "total": 62,
+        "viralScore": 62,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Strong claim",
+          "Fast, energetic delivery",
+          "Visually active"
+        ],
+        "hook": 48,
+        "length": 98,
+        "pacing": 74,
+        "retention": 88,
+        "cta": 45,
+        "replay": 77,
+        "energy": 59,
+        "punch": 92,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 57,
+        "speech": 66,
+        "visual": 70,
+        "hookText": 60,
+        "quote": "and then we have to begin to look at the emotions that we live by every single day.",
+        "wpm": 180,
+        "anchor": "and then we have to begin to look at the emotions that we live by every single day."
+      }
+    },
+    {
+      "rank": 15,
+      "score": 62,
+      "viralScore": 62,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Dramatic pause",
+        "Visually active",
+        "Good pacing",
+        "Ideal short-form length"
+      ],
+      "quote": "And so, by experience then, you start noticing all here comes, here comes the frustrati...",
+      "title": "Closer punch",
+      "start": 1060.4,
+      "end": 1086.48,
+      "duration": 26.08,
+      "dimensions": {
+        "total": 62,
+        "viralScore": 62,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Dramatic pause",
+          "Visually active",
+          "Good pacing",
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 90,
+        "replay": 77,
+        "energy": 60,
+        "punch": 93,
+        "arc": 71,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 50,
+        "speech": 63,
+        "visual": 70,
+        "hookText": 65,
+        "quote": "And so, by experience then, you start noticing all here comes, here comes the frustrati...",
+        "wpm": 165,
+        "anchor": "And so, by experience then, you start noticing all here comes, here comes the frustration, here comes the fear."
+      }
+    },
+    {
+      "rank": 16,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "Builds tension",
+        "Concrete numbers",
+        "Asks a question"
+      ],
+      "quote": "And by the time we're 35 years old, it kind of becomes fixed, right?",
+      "title": "Viral angle",
+      "start": 173.85,
+      "end": 200.36,
+      "duration": 26.51,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "Builds tension",
+          "Concrete numbers",
+          "Asks a question"
+        ],
+        "hook": 47,
+        "length": 98,
+        "pacing": 74,
+        "retention": 89,
+        "cta": 45,
+        "replay": 76,
+        "energy": 59,
+        "punch": 92,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 68,
+        "speech": 63,
+        "visual": 66,
+        "hookText": 65,
+        "quote": "And by the time we're 35 years old, it kind of becomes fixed, right?",
+        "wpm": 186,
+        "anchor": "And psychology used to say that you can't change that, but we now know that you can."
+      }
+    },
+    {
+      "rank": 17,
+      "score": 60,
+      "viralScore": 60,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Dramatic pause",
+        "Someone enters frame",
+        "Good pacing"
+      ],
+      "quote": "Stay in that state for an extended period of time as an experiment, as the scientist in...",
+      "title": "Viral angle",
+      "start": 677.91,
+      "end": 720.9,
+      "duration": 42.99,
+      "dimensions": {
+        "total": 60,
+        "viralScore": 60,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Dramatic pause",
+          "Someone enters frame",
+          "Good pacing"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 73,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 58,
+        "punch": 93,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 48,
+        "speech": 61,
+        "visual": 58,
+        "hookText": 65,
+        "quote": "Stay in that state for an extended period of time as an experiment, as the scientist in...",
+        "wpm": 151,
+        "anchor": "Stay in that state for an extended period of time as an experiment, as the scientist in your life, to keep your energy connected to the dream of your future."
+      }
+    },
+    {
+      "rank": 18,
+      "score": 60,
+      "viralScore": 60,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: opens with a question",
+        "Asks a question",
+        "Question then answer",
+        "Fast, energetic delivery"
+      ],
+      "quote": "Why?",
+      "title": "Viral angle",
+      "start": 379.99,
+      "end": 406.36,
+      "duration": 26.37,
+      "dimensions": {
+        "total": 60,
+        "viralScore": 60,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: opens with a question",
+          "Asks a question",
+          "Question then answer",
+          "Fast, energetic delivery"
+        ],
+        "hook": 64,
+        "length": 98,
+        "pacing": 74,
+        "retention": 89,
+        "cta": 45,
+        "replay": 76,
+        "energy": 59,
+        "punch": 92,
+        "arc": 49,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 64,
+        "speech": 63,
+        "visual": 58,
+        "hookText": 63,
+        "quote": "Why?",
+        "wpm": 184,
+        "anchor": "Because it's not enough to just have a great meditation and get up and get on the free way and get in traffic and get in stress."
+      }
+    },
+    {
+      "rank": 19,
+      "score": 59,
+      "viralScore": 59,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Fast, energetic delivery",
+        "Visually active",
+        "Good pacing"
+      ],
+      "quote": "But when you step out into that unknown into that void,",
+      "title": "Viral angle",
+      "start": 262.43,
+      "end": 292.45,
+      "duration": 30.02,
+      "dimensions": {
+        "total": 59,
+        "viralScore": 59,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Fast, energetic delivery",
+          "Visually active",
+          "Good pacing"
+        ],
+        "hook": 52,
+        "length": 98,
+        "pacing": 73,
+        "retention": 88,
+        "cta": 45,
+        "replay": 75,
+        "energy": 58,
+        "punch": 92,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 45,
+        "speech": 68,
+        "visual": 70,
+        "hookText": 65,
+        "quote": "But when you step out into that unknown into that void,",
+        "wpm": 175,
+        "anchor": "But when you step out into that unknown into that void,"
+      }
+    },
+    {
+      "rank": 20,
+      "score": 59,
+      "viralScore": 59,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Tells a story",
+        "Concrete numbers",
+        "Dramatic pause",
+        "Visually active"
+      ],
+      "quote": "A lot of analysis.",
+      "title": "Viral angle",
+      "start": 440.64,
+      "end": 466.43,
+      "duration": 25.79,
+      "dimensions": {
+        "total": 59,
+        "viralScore": 59,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Tells a story",
+          "Concrete numbers",
+          "Dramatic pause",
+          "Visually active"
+        ],
+        "hook": 61,
+        "length": 98,
+        "pacing": 73,
+        "retention": 88,
+        "cta": 45,
+        "replay": 75,
+        "energy": 59,
+        "punch": 91,
+        "arc": 51,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "content": 67,
+        "speech": 61,
+        "visual": 66,
+        "hookText": 60,
+        "quote": "A lot of analysis.",
+        "wpm": 146,
+        "anchor": "And they're blown away by the speed in which the community can change brain, hard to go here and say they know how to do it."
+      }
+    },
+    {
+      "rank": 21,
+      "score": 59,
+      "viralScore": 59,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Fast, energetic delivery",
+        "Visually active",
+        "Good pacing",
+        "Ideal short-form length"
+      ],
+      "quote": "Installing the circuitry, every day conditioning the body into the emotion of the futur...",
+      "title": "Viral angle",
+      "start": 643.65,
+      "end": 671.72,
+      "duration": 28.07,
+      "dimensions": {
+        "total": 59,
+        "viralScore": 59,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Fast, energetic delivery",
+          "Visually active",
+          "Good pacing",
+          "Ideal short-form length"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 74,
+        "retention": 88,
+        "cta": 45,
+        "replay": 76,
+        "energy": 60,
+        "punch": 91,
+        "arc": 53,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "content": 45,
+        "speech": 63,
+        "visual": 66,
+        "hookText": 65,
+        "quote": "Installing the circuitry, every day conditioning the body into the emotion of the futur...",
+        "wpm": 171,
+        "anchor": "Installing the circuitry, every day conditioning the body into the emotion of the future, that your body begins to change to look like it's already happened."
+      }
+    },
+    {
+      "rank": 22,
+      "score": 59,
+      "viralScore": 59,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Surprising turn",
+        "Dramatic pause",
+        "Visually active",
+        "Good pacing"
+      ],
+      "quote": "Oh, I'm starting to feel a little frustration.",
+      "title": "Viral angle",
+      "start": 787.28,
+      "end": 813.45,
+      "duration": 26.17,
+      "dimensions": {
+        "total": 59,
+        "viralScore": 59,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Surprising turn",
+          "Dramatic pause",
+          "Visually active",
+          "Good pacing"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 70,
+        "replay": 76,
+        "energy": 61,
+        "punch": 91,
+        "arc": 49,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 61,
+        "speech": 63,
+        "visual": 70,
+        "hookText": 65,
+        "quote": "Oh, I'm starting to feel a little frustration.",
+        "wpm": 165,
+        "anchor": "That's the defining moment where your body is going back to the past, because emotions are a record of the past."
+      }
+    },
+    {
+      "rank": 23,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Builds tension",
+        "Fast, energetic delivery",
+        "Someone enters frame",
+        "Good pacing"
+      ],
+      "quote": "So then at least then when they return back to that familiar feeling, then they feel safe.",
+      "title": "High-energy cut",
+      "start": 322.28,
+      "end": 349.85,
+      "duration": 27.57,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Builds tension",
+          "Fast, energetic delivery",
+          "Someone enters frame",
+          "Good pacing"
+        ],
+        "hook": 48,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 45,
+        "replay": 77,
+        "energy": 60,
+        "punch": 94,
+        "arc": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 45,
+        "speech": 66,
+        "visual": 58,
+        "hookText": 60,
+        "quote": "So then at least then when they return back to that familiar feeling, then they feel safe.",
+        "wpm": 181,
+        "anchor": "So then at least then when they return back to that familiar feeling, then they feel safe."
+      }
+    },
+    {
+      "rank": 24,
+      "score": 54,
+      "viralScore": 54,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Weak opening line",
+        "Dramatic pause",
+        "Visually active",
+        "Good pacing"
+      ],
+      "quote": "Yeah, because because it's the it's all of those times that we self correct Those are t...",
+      "title": "Closer punch",
+      "start": 1127.46,
+      "end": 1155.07,
+      "duration": 27.61,
+      "dimensions": {
+        "total": 54,
+        "viralScore": 54,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Weak opening line",
+          "Dramatic pause",
+          "Visually active",
+          "Good pacing"
+        ],
+        "hook": 46,
+        "length": 98,
+        "pacing": 75,
+        "retention": 89,
+        "cta": 90,
+        "replay": 77,
+        "energy": 59,
+        "punch": 94,
+        "arc": 49,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "content": 50,
+        "speech": 66,
+        "visual": 70,
+        "hookText": 34,
+        "quote": "Yeah, because because it's the it's all of those times that we self correct Those are t...",
+        "wpm": 152,
+        "anchor": "Yeah, because because it's the it's all of those times that we self correct Those are the most valuable moments dust people who've had"
+      }
+    }
+  ],
+  "error": null,
+  "duration": 1224.57,
+  "candidateCount": 24,
+  "sceneCount": 159,
+  "stageNote": null,
+  "transcribed": true,
+  "viralAnalysis": {
+    "analyzed": 24,
+    "topViralScore": 72,
+    "likelyViral": 0,
+    "postOrder": [
+      {
+        "rank": 1,
+        "title": "Cold-open hook",
+        "viralScore": 72,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 2,
+        "title": "High-energy cut",
+        "viralScore": 69,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 3,
+        "title": "High-energy cut",
+        "viralScore": 68,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 4,
+        "title": "Viral angle",
+        "viralScore": 68,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 5,
+        "title": "High-energy cut",
+        "viralScore": 68,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 6,
+        "title": "High-energy cut",
+        "viralScore": 65,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 7,
+        "title": "Viral angle",
+        "viralScore": 62,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 8,
+        "title": "Viral angle",
+        "viralScore": 60,
+        "verdict": "Okay / test it"
+      }
+    ],
+    "summary": "AI analyzed 24 moments. Best clip scored 72 - still worth testing."
+  },
+  "subtitlesApplied": true,
+  "completedAt": "2026-09-02T17:45:38.662Z"
+}
