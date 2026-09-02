@@ -1,0 +1,130 @@
+diff --git a/clipery/lib/reframe.js b/clipery/lib/reframe.js
+index 72e49ee..0544900 100644
+--- a/clipery/lib/reframe.js
++++ b/clipery/lib/reframe.js
+@@ -16,6 +16,37 @@
+ /** Clamp helper. */
+ const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+ 
++/**
++ * Only the samples where a face was actually found. The detector reports
++ * x:null when it sees nobody, and those must never reach the maths: sorting
++ * a list with nulls in it used to put the crop hard against the left edge,
++ * pointing the camera at empty scenery.
++ */
++function seenOnly(samples) {
++  return (samples || []).filter((s) => s && Number.isFinite(s.t) && Number.isFinite(s.x));
++}
++
++/**
++ * Where to point when the subject is lost: the centre of the action, taken
++ * from the 10th-90th percentile of everywhere anybody stood. For one still
++ * speaker that is simply where they are; for two hosts it is between them,
++ * which keeps both in shot rather than staring at one empty chair.
++ */
++function homeX(samples) {
++  const xs = seenOnly(samples).map((s) => s.x).sort((a, b) => a - b);
++  if (!xs.length) return 0.5;
++  const lo = xs[Math.floor(xs.length * 0.1)];
++  const hi = xs[Math.floor(xs.length * 0.9)];
++  return clamp((lo + hi) / 2, 0, 1);
++}
++
++/** Share of samples that actually saw somebody, 0..1. */
++function faceCoverage(samples) {
++  const all = (samples || []).filter((s) => s && Number.isFinite(s.t));
++  if (!all.length) return 0;
++  return seenOnly(all).length / all.length;
++}
++
+ /**
+  * Turn raw detector samples into a smooth, broadcast-looking camera path.
+  *
+@@ -32,11 +63,11 @@ function buildCameraPath(samples, opts = {}) {
+   const deadZone = opts.deadZone != null ? opts.deadZone : 0.06; // 6% of width
+   const holdFor = opts.holdFor != null ? opts.holdFor : 1.2;     // seconds
+   const travel = opts.travel != null ? opts.travel : 0.5;        // seconds to move
++  const gapFor = opts.gapFor != null ? opts.gapFor : 2.5;        // lost-subject timeout
+ 
+-  const clean = (samples || [])
+-    .filter((s) => s && Number.isFinite(s.t) && Number.isFinite(s.x))
+-    .sort((a, b) => a.t - b.t);
++  const clean = seenOnly(samples).sort((a, b) => a.t - b.t);
+   if (!clean.length) return [];
++  const home = homeX(clean);
+ 
+   // Median-of-3 to kill single bad detections.
+   const med = clean.map((s, i) => {
+@@ -48,7 +79,26 @@ function buildCameraPath(samples, opts = {}) {
+   let heldX = med[0].x;
+   let heldSince = med[0].t;
+ 
+-  for (const s of med) {
++  // Nobody found for a while? Do not keep staring at where they used to be.
++  // Ease back to the middle of the action instead.
++  const path = [];
++  for (let i = 0; i < med.length; i++) {
++    if (i > 0 && med[i].t - med[i - 1].t > gapFor && Math.abs(home - med[i - 1].x) >= deadZone) {
++      path.push({ t: +(med[i - 1].t + travel).toFixed(2), x: home, recentre: true });
++    }
++    path.push(med[i]);
++  }
++
++  for (const s of path) {
++    if (s.recentre) {
++      // A recentre is not a subject move, so it skips the hold and the
++      // confirmation: the subject is gone, waiting only prolongs a dead shot.
++      keys.push({ t: +Math.max(0, s.t - travel).toFixed(2), x: heldX });
++      keys.push({ t: +s.t.toFixed(2), x: +s.x.toFixed(4) });
++      heldX = s.x;
++      heldSince = s.t;
++      continue;
++    }
+     if (Math.abs(s.x - heldX) < deadZone) continue;      // wobble, ignore
+     if (s.t - heldSince < holdFor) continue;             // too soon, hold the shot
+     // Confirm the move is real: the next sample should agree.
+@@ -99,7 +149,11 @@ function simultaneousSpread(samples) {
+  *  "center" - no faces found: plain centre crop, same as before
+  */
+ function chooseLayout(samples, srcW, srcH, cropFrac) {
+-  if (!samples || samples.length < 2) return "center";
++  const seen = seenOnly(samples);
++  if (seen.length < 2) return "center";
++  // Faces in only a fraction of the clip means the tracker is guessing.
++  // Guessing is what makes the frame wander off the people, so hold still.
++  if (faceCoverage(samples) < 0.35) return "static";
+   // Both people in frame together and too wide to fit -> stop cropping.
+   if (simultaneousSpread(samples) > cropFrac * 1.05) return "wide";
+   // Subject moves around (or speakers take turns) -> follow them.
+@@ -194,7 +248,14 @@ function reframeFilter(o) {
+   }
+ 
+   if (layout === "static") {
+-    const xs = o.samples.map((s) => s.x).sort((a, b) => a - b);
++    const xs = seenOnly(o.samples).map((s) => s.x).sort((a, b) => a - b);
++    if (!xs.length) {
++      return {
++        layout: "center",
++        keys: [],
++        filter: `crop=${cropW}:${srcH}:x=(iw-${cropW})/2:y=0,scale=${outW}:${outH}`,
++      };
++    }
+     const x = xs[Math.floor(xs.length / 2)];
+     const px = clamp(x * srcW - cropW / 2, 0, Math.max(0, srcW - cropW));
+     return {
+@@ -212,4 +273,14 @@ function reframeFilter(o) {
+   };
+ }
+ 
+-module.exports = { buildCameraPath, cropExpr, chooseLayout, spreadOf, simultaneousSpread, reframeFilter };
++module.exports = {
++  buildCameraPath,
++  cropExpr,
++  chooseLayout,
++  spreadOf,
++  simultaneousSpread,
++  reframeFilter,
++  seenOnly,
++  homeX,
++  faceCoverage,
++};
