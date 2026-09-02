@@ -160,6 +160,9 @@ function isProtectedApi(pathname, method) {
 
 let busy = false;
 const queue = [];
+// One render at a time by default: ffmpeg plus whisper will happily eat every
+// core on a small server. Raise it only on a machine with room to spare.
+const MAX_QUEUE = Math.max(1, Number(process.env.CLIPERY_MAX_QUEUE) || 20);
 
 function readWaitlist() {
   try {
@@ -485,17 +488,16 @@ async function runQueueItem(item) {
 }
 
 function enqueue(sourcePath, meta) {
-  const item = { type: "single", sourcePath, meta };
-  if (busy) {
-    queue.push(item);
-    return { queued: true, position: queue.length };
-  }
-  runQueueItem(item);
-  return { queued: false, position: 0 };
+  return enqueueItem({ type: "single", sourcePath, meta });
 }
 
 function enqueueItem(item) {
   if (busy) {
+    if (queue.length >= MAX_QUEUE) {
+      const err = new Error("The render queue is full. Try again in a few minutes.");
+      err.busy = true;
+      throw err;
+    }
     queue.push(item);
     return { queued: true, position: queue.length };
   }
@@ -618,7 +620,7 @@ const server = http.createServer(async (req, res) => {
         const result = auth.upsertSocialUser(profile);
         if (!result.ok) return fail(result.error || "Sign-in failed.");
 
-        const { cookie } = auth.createSession(result.user.id);
+        const { cookie } = auth.createSession(result.user.id, req);
         res.writeHead(302, {
           Location: state.next || "/studio",
           "Set-Cookie": [cookie, oauth.clearState()],
@@ -640,7 +642,7 @@ const server = http.createServer(async (req, res) => {
       }
       const result = auth.registerUser(body);
       if (!result.ok) return send(res, result.status || 400, { ok: false, error: result.error });
-      const { cookie } = auth.createSession(result.user.id);
+      const { cookie } = auth.createSession(result.user.id, req);
       return send(res, 201, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
     }
 
@@ -653,13 +655,13 @@ const server = http.createServer(async (req, res) => {
       }
       const result = auth.loginUser(body);
       if (!result.ok) return send(res, result.status || 401, { ok: false, error: result.error });
-      const { cookie } = auth.createSession(result.user.id);
+      const { cookie } = auth.createSession(result.user.id, req);
       return send(res, 200, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
     }
 
     if (pathname === "/api/auth/logout" && req.method === "POST") {
       auth.destroySession(auth.parseCookies(req)[auth.COOKIE]);
-      return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie() });
+      return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie(req) });
     }
 
     if (pathname === "/api/auth/me" && req.method === "GET") {
@@ -1281,11 +1283,17 @@ const server = http.createServer(async (req, res) => {
 
     serveStatic(req, res, pathname, url.search);
   } catch (e) {
+    // A full render queue is not a crash - tell the user to come back shortly.
+    if (e && e.busy) return send(res, 503, { ok: false, error: e.message, retry: true });
     console.error(e);
     send(res, 500, { ok: false, error: e.message || "Server error" });
   }
 });
 
+// Mark jobs killed by a restart as failed, then keep the disk from filling up.
+require("./lib/cleanup").start();
+
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Clipery running on http://0.0.0.0:${PORT}`);
+  if (process.env.BASE_URL) console.log(`Public address: ${process.env.BASE_URL}`);
 });
