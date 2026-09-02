@@ -83,9 +83,32 @@ def transcribe_whisper(wav_path: str, offset: float = 0.0):
 
     if _WHISPER_MODEL is None:
         name = os.environ.get("CLIPERY_WHISPER_MODEL", "base")
-        _WHISPER_MODEL = WhisperModel(name, device="cpu", compute_type="int8")
+        # Use every core we have. faster-whisper defaults to 4 threads, which
+        # leaves a modern laptop idling; on a 2-core box this is simply 2.
+        try:
+            threads = int(os.environ.get("CLIPERY_WHISPER_THREADS") or (os.cpu_count() or 4))
+        except ValueError:
+            threads = 4
+        threads = max(1, min(threads, 16))
+        _WHISPER_MODEL = WhisperModel(
+            name, device="cpu", compute_type="int8", cpu_threads=threads
+        )
+        print("whisper model=%s threads=%d" % (name, threads), file=sys.stderr)
+    # beam_size=1 (greedy) is about twice as fast as beam_size=5 and the
+    # difference is barely visible in burned-in captions. Set
+    # CLIPERY_WHISPER_BEAM=5 to trade the speed back for accuracy.
+    try:
+        beam = int(os.environ.get("CLIPERY_WHISPER_BEAM") or 1)
+    except ValueError:
+        beam = 1
     segments, _info = _WHISPER_MODEL.transcribe(
-        wav_path, word_timestamps=True, vad_filter=True, beam_size=5
+        wav_path,
+        word_timestamps=True,
+        vad_filter=True,
+        beam_size=max(1, beam),
+        # Not feeding the previous text back in avoids repetition loops and
+        # shaves more time off long videos.
+        condition_on_previous_text=False,
     )
     entries = []
     words = []

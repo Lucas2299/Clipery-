@@ -1,269 +1,328 @@
+diff --git a/clipery/.env.example b/clipery/.env.example
+index a7eb22f..3f2e376 100644
+--- a/clipery/.env.example
++++ b/clipery/.env.example
+@@ -35,3 +35,18 @@ CLIPERY_MAX_QUEUE=20
+ 
+ # Speech model: tiny (fastest) | base (default) | small (most accurate)
+ CLIPERY_WHISPER_MODEL=base
++
++# One switch for an old or low-power PC: tiny speech model + fastest encoder.
++# Roughly 3x quicker than the defaults, slightly rougher captions and files.
++# CLIPERY_FAST=1
++
++# Speech decoding beam. 1 = greedy and about twice as fast (default),
++# 5 = the most accurate setting.
++# CLIPERY_WHISPER_BEAM=1
++
++# CPU cores the speech model may use. Defaults to every core you have.
++# CLIPERY_WHISPER_THREADS=4
++
++# x264 encoder speed / quality. Lower CRF = better quality, bigger file.
++# CLIPERY_PRESET=veryfast
++# CLIPERY_CRF=24
 diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
-index 04d6064..eed5efb 100644
+index eed5efb..6ccd2e9 100644
 --- a/clipery/lib/clipEngine.js
 +++ b/clipery/lib/clipEngine.js
-@@ -64,14 +64,22 @@ const FACE_PY = path.join(__dirname, "facedetect.py");
-  * Face track for a time window: where the speaker is, moment by moment.
-  * Returns {x, track:[{t,x,faces}], speakers, spread} or null (centre crop).
-  */
--async function faceTrack(source, start, end) {
-+async function faceTrack(source, start, end, opts = {}) {
-+  if (String(process.env.CLIPERY_FACE_TRACKING || "").match(/^(0|off|false)$/i)) return null;
-+  const perSec = opts.perSec || 2.5;
-+  const timeout = opts.timeout || 120000;
-+  const t0 = Date.now();
-   try {
--    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 120000 });
-+    const { stdout } = await run(
-+      PY,
-+      [FACE_PY, source, String(start), String(end), String(perSec)],
-+      { timeout }
-+    );
-     const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
-     if (r && r.ok && Array.isArray(r.track) && r.track.length) {
-       console.log(
-         `[reframe] ${r.speakers || 1} speaker(s), spread ${((r.spread || 0) * 100).toFixed(0)}% of width, ` +
--        `${r.faces}/${r.samples} samples with a face`
-+        `${r.faces}/${r.samples} samples with a face (${((Date.now() - t0) / 1000).toFixed(1)}s)`
-       );
-       return r;
-     }
-@@ -79,11 +87,42 @@ async function faceTrack(source, start, end) {
-     else if (r && r.reason === "no-cv2") console.warn("[reframe] off - run: pip install opencv-python-headless");
-     else console.warn(`[reframe] detector problem: ${(r && r.error) || (r && r.reason) || "unknown"} -> centre crop`);
-   } catch (e) {
--    console.warn(`[reframe] failed: ${e.message} -> centre crop`);
-+    const secs = ((Date.now() - t0) / 1000).toFixed(0);
-+    if (e.killed || /timed? ?out|ETIMEDOUT/i.test(e.message || "")) {
-+      console.warn(`[reframe] gave up after ${secs}s -> centre crop (set CLIPERY_FACE_TRACKING=0 to skip it)`);
-+    } else {
-+      console.warn(`[reframe] failed: ${e.message} -> centre crop`);
+@@ -3,7 +3,7 @@ const fs = require("fs");
+ const path = require("path");
+ const { promisify } = require("util");
+ const crypto = require("crypto");
+-const { tryEnhanceClip, transcribeToWords } = require("./subtitles");
++const { prepareClipAss, transcribeToWords } = require("./subtitles");
+ const brain = require("./brain");
+ const story = require("./story");
+ const { reframeFilter } = require("./reframe");
+@@ -486,7 +486,19 @@ function escapeDrawtext(s) {
+     .replace(/%/g, "%%");
+ }
+ 
+-async function renderClip(source, outFile, start, end, label, sublabel, mode, srcMeta) {
++// One switch for old or low-power machines: CLIPERY_FAST=1 picks the quick
++// end of every trade-off (tiny speech model, fastest encoder preset).
++const FAST_MODE = process.env.CLIPERY_FAST === "1";
++if (FAST_MODE && !process.env.CLIPERY_WHISPER_MODEL) {
++  process.env.CLIPERY_WHISPER_MODEL = "tiny";
++}
++
++// Encoder speed knobs for slow machines. "ultrafast" roughly halves encode
++// time again at the cost of a bigger file; "veryfast" is the balanced default.
++const ENCODE_PRESET = process.env.CLIPERY_PRESET || (FAST_MODE ? "ultrafast" : "veryfast");
++const ENCODE_CRF = String(process.env.CLIPERY_CRF || (FAST_MODE ? 26 : 24));
++
++async function renderClip(source, outFile, start, end, label, sublabel, mode, srcMeta, subOpts) {
+   const dur = Math.max(0.5, end - start);
+   const targetW = 608;
+   const targetH = 1080;
+@@ -509,9 +521,21 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
+   ];
+ 
++  // Captions are prepared from the source audio BEFORE the encode so they can
++  // ride along in this same filter chain. Two encodes per clip became one.
++  let sub = null;
++  if (subOpts) {
++    try {
++      sub = await prepareClipAss(source, start, dur, outFile, subOpts);
++    } catch (e) {
++      console.warn("[subtitles] prepare failed:", e.message);
 +    }
++  }
++  const subFilter = sub ? [sub.filter] : [];
++
+   // The zoom-out layout needs split/overlay, so it must go through
+   // -filter_complex; the simple crop chains stay on -vf exactly as before.
+-  const graph = [rf.filter, ...extras].join(",");
++  const graph = [rf.filter, ...extras, ...subFilter].join(",");
+   const flag = rf.filter.includes("split=") ? "-filter_complex" : "-vf";
+ 
+   const encode = (filterFlag, filterGraph) =>
+@@ -533,9 +557,9 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+         "-c:v",
+         "libx264",
+         "-preset",
+-        "veryfast",
++        ENCODE_PRESET,
+         "-crf",
+-        "24",
++        ENCODE_CRF,
+         "-pix_fmt",
+         "yuv420p",
+         "-c:a",
+@@ -549,6 +573,19 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+       { timeout: 200000 }
+     );
+ 
++  const dropAss = () => {
++    if (sub && sub.assPath) {
++      try { fs.unlinkSync(sub.assPath); } catch {}
++    }
++  };
++
++  const result = (layout) => ({
++    layout,
++    subtitlesApplied: !!(sub && sub.subtitlesApplied),
++    hookApplied: !!(sub && sub.hookApplied),
++    hookText: sub ? sub.hookText : null,
++  });
++
+   try {
+     await encode(flag, graph);
+   } catch (e) {
+@@ -559,14 +596,22 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+       (srcMeta && srcMeta.width) || 1920,
+       Math.round((((srcMeta && srcMeta.height) || 1080) * targetW) / targetH)
+     );
+-    await encode(
+-      "-vf",
+-      [`crop=${cropW}:ih:x=(iw-${cropW})/2:y=0`, `scale=${targetW}:${targetH}`, ...extras].join(",")
+-    );
+-    return "center";
++    const plain = [`crop=${cropW}:ih:x=(iw-${cropW})/2:y=0`, `scale=${targetW}:${targetH}`, ...extras];
++    try {
++      await encode("-vf", [...plain, ...subFilter].join(","));
++    } catch (e2) {
++      // Last resort: no captions rather than no clip.
++      console.warn(`[subtitles] burn-in failed (${e2.message.split("\n")[0]}) -> plain clip`);
++      await encode("-vf", plain.join(","));
++      dropAss();
++      sub = null;
++    }
++    dropAss();
++    return result("center");
    }
-   return null;
+ 
+-  return rf.layout;
++  dropAss();
++  return result(rf.layout);
+ }
+ 
+ /** Clips per source video for this account (plan limit, capped by the mode). */
+@@ -996,21 +1041,34 @@ async function processVideo(sourcePath, options = {}) {
+       const vScore = c.dimensions.viralScore || c.score;
+       const label = `#${i + 1} VIRAL ${vScore}`;
+       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
+-      const layout = await renderClip(sourcePath, outFile, c.start, c.end, label, sub, mode, meta);
+-      if (options.subtitles || options.hook) {
+-        const er = await tryEnhanceClip(outFile, {
+-          clipDur: +(c.end - c.start).toFixed(2),
+-          subStyle: options.subtitles ? options.subStyle : null,
+-          hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+-          trends: options.trends,
+-        });
+-        if (er.subtitlesApplied) job.subtitlesApplied = true;
+-        if (er.hookApplied) {
++      const wantExtras = !!(options.subtitles || options.hook);
++      const rendered = await renderClip(
++        sourcePath,
++        outFile,
++        c.start,
++        c.end,
++        label,
++        sub,
++        mode,
++        meta,
++        wantExtras
++          ? {
++              clipDur: +(c.end - c.start).toFixed(2),
++              subStyle: options.subtitles ? options.subStyle : null,
++              hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
++              trends: options.trends,
++            }
++          : null
++      );
++      const layout = rendered.layout;
++      if (wantExtras) {
++        if (rendered.subtitlesApplied) job.subtitlesApplied = true;
++        if (rendered.hookApplied) {
+           job.hookApplied = true;
+-          if (er.hookText && !job.hookText) job.hookText = er.hookText;
++          if (rendered.hookText && !job.hookText) job.hookText = rendered.hookText;
+         }
+-        if (!er.subtitlesApplied && !er.hookApplied && er.reason) {
+-          job.subtitlesNote = `captions skipped (${er.reason})`;
++        if (!rendered.subtitlesApplied && !rendered.hookApplied) {
++          job.subtitlesNote = "captions skipped (no speech detected)";
+         }
+       }
+       clips.push({
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index 1d58565..0df1d46 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -498,7 +498,7 @@ async function burnAss(videoPath, assPath) {
+         "-vf", vf,
+         "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+         "-pix_fmt", "yuv420p",
+-        "-c:a", "aac", "-b:a", "128k",
++        "-c:a", "copy",
+         "-movflags", "+faststart",
+         tmpOut,
+       ],
+@@ -569,6 +569,78 @@ async function tryEnhanceClip(videoPath, opts = {}) {
+   };
  }
  
 +/**
-+ * Keep the job file moving while a long step runs, so the progress bar does
-+ * not sit frozen and look crashed. Returns a stop() function.
++ * Build the .ass for a clip BEFORE it is rendered, working straight from the
++ * source video's audio. Extracting audio is nearly free (no video decode), so
++ * the caller can burn captions in the same ffmpeg pass that does the crop --
++ * one encode per clip instead of two.
++ *
++ * Returns null when there is nothing to burn; the caller then renders plain.
 + */
-+function heartbeat(job, writeJob, label, fromPct, toPct, expectedSec) {
-+  const started = Date.now();
-+  const tick = () => {
-+    const secs = (Date.now() - started) / 1000;
-+    const share = Math.min(0.95, secs / Math.max(5, expectedSec));
-+    job.progress = Math.round(fromPct + (toPct - fromPct) * share);
-+    job.stageNote = `${label} - ${Math.round(secs)}s`;
-+    try {
-+      writeJob(job);
-+    } catch (_) {}
-+  };
-+  tick();
-+  const timer = setInterval(tick, 3000);
-+  if (timer.unref) timer.unref();
-+  return () => {
-+    clearInterval(timer);
-+    job.stageNote = null;
-+    const secs = ((Date.now() - started) / 1000).toFixed(1);
-+    console.log(`[stage] ${label} finished in ${secs}s`);
++async function prepareClipAss(source, start, dur, outFile, opts = {}) {
++  const wantSubs = !!opts.subStyle;
++  const wantHook = !!(opts.hook && opts.hook.enabled !== false);
++  if (!wantSubs && !wantHook) return null;
++  if (!subtitlesAvailable()) return null;
++
++  const noExt = String(outFile).replace(/\.mp4$/i, "");
++  const wavPath = noExt + ".speech.wav";
++  const jsonPath = noExt + ".words.json";
++  const assPath = noExt + ".subtitles.ass";
++
++  let words = [];
++  try {
++    await run(
++      "ffmpeg",
++      [
++        "-y", "-hide_banner", "-loglevel", "error",
++        "-ss", String(start),
++        "-i", source,
++        "-t", String(dur),
++        "-vn", "-ac", "1", "-ar", "16000",
++        wavPath,
++      ],
++      { timeout: 10 * 60 * 1000 }
++    );
++    const n = await transcribeToWords(wavPath, jsonPath);
++    if (n) {
++      try {
++        words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
++      } catch {}
++    }
++  } catch (e) {
++    console.warn("[subtitles] clip audio failed:", e.message);
++  }
++  try { fs.unlinkSync(wavPath); } catch {}
++  try { fs.unlinkSync(jsonPath); } catch {}
++
++  if (!words.length) return null;
++
++  let pages = [];
++  if (wantSubs) {
++    const style = normalizeSubStyle(opts.subStyle);
++    const rowChars = ROW_CHARS[style.size] - (CAPS_STYLES.has(style.style) ? 2 : 0);
++    pages = buildRollingPages(words, rowChars, style.words);
++  }
++
++  let hook = null;
++  if (wantHook) {
++    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
++  }
++
++  if (!pages.length && !hook) return null;
++
++  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook), "utf8");
++  return {
++    assPath,
++    filter: `subtitles='${escFilterPath(assPath)}'`,
++    captions: pages.length,
++    subtitlesApplied: pages.length > 0,
++    hookApplied: !!hook,
++    hookText: hook ? hook.text : null,
 +  };
 +}
 +
- /** Old single-point helper, kept for callers that only need one X. */
- async function faceCenterX(source, start, end) {
-   const r = await faceTrack(source, start, end);
-@@ -684,17 +723,32 @@ async function processVideo(sourcePath, options = {}) {
-     // actually being said - story, payoff, surprise, hook strength - instead of
-     // guessing from loudness alone. Trend keywords reuse the same transcript.
-     let videoWords = null;
--    if (meta.hasAudio) {
-+    const brainOff = String(process.env.CLIPERY_BRAIN || "").match(/^(0|off|false)$/i);
-+    if (meta.hasAudio && !brainOff) {
-       job.stage = "listening";
-       writeJob(job);
-+      // Transcribing runs at roughly 3-8x real time on a CPU, so a 10 minute
-+      // video is a couple of minutes with nothing to show. Tick the progress
-+      // bar and say how long it has been going.
-+      const stop = heartbeat(job, writeJob, "Listening to the audio", 28, 40, meta.duration / 4);
-+      console.log(`[brain] transcribing ${(meta.duration / 60).toFixed(1)} min of audio...`);
-       const tmpWords = path.join(JOBS_DIR, `${id}.words.json`);
--      const n = await transcribeToWords(sourcePath, tmpWords);
-       try {
-+        const n = await transcribeToWords(sourcePath, tmpWords);
-         if (n > 0) videoWords = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
--      } catch {}
-+      } catch (e) {
-+        console.warn(`[brain] transcript failed: ${e.message}`);
-+      }
-+      stop();
-       try { fs.unlinkSync(tmpWords); } catch {}
-       job.transcribed = !!(videoWords && videoWords.length);
--      if (!job.transcribed) job.brainNote = "no transcript - scored on audio and visuals only";
-+      if (job.transcribed) {
-+        console.log(`[brain] ${videoWords.length} words - hook, story and payoff scoring is ON`);
-+      } else {
-+        job.brainNote = "no transcript - scored on audio and visuals only";
-+        console.warn("[brain] no transcript (install faster-whisper) - falling back to audio scoring");
-+      }
-+      job.progress = 40;
-       writeJob(job);
-     }
-     const trendSet =
-@@ -704,10 +758,22 @@ async function processVideo(sourcePath, options = {}) {
+ /** Backwards-compatible wrapper: subtitles only. */
+ async function tryAddSubtitles(videoPath, subStyle = {}) {
+   const r = await tryEnhanceClip(videoPath, { subStyle });
+@@ -580,6 +652,7 @@ module.exports = {
+   subtitlesAvailable,
+   tryAddSubtitles,
+   tryEnhanceClip,
++  prepareClipAss,
+   transcribeToWords,
+   buildRollingPages,
+   buildKaraokeAss,
+diff --git a/clipery/lib/transcribe.py b/clipery/lib/transcribe.py
+index 3ab795d..25a1f77 100644
+--- a/clipery/lib/transcribe.py
++++ b/clipery/lib/transcribe.py
+@@ -83,9 +83,32 @@ def transcribe_whisper(wav_path: str, offset: float = 0.0):
  
-     // Cheap visual pass: how many faces are on screen across the video, so the
-     // scorer can spot reactions and people entering or leaving the frame.
-+    // Cheap visual pass: how many faces are on screen across the video, so the
-+    // scorer can spot reactions and people entering or leaving the frame.
-+    // Deliberately coarse - one look every 3 seconds, capped at 90 seconds of
-+    // work. It is a scoring hint, not the reframing (that runs per clip).
-     let visualTrack = null;
--    if (videoWords || scenes.length) {
--      const det = await faceTrack(sourcePath, 0, Math.min(meta.duration, 20 * 60));
-+    if (!brainOff) {
-+      job.stage = "watching";
-+      const stopWatch = heartbeat(job, writeJob, "Watching the picture", 40, 46, 30);
-+      const det = await faceTrack(sourcePath, 0, Math.min(meta.duration, 20 * 60), {
-+        perSec: 0.33,
-+        timeout: 90000,
-+      });
-+      stopWatch();
-       visualTrack = (det && det.track) || null;
-+      job.progress = 46;
-+      writeJob(job);
-     }
- 
-     const scored = [];
-@@ -718,7 +784,7 @@ async function processVideo(sourcePath, options = {}) {
-       energies.push(
-         meta.hasAudio ? await sampleEnergy(sourcePath, c.start, c.end) : { energy: 55, punch: 55 }
-       );
--      job.progress = 28 + Math.round(((i + 1) / candidates.length) * 14);
-+      job.progress = 46 + Math.round(((i + 1) / candidates.length) * 3);
-       writeJob(job);
-     }
-     const stats = {
-@@ -797,7 +863,7 @@ async function processVideo(sourcePath, options = {}) {
-         dimensions: dims,
-         title: titleForClip(c, meta.duration, dims, mode, i),
-       });
--      job.progress = 42 + Math.round(((i + 1) / candidates.length) * 8);
-+      job.progress = 49 + Math.round(((i + 1) / candidates.length) * 3);
-       writeJob(job);
-     }
- 
-diff --git a/clipery/lib/facedetect.py b/clipery/lib/facedetect.py
-index 851a3d6..1724ec2 100644
---- a/clipery/lib/facedetect.py
-+++ b/clipery/lib/facedetect.py
-@@ -193,16 +193,22 @@ def main() -> None:
-     next_t = 0.0            # next sample time, relative to `start`
-     base = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0 or start
-     while True:
--        ok, frame = cap.read()
--        if not ok:
-+        # grab() pulls the next frame WITHOUT decoding it - skipping is then
-+        # nearly free. We only pay for a full decode at the sample points.
-+        # Decoding every frame of a 20 minute video took minutes and looked
-+        # like the app had frozen.
-+        if not cap.grab():
-             break
-         frame_i += 1
-         t = base + frame_i / fps
-         if t > end:
-             break
-         if t - base < next_t - 1e-6:
--            continue        # not a sample point yet, skip the work
-+            continue        # not a sample point yet, no decode needed
-         next_t += step
-+        ok, frame = cap.retrieve()
-+        if not ok:
-+            continue
- 
-         small_w = 384
-         small = cv2.resize(frame, (small_w, max(1, int(frame.shape[0] * small_w / frame.shape[1]))))
-diff --git a/clipery/public/app.js b/clipery/public/app.js
-index 3ba3ff3..a732abe 100644
---- a/clipery/public/app.js
-+++ b/clipery/public/app.js
-@@ -124,6 +124,9 @@
-       probing: "Reading video",
-       detecting_moments: "Detecting moments",
-       scoring: "Scoring clips",
-+      listening: "Listening to the audio",
-+      watching: "Watching the picture",
-+      checking_context: "Checking context and payoff",
-       rendering: "Rendering vertical clips",
-       complete: "Done",
-       processing: "Processing",
-@@ -206,7 +209,11 @@
- 
-   function updateProgress(job) {
-     if (statusBox) statusBox.hidden = false;
--    if (statusStage) statusStage.textContent = stageLabel(job.stage || job.status);
-+    if (statusStage) {
-+      statusStage.textContent =
-+        stageLabel(job.stage || job.status) +
-+        (job.stageNote ? " (" + String(job.stageNote).replace(/^.*- /, "") + ")" : "");
-+    }
-     const pct = Math.min(100, Math.max(0, Number(job.progress) || 0));
-     if (statusPct) statusPct.textContent = pct + "%";
-     if (progressFill) progressFill.style.width = pct + "%";
-diff --git a/clipery/public/job.js b/clipery/public/job.js
-index 4d2a4f2..d766ee9 100644
---- a/clipery/public/job.js
-+++ b/clipery/public/job.js
-@@ -46,7 +46,9 @@
- 
-     if (job.status === "processing" || job.status === "queued") {
-       statusBox.classList.remove("hide");
--      statusStage.textContent = CF.stageLabel(job.stage || job.status);
-+      statusStage.textContent =
-+        CF.stageLabel(job.stage || job.status) +
-+        (job.stageNote ? " (" + String(job.stageNote).replace(/^.*- /, "") + ")" : "");
-       const pct = Math.min(100, Math.max(0, Number(job.progress) || 0));
-       statusPct.textContent = pct + "%";
-       progressFill.style.width = pct + "%";
-diff --git a/clipery/public/shared.js b/clipery/public/shared.js
-index 855665b..87d4d57 100644
---- a/clipery/public/shared.js
-+++ b/clipery/public/shared.js
-@@ -43,6 +43,9 @@
-       probing: "Reading video",
-       detecting_moments: "Detecting moments",
-       scoring: "Scoring clips",
-+      listening: "Listening to the audio",
-+      watching: "Watching the picture",
-+      checking_context: "Checking context and payoff",
-       scoring_sources: "Scoring each video",
-       downloading: "Downloading links",
-       rendering: "Rendering vertical clips",
-diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index 17e39a3..c075914 100644
---- a/clipery/public/studio.js
-+++ b/clipery/public/studio.js
-@@ -286,6 +286,9 @@
-       probing: "Reading video",
-       detecting_moments: "Finding moments",
-       scoring: "Scoring",
-+      listening: "Listening",
-+      watching: "Watching",
-+      checking_context: "Checking context",
-       scoring_sources: "Scoring videos",
-       rendering: "Rendering",
-       rendering_clips: "Rendering clips",
-@@ -420,7 +423,13 @@
- 
-   function longProgress(job) {
-     if (longStatus) longStatus.style.display = "block";
--    if (longStage) longStage.textContent = stageLabel(job.stage || job.status);
-+    // A long step (transcribing, watching the picture) reports how many
-+    // seconds it has been running, so the screen never looks stuck.
-+    if (longStage) {
-+      longStage.textContent =
-+        stageLabel(job.stage || job.status) +
-+        (job.stageNote ? " " + String(job.stageNote).replace(/^.*- /, "") : "");
-+    }
-     var pct = Math.min(100, Math.max(0, Number(job.progress) || 0));
-     if (longPct) longPct.textContent = pct + "%";
-     if (longFill) longFill.style.width = pct + "%";
+     if _WHISPER_MODEL is None:
+         name = os.environ.get("CLIPERY_WHISPER_MODEL", "base")
+-        _WHISPER_MODEL = WhisperModel(name, device="cpu", compute_type="int8")
++        # Use every core we have. faster-whisper defaults to 4 threads, which
++        # leaves a modern laptop idling; on a 2-core box this is simply 2.
++        try:
++            threads = int(os.environ.get("CLIPERY_WHISPER_THREADS") or (os.cpu_count() or 4))
++        except ValueError:
++            threads = 4
++        threads = max(1, min(threads, 16))
++        _WHISPER_MODEL = WhisperModel(
++            name, device="cpu", compute_type="int8", cpu_threads=threads
++        )
++        print("whisper model=%s threads=%d" % (name, threads), file=sys.stderr)
++    # beam_size=1 (greedy) is about twice as fast as beam_size=5 and the
++    # difference is barely visible in burned-in captions. Set
++    # CLIPERY_WHISPER_BEAM=5 to trade the speed back for accuracy.
++    try:
++        beam = int(os.environ.get("CLIPERY_WHISPER_BEAM") or 1)
++    except ValueError:
++        beam = 1
+     segments, _info = _WHISPER_MODEL.transcribe(
+-        wav_path, word_timestamps=True, vad_filter=True, beam_size=5
++        wav_path,
++        word_timestamps=True,
++        vad_filter=True,
++        beam_size=max(1, beam),
++        # Not feeding the previous text back in avoids repetition loops and
++        # shaves more time off long videos.
++        condition_on_previous_text=False,
+     )
+     entries = []
+     words = []

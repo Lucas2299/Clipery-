@@ -498,7 +498,7 @@ async function burnAss(videoPath, assPath) {
         "-vf", vf,
         "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
         "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "128k",
+        "-c:a", "copy",
         "-movflags", "+faststart",
         tmpOut,
       ],
@@ -569,6 +569,78 @@ async function tryEnhanceClip(videoPath, opts = {}) {
   };
 }
 
+/**
+ * Build the .ass for a clip BEFORE it is rendered, working straight from the
+ * source video's audio. Extracting audio is nearly free (no video decode), so
+ * the caller can burn captions in the same ffmpeg pass that does the crop --
+ * one encode per clip instead of two.
+ *
+ * Returns null when there is nothing to burn; the caller then renders plain.
+ */
+async function prepareClipAss(source, start, dur, outFile, opts = {}) {
+  const wantSubs = !!opts.subStyle;
+  const wantHook = !!(opts.hook && opts.hook.enabled !== false);
+  if (!wantSubs && !wantHook) return null;
+  if (!subtitlesAvailable()) return null;
+
+  const noExt = String(outFile).replace(/\.mp4$/i, "");
+  const wavPath = noExt + ".speech.wav";
+  const jsonPath = noExt + ".words.json";
+  const assPath = noExt + ".subtitles.ass";
+
+  let words = [];
+  try {
+    await run(
+      "ffmpeg",
+      [
+        "-y", "-hide_banner", "-loglevel", "error",
+        "-ss", String(start),
+        "-i", source,
+        "-t", String(dur),
+        "-vn", "-ac", "1", "-ar", "16000",
+        wavPath,
+      ],
+      { timeout: 10 * 60 * 1000 }
+    );
+    const n = await transcribeToWords(wavPath, jsonPath);
+    if (n) {
+      try {
+        words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
+      } catch {}
+    }
+  } catch (e) {
+    console.warn("[subtitles] clip audio failed:", e.message);
+  }
+  try { fs.unlinkSync(wavPath); } catch {}
+  try { fs.unlinkSync(jsonPath); } catch {}
+
+  if (!words.length) return null;
+
+  let pages = [];
+  if (wantSubs) {
+    const style = normalizeSubStyle(opts.subStyle);
+    const rowChars = ROW_CHARS[style.size] - (CAPS_STYLES.has(style.style) ? 2 : 0);
+    pages = buildRollingPages(words, rowChars, style.words);
+  }
+
+  let hook = null;
+  if (wantHook) {
+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
+  }
+
+  if (!pages.length && !hook) return null;
+
+  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook), "utf8");
+  return {
+    assPath,
+    filter: `subtitles='${escFilterPath(assPath)}'`,
+    captions: pages.length,
+    subtitlesApplied: pages.length > 0,
+    hookApplied: !!hook,
+    hookText: hook ? hook.text : null,
+  };
+}
+
 /** Backwards-compatible wrapper: subtitles only. */
 async function tryAddSubtitles(videoPath, subStyle = {}) {
   const r = await tryEnhanceClip(videoPath, { subStyle });
@@ -580,6 +652,7 @@ module.exports = {
   subtitlesAvailable,
   tryAddSubtitles,
   tryEnhanceClip,
+  prepareClipAss,
   transcribeToWords,
   buildRollingPages,
   buildKaraokeAss,
