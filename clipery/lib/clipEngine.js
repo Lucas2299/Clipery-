@@ -495,6 +495,45 @@ if (FAST_MODE && !process.env.CLIPERY_WHISPER_MODEL) {
 
 // Encoder speed knobs for slow machines. "ultrafast" roughly halves encode
 // time again at the cost of a bigger file; "veryfast" is the balanced default.
+// A killed ffmpeg leaves a half-written mp4 that no browser can play, so the
+// per-clip encode budget scales with the clip: 20x its length, floor 5 min.
+// An old laptop burning captions into a 60s clip needs far more than the
+// fixed 200s this used to allow.
+/**
+ * Is this file actually playable? A truncated mp4 (ffmpeg killed, disk full)
+ * still exists on disk and still ends in .mp4, but has no readable video
+ * stream -- which is what makes a browser say it found no supported format.
+ */
+async function verifyClip(file) {
+  try {
+    if (!fs.existsSync(file) || fs.statSync(file).size < 10 * 1024) return false;
+    const { stdout } = await run(
+      "ffprobe",
+      [
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=codec_type,nb_frames:format=duration",
+        "-of", "json",
+        file,
+      ],
+      { timeout: 30000 }
+    );
+    const info = JSON.parse(stdout || "{}");
+    const stream = (info.streams || [])[0];
+    if (!stream || stream.codec_type !== "video") return false;
+    const seconds = parseFloat((info.format && info.format.duration) || 0);
+    return seconds > 0.4;
+  } catch {
+    return false;
+  }
+}
+
+function ENCODE_TIMEOUT_MS(dur) {
+  const env = Number(process.env.CLIPERY_ENCODE_TIMEOUT);
+  if (env > 0) return env * 1000;
+  return Math.max(5 * 60 * 1000, Math.round((Number(dur) || 60) * 20 * 1000));
+}
+
 const ENCODE_PRESET = process.env.CLIPERY_PRESET || (FAST_MODE ? "ultrafast" : "veryfast");
 const ENCODE_CRF = String(process.env.CLIPERY_CRF || (FAST_MODE ? 26 : 24));
 
@@ -570,7 +609,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
         "+faststart",
         outFile,
       ],
-      { timeout: 200000 }
+      { timeout: ENCODE_TIMEOUT_MS(dur) }
     );
 
   const dropAss = () => {
@@ -611,6 +650,43 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
   }
 
   dropAss();
+
+  // Prove it plays before we hand it to the browser. A rescue pass uses
+  // accurate seeking and the simplest possible chain: a watchable clip beats
+  // a clever one.
+  if (!(await verifyClip(outFile))) {
+    console.warn(`[render] clip @${start.toFixed(1)}s came out unplayable -> re-cutting it simply`);
+    const cropW = Math.min(
+      (srcMeta && srcMeta.width) || 1920,
+      Math.round((((srcMeta && srcMeta.height) || 1080) * targetW) / targetH)
+    );
+    try {
+      await run(
+        "ffmpeg",
+        [
+          "-y", "-hide_banner", "-loglevel", "error",
+          "-i", source,
+          "-ss", String(start),
+          "-t", String(dur),
+          "-vf", `crop=${cropW}:ih:x=(iw-${cropW})/2:y=0,scale=${targetW}:${targetH}`,
+          "-c:v", "libx264", "-preset", ENCODE_PRESET, "-crf", ENCODE_CRF,
+          "-pix_fmt", "yuv420p",
+          "-c:a", "aac", "-b:a", "128k",
+          "-movflags", "+faststart",
+          outFile,
+        ],
+        { timeout: ENCODE_TIMEOUT_MS(dur) }
+      );
+    } catch (e) {
+      console.warn(`[render] rescue cut failed: ${e.message.split("\n")[0]}`);
+    }
+    if (!(await verifyClip(outFile))) {
+      try { fs.unlinkSync(outFile); } catch {}
+      return { layout: "failed", broken: true, subtitlesApplied: false, hookApplied: false, hookText: null };
+    }
+    return { layout: "center", subtitlesApplied: false, hookApplied: false, hookText: null };
+  }
+
   return result(rf.layout);
 }
 
@@ -1060,6 +1136,11 @@ async function processVideo(sourcePath, options = {}) {
             }
           : null
       );
+      if (rendered.broken) {
+        console.warn(`[render] clip ${i + 1} could not be produced - leaving it out`);
+        job.renderNote = "one clip could not be rendered and was left out";
+        continue;
+      }
       const layout = rendered.layout;
       if (wantExtras) {
         if (rendered.subtitlesApplied) job.subtitlesApplied = true;
@@ -1072,7 +1153,7 @@ async function processVideo(sourcePath, options = {}) {
         }
       }
       clips.push({
-        rank: i + 1,
+        rank: clips.length + 1,
         reframe: layout,
         score: c.score,
         viralScore: vScore,
