@@ -57,7 +57,7 @@ function run(cmd, args, opts = {}) {
 }
 
 /* -------- face-follow crop: centre the 9:16 frame on the speaker -------- */
-const PY = process.env.PYTHON || "python3";
+const PY = require("./python").PYTHON;
 const FACE_PY = path.join(__dirname, "facedetect.py");
 
 /**

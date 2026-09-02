@@ -30,7 +30,8 @@ function jobPath(id) {
 }
 
 /* -------- face-follow crop: centre the 9:16 frame on the speaker -------- */
-const PY = process.env.PYTHON || "python3";
+const { PYTHON: PY, bin } = require("./python");
+const YTDLP = bin("yt-dlp");
 const FACE_PY = path.join(__dirname, "facedetect.py");
 
 /** Median face-centre X (0..1) for a time window, or null (centre crop). */
@@ -204,12 +205,12 @@ async function tryYtdlp(url, outBase) {
     url,
   ];
   try {
-    await run("yt-dlp", args, { timeout: 180000 });
+    await run(YTDLP, args, { timeout: 180000 });
   } catch (e) {
     // retry simpler format
     try {
       await run(
-        "yt-dlp",
+        YTDLP,
         [
           "--no-playlist", "-f", "b", "--max-filesize", "40M",
           "-o", outBase + ".%(ext)s",

@@ -11,3 +11,5 @@ data/sessions.json
 public/clips
 uploads
 .env
+venv
+.venv
