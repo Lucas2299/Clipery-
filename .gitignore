@@ -9,3 +9,8 @@ clipery/tmp/*
 clipery/data/users.json
 clipery/data/sessions.json
 clipery/.env
+
+# python virtual environment and downloaded face model (local only)
+clipery/venv/
+clipery/.venv/
+clipery/lib/models/

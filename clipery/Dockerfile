@@ -22,14 +22,16 @@ RUN apt-get update \
 #                               karaoke captions.
 #   opencv-python-headless   -> face tracking for smart reframing, so the 9:16
 #                               crop follows the speaker instead of the centre.
+#                               Pinned below 5: OpenCV 5 removed the classic
+#                               face cascade the tracker uses.
 #   yt-dlp                   -> downloads from a pasted link.
 #   pocketsphinx             -> tiny offline fallback when whisper is disabled.
 RUN pip3 install --no-cache-dir --break-system-packages \
       faster-whisper \
-      opencv-python-headless \
+      "opencv-python-headless<5" \
       yt-dlp \
       pocketsphinx \
-  || pip3 install --no-cache-dir faster-whisper opencv-python-headless yt-dlp pocketsphinx
+  || pip3 install --no-cache-dir faster-whisper "opencv-python-headless<5" yt-dlp pocketsphinx
 
 # Bake the speech model into the image. Without this the FIRST clip of every
 # fresh container stalls for a minute downloading ~150MB, and a read-only or

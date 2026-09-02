@@ -18,7 +18,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFile, spawnSync } = require("child_process");
 
-const PY = process.env.PYTHON || "python3";
+const PY = require("./python").PYTHON;
 const TRANSCRIBE_PY = path.join(__dirname, "transcribe.py");
 
 // ASS colors are &HAABBGGRR (alpha + blue-green-red order!).
