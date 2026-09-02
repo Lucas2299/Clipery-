@@ -124,6 +124,9 @@
       probing: "Reading video",
       detecting_moments: "Detecting moments",
       scoring: "Scoring clips",
+      listening: "Listening to the audio",
+      watching: "Watching the picture",
+      checking_context: "Checking context and payoff",
       rendering: "Rendering vertical clips",
       complete: "Done",
       processing: "Processing",
@@ -206,7 +209,11 @@
 
   function updateProgress(job) {
     if (statusBox) statusBox.hidden = false;
-    if (statusStage) statusStage.textContent = stageLabel(job.stage || job.status);
+    if (statusStage) {
+      statusStage.textContent =
+        stageLabel(job.stage || job.status) +
+        (job.stageNote ? " (" + String(job.stageNote).replace(/^.*- /, "") + ")" : "");
+    }
     const pct = Math.min(100, Math.max(0, Number(job.progress) || 0));
     if (statusPct) statusPct.textContent = pct + "%";
     if (progressFill) progressFill.style.width = pct + "%";

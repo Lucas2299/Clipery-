@@ -193,16 +193,22 @@ def main() -> None:
     next_t = 0.0            # next sample time, relative to `start`
     base = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0 or start
     while True:
-        ok, frame = cap.read()
-        if not ok:
+        # grab() pulls the next frame WITHOUT decoding it - skipping is then
+        # nearly free. We only pay for a full decode at the sample points.
+        # Decoding every frame of a 20 minute video took minutes and looked
+        # like the app had frozen.
+        if not cap.grab():
             break
         frame_i += 1
         t = base + frame_i / fps
         if t > end:
             break
         if t - base < next_t - 1e-6:
-            continue        # not a sample point yet, skip the work
+            continue        # not a sample point yet, no decode needed
         next_t += step
+        ok, frame = cap.retrieve()
+        if not ok:
+            continue
 
         small_w = 384
         small = cv2.resize(frame, (small_w, max(1, int(frame.shape[0] * small_w / frame.shape[1]))))
