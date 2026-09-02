@@ -26,6 +26,10 @@ FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
 _WHISPER_MODEL = None
 
 
+class NoAudio(Exception):
+    """This media has no audio track we can read."""
+
+
 def to_wav(src: str, dst: str) -> None:
     if src.lower().endswith(".wav"):
         try:
@@ -36,10 +40,17 @@ def to_wav(src: str, dst: str) -> None:
                     return
         except Exception:
             pass
-    subprocess.run(
+    proc = subprocess.run(
         [FFMPEG, "-y", "-v", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", "-f", "wav", dst],
-        check=True,
+        capture_output=True,
+        text=True,
     )
+    if proc.returncode != 0:
+        # ffmpeg exits 234 (EINVAL) when the output would hold no stream at
+        # all, which means this file has no usable audio: a silent clip, or a
+        # truncated one. That is a reason to skip captions, not to blow up
+        # with a Python traceback.
+        raise NoAudio((proc.stderr or "").strip().split("\n")[-1][:200])
 
 
 def srt_ts(seconds: float) -> str:
@@ -217,7 +228,19 @@ def main() -> None:
     src, dst = sys.argv[1], sys.argv[2]
     offset = float(sys.argv[3]) if len(sys.argv) > 3 else 0.0
     tmp = dst + ".16k.wav"
-    to_wav(src, tmp)
+    try:
+        to_wav(src, tmp)
+    except NoAudio as e:
+        # Report "no words" cleanly so the caller just renders without
+        # captions instead of treating this as a crash.
+        print("no-audio: %s" % e, file=sys.stderr)
+        if dst.lower().endswith(".json"):
+            with open(dst, "w", encoding="utf-8") as f:
+                json.dump({"version": 1, "words": []}, f)
+        else:
+            open(dst, "w", encoding="utf-8").close()
+        print("words=0")
+        return
     entries, words = transcribe(tmp, offset)
     try:
         os.unlink(tmp)
