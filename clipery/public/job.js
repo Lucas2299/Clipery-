@@ -46,7 +46,9 @@
 
     if (job.status === "processing" || job.status === "queued") {
       statusBox.classList.remove("hide");
-      statusStage.textContent = CF.stageLabel(job.stage || job.status);
+      statusStage.textContent =
+        CF.stageLabel(job.stage || job.status) +
+        (job.stageNote ? " (" + String(job.stageNote).replace(/^.*- /, "") + ")" : "");
       const pct = Math.min(100, Math.max(0, Number(job.progress) || 0));
       statusPct.textContent = pct + "%";
       progressFill.style.width = pct + "%";

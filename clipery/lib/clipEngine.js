@@ -64,14 +64,22 @@ const FACE_PY = path.join(__dirname, "facedetect.py");
  * Face track for a time window: where the speaker is, moment by moment.
  * Returns {x, track:[{t,x,faces}], speakers, spread} or null (centre crop).
  */
-async function faceTrack(source, start, end) {
+async function faceTrack(source, start, end, opts = {}) {
+  if (String(process.env.CLIPERY_FACE_TRACKING || "").match(/^(0|off|false)$/i)) return null;
+  const perSec = opts.perSec || 2.5;
+  const timeout = opts.timeout || 120000;
+  const t0 = Date.now();
   try {
-    const { stdout } = await run(PY, [FACE_PY, source, String(start), String(end)], { timeout: 120000 });
+    const { stdout } = await run(
+      PY,
+      [FACE_PY, source, String(start), String(end), String(perSec)],
+      { timeout }
+    );
     const r = JSON.parse(stdout.trim().split("\n").pop() || "{}");
     if (r && r.ok && Array.isArray(r.track) && r.track.length) {
       console.log(
         `[reframe] ${r.speakers || 1} speaker(s), spread ${((r.spread || 0) * 100).toFixed(0)}% of width, ` +
-        `${r.faces}/${r.samples} samples with a face`
+        `${r.faces}/${r.samples} samples with a face (${((Date.now() - t0) / 1000).toFixed(1)}s)`
       );
       return r;
     }
@@ -79,9 +87,40 @@ async function faceTrack(source, start, end) {
     else if (r && r.reason === "no-cv2") console.warn("[reframe] off - run: pip install opencv-python-headless");
     else console.warn(`[reframe] detector problem: ${(r && r.error) || (r && r.reason) || "unknown"} -> centre crop`);
   } catch (e) {
-    console.warn(`[reframe] failed: ${e.message} -> centre crop`);
+    const secs = ((Date.now() - t0) / 1000).toFixed(0);
+    if (e.killed || /timed? ?out|ETIMEDOUT/i.test(e.message || "")) {
+      console.warn(`[reframe] gave up after ${secs}s -> centre crop (set CLIPERY_FACE_TRACKING=0 to skip it)`);
+    } else {
+      console.warn(`[reframe] failed: ${e.message} -> centre crop`);
+    }
   }
   return null;
+}
+
+/**
+ * Keep the job file moving while a long step runs, so the progress bar does
+ * not sit frozen and look crashed. Returns a stop() function.
+ */
+function heartbeat(job, writeJob, label, fromPct, toPct, expectedSec) {
+  const started = Date.now();
+  const tick = () => {
+    const secs = (Date.now() - started) / 1000;
+    const share = Math.min(0.95, secs / Math.max(5, expectedSec));
+    job.progress = Math.round(fromPct + (toPct - fromPct) * share);
+    job.stageNote = `${label} - ${Math.round(secs)}s`;
+    try {
+      writeJob(job);
+    } catch (_) {}
+  };
+  tick();
+  const timer = setInterval(tick, 3000);
+  if (timer.unref) timer.unref();
+  return () => {
+    clearInterval(timer);
+    job.stageNote = null;
+    const secs = ((Date.now() - started) / 1000).toFixed(1);
+    console.log(`[stage] ${label} finished in ${secs}s`);
+  };
 }
 
 /** Old single-point helper, kept for callers that only need one X. */
@@ -684,17 +723,32 @@ async function processVideo(sourcePath, options = {}) {
     // actually being said - story, payoff, surprise, hook strength - instead of
     // guessing from loudness alone. Trend keywords reuse the same transcript.
     let videoWords = null;
-    if (meta.hasAudio) {
+    const brainOff = String(process.env.CLIPERY_BRAIN || "").match(/^(0|off|false)$/i);
+    if (meta.hasAudio && !brainOff) {
       job.stage = "listening";
       writeJob(job);
+      // Transcribing runs at roughly 3-8x real time on a CPU, so a 10 minute
+      // video is a couple of minutes with nothing to show. Tick the progress
+      // bar and say how long it has been going.
+      const stop = heartbeat(job, writeJob, "Listening to the audio", 28, 40, meta.duration / 4);
+      console.log(`[brain] transcribing ${(meta.duration / 60).toFixed(1)} min of audio...`);
       const tmpWords = path.join(JOBS_DIR, `${id}.words.json`);
-      const n = await transcribeToWords(sourcePath, tmpWords);
       try {
+        const n = await transcribeToWords(sourcePath, tmpWords);
         if (n > 0) videoWords = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
-      } catch {}
+      } catch (e) {
+        console.warn(`[brain] transcript failed: ${e.message}`);
+      }
+      stop();
       try { fs.unlinkSync(tmpWords); } catch {}
       job.transcribed = !!(videoWords && videoWords.length);
-      if (!job.transcribed) job.brainNote = "no transcript - scored on audio and visuals only";
+      if (job.transcribed) {
+        console.log(`[brain] ${videoWords.length} words - hook, story and payoff scoring is ON`);
+      } else {
+        job.brainNote = "no transcript - scored on audio and visuals only";
+        console.warn("[brain] no transcript (install faster-whisper) - falling back to audio scoring");
+      }
+      job.progress = 40;
       writeJob(job);
     }
     const trendSet =
@@ -704,10 +758,22 @@ async function processVideo(sourcePath, options = {}) {
 
     // Cheap visual pass: how many faces are on screen across the video, so the
     // scorer can spot reactions and people entering or leaving the frame.
+    // Cheap visual pass: how many faces are on screen across the video, so the
+    // scorer can spot reactions and people entering or leaving the frame.
+    // Deliberately coarse - one look every 3 seconds, capped at 90 seconds of
+    // work. It is a scoring hint, not the reframing (that runs per clip).
     let visualTrack = null;
-    if (videoWords || scenes.length) {
-      const det = await faceTrack(sourcePath, 0, Math.min(meta.duration, 20 * 60));
+    if (!brainOff) {
+      job.stage = "watching";
+      const stopWatch = heartbeat(job, writeJob, "Watching the picture", 40, 46, 30);
+      const det = await faceTrack(sourcePath, 0, Math.min(meta.duration, 20 * 60), {
+        perSec: 0.33,
+        timeout: 90000,
+      });
+      stopWatch();
       visualTrack = (det && det.track) || null;
+      job.progress = 46;
+      writeJob(job);
     }
 
     const scored = [];
@@ -718,7 +784,7 @@ async function processVideo(sourcePath, options = {}) {
       energies.push(
         meta.hasAudio ? await sampleEnergy(sourcePath, c.start, c.end) : { energy: 55, punch: 55 }
       );
-      job.progress = 28 + Math.round(((i + 1) / candidates.length) * 14);
+      job.progress = 46 + Math.round(((i + 1) / candidates.length) * 3);
       writeJob(job);
     }
     const stats = {
@@ -797,7 +863,7 @@ async function processVideo(sourcePath, options = {}) {
         dimensions: dims,
         title: titleForClip(c, meta.duration, dims, mode, i),
       });
-      job.progress = 42 + Math.round(((i + 1) / candidates.length) * 8);
+      job.progress = 49 + Math.round(((i + 1) / candidates.length) * 3);
       writeJob(job);
     }
 

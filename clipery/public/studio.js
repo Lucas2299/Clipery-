@@ -286,6 +286,9 @@
       probing: "Reading video",
       detecting_moments: "Finding moments",
       scoring: "Scoring",
+      listening: "Listening",
+      watching: "Watching",
+      checking_context: "Checking context",
       scoring_sources: "Scoring videos",
       rendering: "Rendering",
       rendering_clips: "Rendering clips",
@@ -420,7 +423,13 @@
 
   function longProgress(job) {
     if (longStatus) longStatus.style.display = "block";
-    if (longStage) longStage.textContent = stageLabel(job.stage || job.status);
+    // A long step (transcribing, watching the picture) reports how many
+    // seconds it has been running, so the screen never looks stuck.
+    if (longStage) {
+      longStage.textContent =
+        stageLabel(job.stage || job.status) +
+        (job.stageNote ? " " + String(job.stageNote).replace(/^.*- /, "") : "");
+    }
     var pct = Math.min(100, Math.max(0, Number(job.progress) || 0));
     if (longPct) longPct.textContent = pct + "%";
     if (longFill) longFill.style.width = pct + "%";
