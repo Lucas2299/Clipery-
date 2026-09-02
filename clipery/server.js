@@ -1,3 +1,6 @@
+// Settings from clipery/.env must land in process.env before anything else
+// is loaded, so this require stays first.
+require("./lib/env");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -21,29 +24,6 @@ const {
 const { normalizeSubStyle } = require("./lib/subtitles");
 const auth = require("./lib/auth");
 const oauth = require("./lib/oauth");
-
-// Load clipery/.env (KEY=value per line) so social login keys can live in a
-// file instead of being exported by hand on every start. Real environment
-// variables always win over the file.
-(function loadDotEnv() {
-  try {
-    const file = path.join(__dirname, ".env");
-    if (!fs.existsSync(file)) return;
-    for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq < 0) continue;
-      const key = trimmed.slice(0, eq).trim();
-      let value = trimmed.slice(eq + 1).trim();
-      if (/^(".*"|'.*')$/s.test(value)) value = value.slice(1, -1);
-      if (!(key in process.env)) process.env[key] = value;
-    }
-    console.log("[env] loaded clipery/.env");
-  } catch (e) {
-    console.warn("[env] could not read .env:", e.message);
-  }
-})();
 
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
