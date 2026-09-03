@@ -84,7 +84,11 @@ async function faceTrack(source, start, end, opts = {}) {
       return r;
     }
     if (r && r.ok) console.log("[reframe] no clear face -> centre crop");
-    else if (r && r.reason === "no-cv2") console.warn("[reframe] off - run: pip install opencv-python-headless");
+    else if (r && r.reason === "no-faces") {
+      console.log("[reframe] no faces -> centre crop");
+      // Keep the motion readings: they still tell the scorer where the action is.
+      if (Array.isArray(r.track) && r.track.length) return { ...r, x: null, speakers: 0, spread: 0 };
+    } else if (r && r.reason === "no-cv2") console.warn("[reframe] off - run: pip install opencv-python-headless");
     else console.warn(`[reframe] detector problem: ${(r && r.error) || (r && r.reason) || "unknown"} -> centre crop`);
   } catch (e) {
     const secs = ((Date.now() - t0) / 1000).toFixed(0);
@@ -944,6 +948,17 @@ async function processVideo(sourcePath, options = {}) {
         dims.complete = arc.complete;
         dims.missing = arc.missing;
       }
+      if (!read && visualTrack) {
+        // No usable speech here (gameplay, sport, music): let the picture
+        // itself rank the moment - action beats a static screen.
+        const motion = brain.motionSignals(c.start, c.end, visualTrack);
+        if (motion) {
+          dims.motion = motion.level;
+          dims.total = Math.min(99, Math.max(30, Math.round(dims.total + motion.bonus * 0.8)));
+          dims.viralScore = dims.total;
+          if (motion.reason) dims.reasons = [motion.reason[0].toUpperCase() + motion.reason.slice(1), ...(dims.reasons || [])].slice(0, 4);
+        }
+      }
       if (read) {
         dims.content = read.content;
         dims.speech = read.speech;
@@ -958,6 +973,7 @@ async function processVideo(sourcePath, options = {}) {
         dims.total = Math.min(99, Math.max(30, Math.round(blended)));
         dims.viralScore = dims.total;
         dims.hook = Math.round(dims.hook * 0.35 + read.hook * 0.65);
+        if (read.motion != null) dims.motion = read.motion;
         const arcWhy = [];
         if (arc && arc.roles) {
           if (arc.roles.includes("payoff")) arcWhy.push("Complete story with a payoff");
