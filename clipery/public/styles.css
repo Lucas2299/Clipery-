@@ -2719,3 +2719,16 @@ body.studio-app {
   width: auto;
   display: block;
 }
+
+/* Three-brain panel on each clip card */
+.brain-panel { margin: .5rem 0 .25rem; font-size: .78rem; color: #c9c4d4; }
+.brain-panel summary { cursor: pointer; color: #a89ff0; font-weight: 600; }
+.brain-line { margin: .4rem 0 .2rem; line-height: 1.35; }
+.brain-scores { display: grid; grid-template-columns: 1fr 1fr; gap: .15rem .8rem; margin: .35rem 0; }
+.bscore { display: grid; grid-template-columns: 5.2rem 1fr 2rem; align-items: center; gap: .35rem; }
+.bscore-k { text-transform: capitalize; opacity: .8; }
+.bscore-bar { height: 6px; background: rgba(255,255,255,.08); border-radius: 3px; overflow: hidden; }
+.bscore-bar i { display: block; height: 100%; border-radius: 3px; background: #6c63ff; }
+.bscore-bar i.hi { background: #3ddc84; }
+.bscore-bar i.lo { background: #8a86a0; }
+.bscore-v { text-align: right; font-variant-numeric: tabular-nums; }

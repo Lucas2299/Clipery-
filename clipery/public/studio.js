@@ -308,6 +308,36 @@
       .replace(/"/g, "&quot;");
   }
 
+  // The three brains, per clip: what it is (1), why it scores (2), how it
+  // was cut (3). Collapsed by default so the card stays tidy.
+  var SCORE_ORDER = ["hook", "curiosity", "emotion", "value", "completion", "surprise", "payoff", "retention"];
+  function brainPanel(c) {
+    var sc = c.scores;
+    if (!sc) return "";
+    var bars = SCORE_ORDER.map(function (k) {
+      var v = sc[k] != null ? sc[k] : 0;
+      var cls = v >= 75 ? "hi" : v >= 55 ? "mid" : "lo";
+      return (
+        '<div class="bscore"><span class="bscore-k">' + k + "</span>" +
+        '<span class="bscore-bar"><i class="' + cls + '" style="width:' + v + '%"></i></span>' +
+        '<span class="bscore-v">' + v + "</span></div>"
+      );
+    }).join("");
+    var ed = c.edit || {};
+    var edits = [];
+    if (ed.anchor) edits.push("built around: " + ed.anchor);
+    if (ed.reasons && ed.reasons.length) edits.push(ed.reasons.join(", "));
+    if (ed.emphasis && ed.emphasis.length) edits.push("caption emphasis: " + ed.emphasis.slice(0, 5).join(", "));
+    if (ed.trimmable >= 1) edits.push(ed.trimmable + "s of dead air could be trimmed");
+    return (
+      '<details class="brain-panel"><summary>Why this clip</summary>' +
+      (c.summary ? '<p class="brain-line"><b>What it is:</b> ' + esc(c.summary) + "</p>" : "") +
+      '<div class="brain-scores">' + bars + "</div>" +
+      (edits.length ? '<p class="brain-line"><b>Edit:</b> ' + esc(edits.join(" / ")) + "</p>" : "") +
+      "</details>"
+    );
+  }
+
   function clipCard(c) {
     var vs = c.viralScore != null ? c.viralScore : c.score;
     var verdict = c.verdict || "";
@@ -344,6 +374,7 @@
           reasons.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") +
           "</ul>"
         : "") +
+      brainPanel(c) +
       '<div class="clip-actions"><a href="' + esc(c.url) + '" download>Download</a></div>' +
       "</div></article>"
     );

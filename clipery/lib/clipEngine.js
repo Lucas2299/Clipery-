@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { prepareClipAss, transcribeToWords } = require("./subtitles");
 const brain = require("./brain");
 const story = require("./story");
+const brains = require("./brain/index"); // the three brains: understand / score / edit
 const { reframeFilter } = require("./reframe");
 
 const execFileAsync = promisify(execFile);
@@ -770,25 +771,42 @@ async function detectSilences(sourcePath) {
   return sils;
 }
 
-/** Move [start,end] to nearby silence edges: begin right after a pause, stop at a pause. */
-function snapCutsToSilence(sils, start, end, totalDur) {
-  let ns = start;
-  let cand = null;
-  for (const s of sils) {
-    if (s.end > start && s.end <= start + 1.6 && s.start <= start + 1.6) cand = s.end;
-  }
-  if (cand !== null && end - cand >= 6) ns = cand;
+// Cut-point snapping now lives in Brain 3: lib/brain/edit.js (snapToSilence).
 
-  let ne = end;
-  cand = null;
-  for (const s of sils) {
-    if (s.start >= end - 2.2 && s.start <= end) cand = s.start;
-  }
-  if (cand !== null && cand - ns >= 6) ne = cand;
-
-  ne = Math.min(ne, totalDur);
-  if (ne - ns < 6) return { start, end }; // too risky - keep original cut
-  return { start: +ns.toFixed(2), end: +ne.toFixed(2) };
+/**
+ * Fold the three-brain reading into the audio-only `dims` the engine already
+ * carries. Keeps the old field names (viralScore, verdict, reasons, quote) so
+ * the studio, rankings and titles keep working, and adds the new ones:
+ *   dims.scores   - the eight Brain 2 dimensions (hook, curiosity, ...)
+ *   dims.brain    - Brain 1's reading (topic, story, conflict, ...)
+ *   dims.summary  - one plain-English line about the moment
+ */
+function applyThought(dims, thought, hasWords, baseTotal) {
+  if (!thought) return dims;
+  const base = baseTotal != null ? baseTotal : dims.total;
+  dims.scores = thought.scores;
+  dims.brain = thought.understanding;
+  dims.summary = thought.summary;
+  dims.topic = thought.topic;
+  dims.quote = thought.quote || dims.quote || null;
+  dims.wpm = thought.wpm;
+  if (thought.motion != null) dims.motion = thought.motion;
+  dims.hook = Math.round(dims.hook * 0.35 + thought.scores.hook * 0.65);
+  dims.complete = thought.understanding ? thought.understanding.missing.length === 0 : undefined;
+  dims.missing = thought.understanding ? thought.understanding.missing : [];
+  dims.arc = thought.scores.completion;
+  // With a transcript the brains outweigh raw loudness; without one they
+  // only have visuals to go on, so loudness keeps most of its say.
+  const blended = hasWords && thought.understanding
+    ? base * 0.3 + thought.total * 0.7
+    : base * 0.6 + thought.total * 0.4;
+  dims.total = Math.min(99, Math.max(30, Math.round(blended)));
+  dims.viralScore = dims.total;
+  const vk = brains.verdictFor(dims.total);
+  dims.verdict = vk.text;
+  dims.verdictKey = vk.key;
+  dims.reasons = [...new Set([...thought.reasons, ...(dims.reasons || [])])].slice(0, 4);
+  return dims;
 }
 
 async function processVideo(sourcePath, options = {}) {
@@ -931,8 +949,8 @@ async function processVideo(sourcePath, options = {}) {
 
       const dims = scoreDimensions(c, meta.duration, energy, mode, i, stats);
 
-      // The brain: content + speech + visuals + hook, read off the transcript.
-      const read = brain.analyzeMoment({
+      // Brain 1 reads the moment, Brain 2 scores it on eight dimensions.
+      const thought = brains.think({
         words: videoWords,
         start: c.start,
         end: c.end,
@@ -942,49 +960,7 @@ async function processVideo(sourcePath, options = {}) {
         faceTrack: visualTrack,
         mode,
       });
-      const arc = videoWords ? story.arcScore(videoWords, c.start, c.end) : null;
-      if (arc) {
-        dims.arc = arc.score;
-        dims.complete = arc.complete;
-        dims.missing = arc.missing;
-      }
-      if (!read && visualTrack) {
-        // No usable speech here (gameplay, sport, music): let the picture
-        // itself rank the moment - action beats a static screen.
-        const motion = brain.motionSignals(c.start, c.end, visualTrack);
-        if (motion) {
-          dims.motion = motion.level;
-          dims.total = Math.min(99, Math.max(30, Math.round(dims.total + motion.bonus * 0.8)));
-          dims.viralScore = dims.total;
-          if (motion.reason) dims.reasons = [motion.reason[0].toUpperCase() + motion.reason.slice(1), ...(dims.reasons || [])].slice(0, 4);
-        }
-      }
-      if (read) {
-        dims.content = read.content;
-        dims.speech = read.speech;
-        dims.visual = read.visual;
-        dims.hookText = read.hook;
-        dims.quote = read.quote;
-        dims.wpm = read.wpm;
-        // Transcript understanding outweighs raw loudness.
-        const blended = arc
-          ? dims.total * 0.28 + read.brain * 0.52 + arc.score * 0.2
-          : dims.total * 0.35 + read.brain * 0.65;
-        dims.total = Math.min(99, Math.max(30, Math.round(blended)));
-        dims.viralScore = dims.total;
-        dims.hook = Math.round(dims.hook * 0.35 + read.hook * 0.65);
-        if (read.motion != null) dims.motion = read.motion;
-        const arcWhy = [];
-        if (arc && arc.roles) {
-          if (arc.roles.includes("payoff")) arcWhy.push("Complete story with a payoff");
-          else if (arc.roles.includes("tension")) arcWhy.push("Builds tension");
-        }
-        dims.reasons = [...arcWhy, ...read.reasons, ...(dims.reasons || [])].slice(0, 4);
-        dims.verdictKey =
-          dims.total >= 90 ? "viral" : dims.total >= 82 ? "strong" : dims.total >= 72 ? "good" : dims.total >= 60 ? "okay" : "low";
-        dims.verdict =
-          { viral: "Likely to go viral", strong: "Strong viral chance", good: "Good to post", okay: "Okay / test it", low: "Low priority" }[dims.verdictKey];
-      }
+      applyThought(dims, thought, !!videoWords);
       if (trendSet) {
         let hits = 0;
         for (const w of videoWords) {
@@ -1030,11 +1006,11 @@ async function processVideo(sourcePath, options = {}) {
 
         c.start = arc.start;
         c.end = arc.end;
-        c.dimensions.arc = after.score;
-        c.dimensions.complete = after.complete;
-        c.dimensions.missing = after.missing;
         c.dimensions.anchor = arc.anchor ? arc.anchor.text : null;
-        const read = brain.analyzeMoment({
+        // Re-think the trimmed window: a whole story deserves a better number
+        // than the fragment we started with.
+        const audioOnly = scoreDimensions(c, meta.duration, { energy: stats.avgEnergy, punch: stats.avgPunch }, mode, 0, stats);
+        const thought = brains.think({
           words: videoWords,
           start: arc.start,
           end: arc.end,
@@ -1044,17 +1020,10 @@ async function processVideo(sourcePath, options = {}) {
           faceTrack: visualTrack,
           mode,
         });
-        if (read) {
-          c.dimensions.quote = read.quote;
-          c.dimensions.hook = Math.round(c.dimensions.hook * 0.4 + read.hook * 0.6);
-          c.score = c.dimensions.total = Math.min(
-            99,
-            Math.max(30, Math.round(c.dimensions.total * 0.45 + read.brain * 0.35 + after.score * 0.2))
-          );
-          c.dimensions.viralScore = c.score;
-          if (arc.reasons.length) {
-            c.dimensions.reasons = [...arc.reasons.map(cap), ...(c.dimensions.reasons || [])].slice(0, 4);
-          }
+        applyThought(c.dimensions, thought, true, audioOnly.total);
+        c.score = c.dimensions.total;
+        if (arc.reasons.length) {
+          c.dimensions.reasons = [...arc.reasons.map(cap), ...(c.dimensions.reasons || [])].slice(0, 4);
         }
       }
       scored.sort((a, b) => b.score - a.score);
@@ -1110,7 +1079,7 @@ async function processVideo(sourcePath, options = {}) {
       if (silences.length) {
         const seen = new Set();
         for (const c of top) {
-          const snapped = snapCutsToSilence(silences, c.start, c.end, meta.duration);
+          const snapped = brains.edit.snapToSilence(silences, c.start, c.end, meta.duration);
           const key = `${snapped.start}-${snapped.end}`;
           if ((snapped.start !== c.start || snapped.end !== c.end) && seen.has(key)) continue;
           seen.add(key);
@@ -1120,6 +1089,27 @@ async function processVideo(sourcePath, options = {}) {
         }
       }
     } catch (_) {}
+
+    // Brain 3: the edit plan for each clip (caption emphasis, trimmable dead
+    // air, the anchor line). Pure text work, shown in the studio.
+    for (const c of top) {
+      try {
+        c.edit = brains.edit.plan({
+          words: videoWords,
+          start: c.start,
+          end: c.end,
+          duration: meta.duration,
+          mode,
+          captions: !!options.subtitles,
+        });
+        // Edges were already decided above; keep them, take the rest.
+        c.edit.start = c.start;
+        c.edit.end = c.end;
+        c.edit.duration = +(c.end - c.start).toFixed(2);
+      } catch (_) {
+        c.edit = null;
+      }
+    }
 
     job.stage = "rendering";
     job.progress = 52;
@@ -1182,6 +1172,9 @@ async function processVideo(sourcePath, options = {}) {
         end: c.end,
         duration: +(c.end - c.start).toFixed(2),
         dimensions: c.dimensions,
+        scores: c.dimensions.scores || null,
+        summary: c.dimensions.summary || null,
+        edit: c.edit || null,
         url: `/clips/${id}/${filename}`,
         downloadName: `viral-${vScore}-rank${i + 1}-${id}.mp4`,
         postTip:
