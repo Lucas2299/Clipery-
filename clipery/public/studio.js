@@ -143,7 +143,7 @@
         // upcoming: hidden for pop/mrbeast, white for highlight/hormozi, full-colour for static looks
         if (s.style === "pop" || s.style === "mrbeast") { w.style.color = "#fff"; w.style.opacity = "0"; }
         else if (STATIC[s.style]) { w.style.color = wordCol; w.style.opacity = "1"; }
-        else if (s.style === "highlight" || s.style === "hormozi") { w.style.color = "#fff"; w.style.opacity = "1"; }
+        else if (s.style === "highlight" || s.style === "hormozi" || s.style === "reels") { w.style.color = "#fff"; w.style.opacity = "1"; }
         else { w.style.color = "#fff"; w.style.opacity = "0.45"; }
         w.style.textShadow = shadow;
       } else {
@@ -297,6 +297,22 @@
   }
   wireSubPreview("long");
   wireSubPreview("rank");
+
+  // Reels card: give it its own look (dark box, pink highlight) so it no
+  // longer reads as a copy of Hormozi. Done here because the card markup is
+  // one long generated line.
+  (function styleReelsCards() {
+    TEMPLATES.reels = { color: "pink", size: "medium", pos: "bottom", style: "reels", words: 4 };
+    var cards = document.querySelectorAll('.sub-card[data-tpl="reels"]');
+    for (var i = 0; i < cards.length; i++) {
+      var c = cards[i];
+      c.classList.remove("sc-caps");
+      c.classList.add("sc-box");
+      c.style.setProperty("--hl", "#FF4D6D");
+      var meta = c.querySelector(".sc-meta");
+      if (meta) meta.textContent = "pink . med . 4 words";
+    }
+  })();
 
   function setMsg(node, text, isErr) {
     if (!node) return;
