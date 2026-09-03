@@ -169,4 +169,118 @@ function plan(o) {
   };
 }
 
-module.exports = { decideCut, snapToSilence, deadAir, emphasisWords, decideFraming, plan };
+/* ------------------------------------------------------------------ *
+ * Punch-in: a gentle zoom on the line the clip is built around
+ * ------------------------------------------------------------------ */
+
+/**
+ * Where the anchor sentence sits inside the clip, from the clip's own word
+ * timings (clip-relative seconds). Returns {from,to} or null.
+ */
+function locateLine(words, lineText, clipDur) {
+  if (!Array.isArray(words) || !words.length || !lineText) return null;
+  const norm = (t) => String(t).toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
+  const target = norm(lineText).split(" ").filter(Boolean);
+  if (target.length < 3) return null;
+  const ws = words.map((w) => norm(w.w));
+  const key = target.slice(0, 3).join(" ");
+  for (let i = 0; i + 2 < ws.length; i++) {
+    if (ws[i] + " " + ws[i + 1] + " " + ws[i + 2] !== key) continue;
+    const j = Math.min(words.length - 1, i + target.length - 1);
+    const from = Number(words[i].s);
+    const to = Number(words[j].e || words[j].s) + 0.3;
+    if (to <= from || from < 0 || (clipDur && from > clipDur)) return null;
+    return { from: +from.toFixed(2), to: +Math.min(to, clipDur || to).toFixed(2) };
+  }
+  return null;
+}
+
+/**
+ * ffmpeg filter that zooms in `amount` (0.08 = 8%) between `from` and `to`,
+ * easing in and out over `ramp` seconds. Goes AFTER the 9:16 crop/scale so it
+ * works for every layout, and keeps the frame size unchanged. It is one
+ * per-frame scale + centre crop: cheap, unlike zoompan.
+ */
+function punchInFilter(from, to, outW, outH, amount = 0.08, ramp = 0.35) {
+  if (!(to > from)) return null;
+  const n2 = (v) => (Math.round(v * 100) / 100).toString();
+  const rise = `min(1\\,max(0\\,(t-${n2(from)})/${n2(ramp)}))`;
+  const fall = `min(1\\,max(0\\,(${n2(to)}-t)/${n2(ramp)}))`;
+  const z = `(1+${n2(amount)}*${rise}*${fall})`;
+  return (
+    `scale=w='trunc(${outW}*${z}/2)*2':h='trunc(${outH}*${z}/2)*2':eval=frame,` +
+    `crop=${outW}:${outH}`
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Dead-air trim: drop long silent stretches inside the clip
+ * ------------------------------------------------------------------ */
+
+/**
+ * Which stretches to remove. Keeps `keep` seconds of each pause so speech
+ * still breathes, never cuts the first or last second, and gives up if the
+ * cuts would remove more than a third of the clip (that is a bad clip, not
+ * a trimming job).
+ */
+function trimPlan(gaps, clipDur, opts = {}) {
+  const keep = opts.keep != null ? opts.keep : 0.5;
+  const minCut = opts.minCut != null ? opts.minCut : 0.9;
+  const cuts = [];
+  for (const g of gaps || []) {
+    const from = g.from + keep / 2;
+    const to = g.to - keep / 2;
+    if (to - from < minCut) continue;
+    if (from < 1 || to > clipDur - 1) continue;
+    cuts.push({ from: +from.toFixed(2), to: +to.toFixed(2) });
+  }
+  const removed = cuts.reduce((a, c) => a + (c.to - c.from), 0);
+  if (!cuts.length || removed > clipDur / 3) return { cuts: [], removed: 0 };
+  return { cuts, removed: +removed.toFixed(2) };
+}
+
+/**
+ * Video + audio select expressions that skip the cut ranges, with timestamps
+ * re-based so the result plays continuously. `t` here is the clip-relative
+ * time because the input was already seeked with -ss.
+ */
+function trimFilters(cuts) {
+  if (!cuts || !cuts.length) return null;
+  const n2 = (v) => (Math.round(v * 100) / 100).toString();
+  const keepExpr = cuts.map((c) => `between(t\\,${n2(c.from)}\\,${n2(c.to)})`).join("+");
+  return {
+    video: `select='not(${keepExpr})',setpts=N/FRAME_RATE/TB`,
+    audio: `aselect='not(${keepExpr})',asetpts=N/SR/TB`,
+  };
+}
+
+/**
+ * Shift the caption timings so they still line up after the cuts.
+ * Words that fall inside a removed range snap to the cut point.
+ */
+function shiftWords(words, cuts) {
+  if (!cuts || !cuts.length) return words;
+  const shift = (t) => {
+    let d = 0;
+    for (const c of cuts) {
+      if (t >= c.to) d += c.to - c.from;
+      else if (t > c.from) d += t - c.from;
+    }
+    return +(t - d).toFixed(3);
+  };
+  return (words || []).map((w) => ({ ...w, s: shift(Number(w.s)), e: shift(Number(w.e != null ? w.e : w.s)) }));
+}
+
+module.exports = {
+  decideCut,
+  snapToSilence,
+  deadAir,
+  emphasisWords,
+  decideFraming,
+  plan,
+  locateLine,
+  punchInFilter,
+  trimPlan,
+  trimFilters,
+  shiftWords,
+};

@@ -328,7 +328,9 @@
     if (ed.anchor) edits.push("built around: " + ed.anchor);
     if (ed.reasons && ed.reasons.length) edits.push(ed.reasons.join(", "));
     if (ed.emphasis && ed.emphasis.length) edits.push("caption emphasis: " + ed.emphasis.slice(0, 5).join(", "));
-    if (ed.trimmable >= 1) edits.push(ed.trimmable + "s of dead air could be trimmed");
+    if (ed.trimmed >= 0.5) edits.push("cut " + ed.trimmed + "s of dead air");
+    else if (ed.trimmable >= 1) edits.push(ed.trimmable + "s of dead air could be trimmed");
+    if (ed.punchIn) edits.push("punch-in on the key line");
     return (
       '<details class="brain-panel"><summary>Why this clip</summary>' +
       (c.summary ? '<p class="brain-line"><b>What it is:</b> ' + esc(c.summary) + "</p>" : "") +
