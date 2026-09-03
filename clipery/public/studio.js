@@ -302,17 +302,16 @@
   // longer reads as a copy of Hormozi. Done here because the card markup is
   // one long generated line.
   (function styleReelsCards() {
-    TEMPLATES.reels = { color: "pink", size: "medium", pos: "bottom", style: "reels", words: 3 };
+    TEMPLATES.reels = { color: "red", size: "medium", pos: "bottom", style: "reels", words: 3 };
     var cards = document.querySelectorAll('.sub-card[data-tpl="reels"]');
     for (var i = 0; i < cards.length; i++) {
       var c = cards[i];
       c.classList.remove("sc-caps");
-      // one dark strip behind the whole line (sc-bdim), never a box per word:
-      // per-word boxes pushed the sample onto a third line
-      c.classList.add("sc-bdim");
-      c.style.setProperty("--hl", "#FF4D6D");
+      c.classList.remove("sc-box");
+      c.classList.remove("sc-bdim");
+      c.style.setProperty("--hl", "#FF3B3B");
       var meta = c.querySelector(".sc-meta");
-      if (meta) meta.textContent = "pink . med . 3 words";
+      if (meta) meta.textContent = "red . med . 3 words";
     }
   })();
 

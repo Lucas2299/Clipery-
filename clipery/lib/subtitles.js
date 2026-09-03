@@ -56,7 +56,7 @@ const FIXED_PRIMARY = { boxwhite: "&H00000000", boxred: "&H00FFFFFF", boxblack: 
 // Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
 const DECO = {
   box: "&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // karaoke: translucent dark backdrop box (box colour lives in OutlineColour!)
-  reels: "&HA0000000,&H00000000,1,0,0,0,100,100,0,0,3,7,0", // Instagram look: near-solid dark box, white words, spoken word in colour
+  reels: "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0", // Instagram look: clean outline, white words, spoken word in red
   boxdark: "&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: translucent dark box behind text
   boxlight: "&H3C000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: faint see-through box
   boxwhite: "&H00FFFFFF,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: solid WHITE box, black text
