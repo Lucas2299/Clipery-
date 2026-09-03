@@ -352,6 +352,16 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   const size = SUB_SIZES[s.size];
   const marginV = SUB_POSITIONS[s.pos];
   const primary = FIXED_PRIMARY[s.style] || SUB_COLORS[s.color];
+  // Words that carry the punch (numbers, "never", "worst", "lost"...). Brain 3
+  // picks them per clip (arguments[3]); the caption renders them bold, a step
+  // larger and, once spoken, in a warm yellow.
+  const emphasis = arguments.length > 3 ? arguments[3] : null;
+  const EMPHASIS_SCALE = 118; // bold and a step larger
+  const EMPHASIS_COLOUR = "&H0000E5FF"; // once spoken: warm yellow (ASS is BGR)
+  const stress = new Set((emphasis || []).map((w) => String(w).toLowerCase()));
+  const isStressed = (w) => stress.size > 0 && stress.has(cleanWord(String(w)).toLowerCase().replace(/[^a-z0-9$%.,]/g, ""));
+  const stressOpen = `{\\b1\\fscx${EMPHASIS_SCALE}\\fscy${EMPHASIS_SCALE}}`;
+  const stressClose = "{\\b0\\fscx100\\fscy100}";
   // Fields: OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,
   // ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
   const deco = DECO[s.style] || "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // karaoke outline
@@ -441,7 +451,9 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     if (wholeBox) {
       // calm static block: every word in the final colour, one event per page
       const parts = [];
-      for (let j = 0; j < allWords.length; j++) parts.push(wordText(j));
+      for (let j = 0; j < allWords.length; j++) {
+        parts.push(isStressed(allWords[j].w) ? stressOpen + wordText(j) + stressClose : wordText(j));
+      }
       if (!parts.length) continue;
       const text = hasTwoRows
         ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
@@ -454,16 +466,20 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     // switches to full colour AND pops to 112% (10-15% scale rule).
     const tag = (j, state) => {
       if (state === "upcoming") return hideKaraoke ? "{\\alpha&HFF&}" : `{\\1c${whiteKaraoke ? "&H00FFFFFF" : KARAOKE_DIM}}`;
-      const col = palette ? palette[(spokenBase + j) % palette.length] : primary;
+      const hot = isStressed(allWords[j].w);
+      const col = hot && !palette ? EMPHASIS_COLOUR : palette ? palette[(spokenBase + j) % palette.length] : primary;
+      const big = hot ? EMPHASIS_SCALE : 100;
       if (state === "active") {
-        return `{\\1c${col}\\fscx100\\fscy100\\t(0,${ACTIVE_POP_MS},\\fscx${ACTIVE_SCALE}\\fscy${ACTIVE_SCALE})}`;
+        return `{\\1c${col}\\fscx${big}\\fscy${big}\\t(0,${ACTIVE_POP_MS},\\fscx${big + 12}\\fscy${big + 12})}`;
       }
-      return `{\\1c${col}}`;
+      return `{\\1c${col}\\fscx${big}\\fscy${big}}`;
     };
     const line = (active) => {
       const parts = [];
       for (let j = 0; j < allWords.length; j++) {
-        parts.push(tag(j, j === active ? "active" : j < active ? "spoken" : "upcoming") + wordText(j));
+        const hot = isStressed(allWords[j].w);
+        const body = tag(j, j === active ? "active" : j < active ? "spoken" : "upcoming") + wordText(j);
+        parts.push(hot ? "{\\b1}" + body + "{\\b0}" : body);
       }
       return hasTwoRows
         ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
@@ -589,30 +605,36 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
   const assPath = noExt + ".subtitles.ass";
 
   let words = [];
-  try {
-    await run(
-      "ffmpeg",
-      [
-        "-y", "-hide_banner", "-loglevel", "error",
-        "-ss", String(start),
-        "-i", source,
-        "-t", String(dur),
-        "-vn", "-ac", "1", "-ar", "16000",
-        wavPath,
-      ],
-      { timeout: 10 * 60 * 1000 }
-    );
-    const n = await transcribeToWords(wavPath, jsonPath);
-    if (n) {
-      try {
-        words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
-      } catch {}
+  if (Array.isArray(opts.wordsOverride)) {
+    // Re-timed words from the editor (after dead-air trims): no need to
+    // listen to the audio again.
+    words = opts.wordsOverride;
+  } else {
+    try {
+      await run(
+        "ffmpeg",
+        [
+          "-y", "-hide_banner", "-loglevel", "error",
+          "-ss", String(start),
+          "-i", source,
+          "-t", String(dur),
+          "-vn", "-ac", "1", "-ar", "16000",
+          wavPath,
+        ],
+        { timeout: 10 * 60 * 1000 }
+      );
+      const n = await transcribeToWords(wavPath, jsonPath);
+      if (n) {
+        try {
+          words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
+        } catch {}
+      }
+    } catch (e) {
+      console.warn("[subtitles] clip audio failed:", e.message);
     }
-  } catch (e) {
-    console.warn("[subtitles] clip audio failed:", e.message);
+    try { fs.unlinkSync(wavPath); } catch {}
+    try { fs.unlinkSync(jsonPath); } catch {}
   }
-  try { fs.unlinkSync(wavPath); } catch {}
-  try { fs.unlinkSync(jsonPath); } catch {}
 
   if (!words.length) return null;
 
@@ -630,7 +652,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
 
   if (!pages.length && !hook) return null;
 
-  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook), "utf8");
+  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook, opts.emphasis), "utf8");
   return {
     assPath,
     filter: `subtitles='${escFilterPath(assPath)}'`,
@@ -638,6 +660,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
     subtitlesApplied: pages.length > 0,
     hookApplied: !!hook,
     hookText: hook ? hook.text : null,
+    words, // clip-relative word timings, for Brain 3's punch-in and trims
   };
 }
 

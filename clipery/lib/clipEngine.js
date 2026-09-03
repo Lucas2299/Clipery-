@@ -539,6 +539,11 @@ function ENCODE_TIMEOUT_MS(dur) {
   return Math.max(5 * 60 * 1000, Math.round((Number(dur) || 60) * 20 * 1000));
 }
 
+// Brain 3 editor moves. Each can be switched off in .env:
+//   CLIPERY_PUNCH_IN=0   no zoom on the key line
+//   CLIPERY_TRIM=0       keep dead air inside clips
+//   CLIPERY_EMPHASIS=0   plain captions, no bold key words
+const offFlag = (k) => /^(0|off|false)$/i.test(String(process.env[k] || ""));
 const ENCODE_PRESET = process.env.CLIPERY_PRESET || (FAST_MODE ? "ultrafast" : "veryfast");
 const ENCODE_CRF = String(process.env.CLIPERY_CRF || (FAST_MODE ? 26 : 24));
 
@@ -567,22 +572,85 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
 
   // Captions are prepared from the source audio BEFORE the encode so they can
   // ride along in this same filter chain. Two encodes per clip became one.
+  const editPlan = (subOpts && subOpts.edit) || null;
+  const EDIT_PUNCH_IN = !offFlag("CLIPERY_PUNCH_IN");
+  const EDIT_TRIM = !offFlag("CLIPERY_TRIM");
+  const EDIT_EMPHASIS = !offFlag("CLIPERY_EMPHASIS");
   let sub = null;
   if (subOpts) {
     try {
-      sub = await prepareClipAss(source, start, dur, outFile, subOpts);
+      sub = await prepareClipAss(source, start, dur, outFile, {
+        ...subOpts,
+        emphasis: EDIT_EMPHASIS && editPlan ? editPlan.emphasis : null,
+      });
     } catch (e) {
       console.warn("[subtitles] prepare failed:", e.message);
     }
   }
+
+  // ---- Brain 3 editor moves ------------------------------------------
+  // They need the clip's own word timings, which the caption pass just made.
+  const clipWords = (sub && sub.words) || null;
+  const edits = { punchIn: null, trimmed: 0, emphasis: 0 };
+  const editV = [];   // video filters, after the 9:16 crop
+  let editA = null;   // audio filter (only for trims)
+
+  // Dead air: drop long pauses inside the clip, keep the speech breathing.
+  // Captions are re-timed to match, so the words still land on the voice.
+  let trimmedWords = clipWords;
+  if (EDIT_TRIM && clipWords && clipWords.length && srcMeta && srcMeta.hasAudio !== false) {
+    const gaps = brains.edit.deadAir(clipWords, 0, dur, 1.6);
+    const tp = brains.edit.trimPlan(gaps, dur);
+    if (tp.cuts.length) {
+      const tf = brains.edit.trimFilters(tp.cuts);
+      editV.push(tf.video);
+      editA = tf.audio;
+      edits.trimmed = tp.removed;
+      trimmedWords = brains.edit.shiftWords(clipWords, tp.cuts);
+      // Rebuild the captions on the new clock.
+      if (sub && sub.assPath && subOpts) {
+        try {
+          const again = await prepareClipAss(source, start, dur, outFile, {
+            ...subOpts,
+            emphasis: EDIT_EMPHASIS && editPlan ? editPlan.emphasis : null,
+            wordsOverride: trimmedWords,
+          });
+          if (again) sub = again;
+        } catch (_) {}
+      }
+    }
+  }
+
+  // Punch-in: a gentle 8% zoom while the line the clip is built around is
+  // spoken. Works for every layout because it sits after the crop/scale.
+  if (EDIT_PUNCH_IN && editPlan && editPlan.anchor && trimmedWords && rf.layout !== "wide") {
+    const where = brains.edit.locateLine(trimmedWords, editPlan.anchor, dur - edits.trimmed);
+    if (where && where.to - where.from >= 1 && where.to - where.from <= 12) {
+      editV.push(brains.edit.punchInFilter(where.from, where.to, targetW, targetH));
+      edits.punchIn = where;
+    }
+  }
+  if (EDIT_EMPHASIS && editPlan && editPlan.emphasis) edits.emphasis = editPlan.emphasis.length;
+  if (edits.trimmed || edits.punchIn) {
+    console.log(
+      `[edit] clip @${start.toFixed(1)}s:` +
+        (edits.trimmed ? ` trimmed ${edits.trimmed}s of dead air` : "") +
+        (edits.punchIn ? ` punch-in ${edits.punchIn.from}-${edits.punchIn.to}s` : "")
+    );
+  }
+
   const subFilter = sub ? [sub.filter] : [];
 
   // The zoom-out layout needs split/overlay, so it must go through
   // -filter_complex; the simple crop chains stay on -vf exactly as before.
-  const graph = [rf.filter, ...extras, ...subFilter].join(",");
-  const flag = rf.filter.includes("split=") ? "-filter_complex" : "-vf";
+  // Trims must run on the audio too, so they force the complex graph.
+  const vChain = [rf.filter, ...editV, ...extras, ...subFilter].join(",");
+  const useComplex = rf.filter.includes("split=") || !!editA;
+  const graph = useComplex && editA ? `[0:v]${vChain}[v];[0:a]${editA}[a]` : vChain;
+  const flag = useComplex ? "-filter_complex" : "-vf";
+  const mapArgs = useComplex && editA ? ["-map", "[v]", "-map", "[a]"] : [];
 
-  const encode = (filterFlag, filterGraph) =>
+  const encode = (filterFlag, filterGraph, maps) =>
     run(
       "ffmpeg",
       [
@@ -598,6 +666,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
         String(dur),
         filterFlag,
         filterGraph,
+        ...(maps || []),
         "-c:v",
         "libx264",
         "-preset",
@@ -628,10 +697,11 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
     subtitlesApplied: !!(sub && sub.subtitlesApplied),
     hookApplied: !!(sub && sub.hookApplied),
     hookText: sub ? sub.hookText : null,
+    edits,
   });
 
   try {
-    await encode(flag, graph);
+    await encode(flag, graph, mapArgs);
   } catch (e) {
     // Never fail a clip over a fancy filter: fall back to the plain,
     // never-zoomed centre crop that every ffmpeg build can do.
@@ -1139,9 +1209,15 @@ async function processVideo(sourcePath, options = {}) {
               subStyle: options.subtitles ? options.subStyle : null,
               hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
               trends: options.trends,
+              edit: c.edit || null,
             }
           : null
       );
+      if (c.edit && rendered.edits) {
+        c.edit.applied = rendered.edits;
+        if (rendered.edits.trimmed) c.edit.trimmed = rendered.edits.trimmed;
+        if (rendered.edits.punchIn) c.edit.punchIn = rendered.edits.punchIn;
+      }
       if (rendered.broken) {
         console.warn(`[render] clip ${i + 1} could not be produced - leaving it out`);
         job.renderNote = "one clip could not be rendered and was left out";
@@ -1352,6 +1428,7 @@ function getLinkBoard(id) {
 module.exports = {
   MODES,
   processVideo,
+  renderClip,
   readJob,
   writeJob,
   listJobs,
