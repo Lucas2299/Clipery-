@@ -280,6 +280,43 @@ function speechSignals(list, energy, stats) {
  * @param sceneTimes  all scene-cut timestamps of the source
  * @param faceTrack   optional [{t, faces}] samples from the face detector
  */
+/**
+ * How much things MOVE in this window compared with the rest of the video.
+ * The detector attaches a `motion` reading (0..100) to every sample; a
+ * talking head sits around 5-15, someone jumping around or fast gameplay
+ * goes 40+. Everything is measured against this video's own median, so a
+ * shaky vlog is not "all action" and a still podcast can still have peaks.
+ *
+ * @returns {{level:number, rel:number, bonus:number, reason:string|null}|null}
+ */
+function motionSignals(start, end, faceTrack) {
+  const all = (faceTrack || []).filter((s) => s && Number.isFinite(s.motion));
+  if (all.length < 6) return null;
+  const inside = all.filter((s) => s.t >= start && s.t <= end);
+  if (inside.length < 2) return null;
+  const sorted = all.map((s) => s.motion).sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  const level = inside.reduce((a, s) => a + s.motion, 0) / inside.length;
+  const peak = Math.max(...inside.map((s) => s.motion));
+  const rel = level - median;
+
+  let bonus = 0;
+  let reason = null;
+  if (rel >= 20 || (rel >= 10 && peak >= 60)) {
+    bonus = 16;
+    reason = "lots of action / movement";
+  } else if (rel >= 8) {
+    bonus = 9;
+    reason = "more movement than usual";
+  } else if (peak >= median + 35) {
+    bonus = 7; // one big burst (a jump, a hit, a fall) inside a calm clip
+    reason = "sudden burst of action";
+  } else if (rel <= -10 && median >= 12) {
+    bonus = -6; // the dull part of an otherwise lively video
+  }
+  return { level: Math.round(level), rel: Math.round(rel), peak: Math.round(peak), bonus, reason };
+}
+
 function visualSignals(start, end, sceneTimes, faceTrack) {
   const len = Math.max(1, end - start);
   const cuts = (sceneTimes || []).filter((t) => t > start && t < end).length;
@@ -287,12 +324,21 @@ function visualSignals(start, end, sceneTimes, faceTrack) {
   const reasons = [];
   let score = 50;
 
+  // Real movement in the picture, not just editing cuts.
+  const motion = motionSignals(start, end, faceTrack);
+  if (motion) {
+    score += motion.bonus;
+    if (motion.reason) reasons.unshift(motion.reason);
+  }
+
   if (perMin >= 6 && perMin <= 30) {
     score += 12;
     reasons.push("visually active");
   } else if (perMin > 30) {
     score += 4; // frantic, could just be a montage
-  } else if (perMin < 1) {
+  } else if (perMin < 1 && !(motion && motion.bonus > 0)) {
+    // No cuts AND nothing moving. (Plenty of movement inside one long take
+    // is action, not a static shot.)
     score -= 6;
     reasons.push("static shot");
   }
@@ -310,7 +356,7 @@ function visualSignals(start, end, sceneTimes, faceTrack) {
     if (min >= 1) score += 4; // a face on screen the whole time holds attention
   }
 
-  return { score: Math.max(5, Math.min(99, Math.round(score))), cuts, reasons };
+  return { score: Math.max(5, Math.min(99, Math.round(score))), cuts, reasons, motion };
 }
 
 /* ------------------------------------------------------------------ *
@@ -336,8 +382,8 @@ function analyzeMoment(opts) {
 
   const isViral = !mode || mode.id === "viral";
   const brain = isViral
-    ? hook.score * 0.34 + content.score * 0.31 + speech.score * 0.22 + visual.score * 0.13
-    : content.score * 0.38 + hook.score * 0.24 + speech.score * 0.22 + visual.score * 0.16;
+    ? hook.score * 0.32 + content.score * 0.28 + speech.score * 0.21 + visual.score * 0.19
+    : content.score * 0.36 + hook.score * 0.22 + speech.score * 0.21 + visual.score * 0.21;
 
   const reasons = [];
   if (hook.strong.length) reasons.push("Hook: " + hook.strong.slice(0, 2).join(" + "));
@@ -352,6 +398,7 @@ function analyzeMoment(opts) {
     content: content.score,
     speech: speech.score,
     visual: visual.score,
+    motion: visual.motion ? visual.motion.level : null,
     wpm: speech.wpm,
     quote: firstLine(list),
     reasons: reasons.filter(Boolean).slice(0, 4),
@@ -406,6 +453,7 @@ module.exports = {
   contentSignals,
   speechSignals,
   visualSignals,
+  motionSignals,
   snapToSentence,
   wordsIn,
   textOf,

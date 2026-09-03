@@ -222,6 +222,20 @@ def main() -> None:
         small = cv2.resize(frame, (small_w, max(1, int(frame.shape[0] * small_w / frame.shape[1]))))
         gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
 
+        # Motion: how much the picture changes to the VERY NEXT frame. Jumping,
+        # running, fast camera work all light this up; a talking head barely
+        # moves it. One extra decode per sample, so it stays cheap.
+        motion = None
+        if cap.grab():
+            frame_i += 1
+            ok2, nxt = cap.retrieve()
+            if ok2:
+                nxt_small = cv2.resize(nxt, (small.shape[1], small.shape[0]))
+                nxt_gray = cv2.cvtColor(nxt_small, cv2.COLOR_BGR2GRAY)
+                diff = cv2.absdiff(gray, nxt_gray)
+                # mean abs diff of 0..255; 12+ is already a lot of movement
+                motion = round(min(100.0, float(diff.mean()) / 12.0 * 100.0), 1)
+
         faces = detector.faces(gray, small_w)
 
         if faces:
@@ -243,14 +257,16 @@ def main() -> None:
                 "x": round(best_x, 4),
                 "faces": len(faces),
                 "xs": sorted(round(c[0], 4) for c in centres),
+                "motion": motion,
             })
         else:
-            track.append({"t": round(t - start, 2), "x": None, "faces": 0})
+            track.append({"t": round(t - start, 2), "x": None, "faces": 0, "motion": motion})
     cap.release()
 
     seen = [p for p in track if p["x"] is not None]
     if not seen:
-        print(json.dumps({"ok": False, "reason": "no-faces", "track": []}))
+        # No faces, but the motion readings are still worth having for scoring.
+        print(json.dumps({"ok": False, "reason": "no-faces", "track": track}))
         return
 
     # Lost-face samples stay x=None on purpose. The reframer needs to know
