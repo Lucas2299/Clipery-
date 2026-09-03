@@ -56,6 +56,7 @@ const FIXED_PRIMARY = { boxwhite: "&H00000000", boxred: "&H00FFFFFF", boxblack: 
 // Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
 const DECO = {
   box: "&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // karaoke: translucent dark backdrop box (box colour lives in OutlineColour!)
+  reels: "&HA0000000,&H00000000,1,0,0,0,100,100,0,0,3,7,0", // Instagram look: near-solid dark box, white words, spoken word in colour
   boxdark: "&H78000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: translucent dark box behind text
   boxlight: "&H3C000000,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: faint see-through box
   boxwhite: "&H00FFFFFF,&H00000000,1,0,0,0,100,100,0,0,3,8,0", // static: solid WHITE box, black text
@@ -120,7 +121,7 @@ const WORD_EMOJI = {
 function normalizeSubStyle(input = {}) {
   const pick = (v, map, dflt) => (map.hasOwnProperty(String(v).toLowerCase()) ? String(v).toLowerCase() : dflt);
   const st = String(input.style).toLowerCase();
-  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"];
+  const okStyles = ["box", "pop", "highlight", "classic", "rainbow", "hormozi", "mrbeast", "reels", "plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"];
   const wds = Math.round(Number(input.words));
   return {
     color: pick(input.color, SUB_COLORS, "white"),
@@ -372,7 +373,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   const secondary =
     s.style === "pop" || s.style === "mrbeast"
       ? KARAOKE_HIDDEN
-      : s.style === "highlight" || s.style === "hormozi"
+      : s.style === "highlight" || s.style === "hormozi" || s.style === "reels"
         ? "&H00FFFFFF"
         : STATIC_STYLES.has(s.style)
           ? primary
@@ -413,7 +414,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   // tags (one clean segment per row = one continuous background box).
   const wholeBox = STATIC_STYLES.has(s.style);
   const hideKaraoke = s.style === "pop" || s.style === "mrbeast"; // upcoming words invisible
-  const whiteKaraoke = s.style === "highlight" || s.style === "hormozi"; // upcoming words white
+  const whiteKaraoke = s.style === "highlight" || s.style === "hormozi" || s.style === "reels"; // upcoming words white
   const fmtWord = (w) => cleanWord(caps ? String(w).toUpperCase() : w);
   // emoji state: each keyword appears once per clip, one emoji per page max
   const usedEmoji = new Set();
