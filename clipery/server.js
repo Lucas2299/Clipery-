@@ -8,6 +8,8 @@ const { URL } = require("url");
 const crypto = require("crypto");
 const {
   processVideo,
+  renderReviewed,
+  planManual,
   readJob,
   listJobs,
   createLinkBoard,
@@ -105,6 +107,9 @@ const PROTECTED_API = [
   "/api/rank/video/upload",
   "/api/rank/links",
   "/api/jobs",
+  "/api/editor/upload",
+  "/api/editor/render",
+  "/api/editor/source",
 ];
 
 // Guarded by FILE, not by URL spelling: whatever path a request uses, if it
@@ -266,24 +271,7 @@ function serveFile(req, res, fullPath) {
     }
     const ext = path.extname(fullPath).toLowerCase();
     const type = MIME[ext] || "application/octet-stream";
-    const range = req.headers.range;
-    if (range && (ext === ".mp4" || ext === ".webm" || ext === ".mov")) {
-      const m = /bytes=(\d+)-(\d*)/.exec(range);
-      if (m) {
-        const start = parseInt(m[1], 10);
-        const end = m[2] ? parseInt(m[2], 10) : st.size - 1;
-        const chunk = end - start + 1;
-        res.writeHead(206, {
-          "Content-Range": `bytes ${start}-${end}/${st.size}`,
-          "Accept-Ranges": "bytes",
-          "Content-Length": chunk,
-          "Content-Type": type,
-          "Cache-Control": "public, max-age=3600",
-        });
-        fs.createReadStream(fullPath, { start, end }).pipe(res);
-        return;
-      }
-    }
+    if ((ext === ".mp4" || ext === ".webm" || ext === ".mov") && streamVideo(req, res, fullPath, st, type)) return;
     res.writeHead(200, {
       "Content-Type": type,
       "Content-Length": st.size,
@@ -315,6 +303,29 @@ function canSeeClipFile(req, fullPath) {
   if (!job) return false;
   // The owner can watch anything - that is the point of the dashboard.
   return job.userId === me.id || auth.isAdmin(me);
+}
+
+/** Stream a video file with Range support (the browser scrubber needs it). */
+function streamVideo(req, res, fullPath, st, type, cacheControl) {
+  const range = req.headers.range;
+  if (range) {
+    const m = /bytes=(\d+)-(\d*)/.exec(range);
+    if (m) {
+      const start = parseInt(m[1], 10);
+      const end = m[2] ? parseInt(m[2], 10) : st.size - 1;
+      const chunk = end - start + 1;
+      res.writeHead(206, {
+        "Content-Range": `bytes ${start}-${end}/${st.size}`,
+        "Accept-Ranges": "bytes",
+        "Content-Length": chunk,
+        "Content-Type": type,
+        "Cache-Control": cacheControl || "public, max-age=3600",
+      });
+      fs.createReadStream(fullPath, { start, end }).pipe(res);
+      return true;
+    }
+  }
+  return false;
 }
 
 function serveStatic(req, res, pathname, search) {
@@ -440,6 +451,10 @@ async function runQueueItem(item) {
         ...item.meta,
         sourceName: got.title || item.meta.sourceName || "video",
       });
+    } else if (item.type === "editor-manual") {
+      await planManual(item.sourcePath, item.meta);
+    } else if (item.type === "editor-render") {
+      await renderReviewed(item.meta.jobId, item.approved);
     } else {
       await processVideo(item.sourcePath, item.meta);
     }
@@ -1000,6 +1015,94 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
+    // ---- Editor ------------------------------------------------------------
+    // Upload for the editor. review=1: AI proposes clips, then waits.
+    // manual=1: no AI, user marks the ranges themselves.
+    if (pathname === "/api/editor/upload" && req.method === "POST") {
+      const ct = req.headers["content-type"] || "";
+      if (!ct.includes("multipart/form-data")) return send(res, 400, { ok: false, error: "Send multipart form with field 'video'." });
+      const buf = await parseBody(req);
+      const parts = parseMultipart(buf, ct);
+      const get = (n) => {
+        const p = parts.find((x) => x.name === n);
+        return p ? p.body.toString("utf8") : "";
+      };
+      const filePart = parts.find((p) => (p.name === "video" || p.name === "file") && p.body && p.body.length > 1000);
+      if (!filePart) return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
+      if (filePart.body.length > 100 * 1024 * 1024) return send(res, 400, { ok: false, error: "Max upload size is 100MB." });
+      const orig = filePart.filename || "upload.mp4";
+      let ext = path.extname(orig).toLowerCase() || ".mp4";
+      if (![".mp4", ".mov", ".webm", ".mkv", ".m4v"].includes(ext)) ext = ".mp4";
+      const manual = wantSubtitles(get("manual"));
+      const mode = normalizeMode(get("mode") || "viral");
+      const subtitles = wantSubtitles(get("subtitles"));
+      const subStyle = readSubStyle(get);
+      const hookOpts = readHook(get);
+      const trends = readTrends(get);
+      const jobId = crypto.randomBytes(6).toString("hex");
+      const owner = chargeVideo(req, res);
+      if (!owner) return;
+      const dest = path.join(UPLOADS, `${jobId}${ext}`);
+      fs.writeFileSync(dest, filePart.body);
+      const meta = {
+        userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
+        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, trends,
+        review: true, manual, editor: true,
+      };
+      seedJob(jobId, meta);
+      let q;
+      try {
+        q = enqueueItem(manual ? { type: "editor-manual", sourcePath: dest, meta } : { sourcePath: dest, meta });
+      } catch (e) {
+        return send(res, 503, { ok: false, error: e.message, retry: true });
+      }
+      return send(res, 202, { ok: true, jobId, ...q, editorUrl: `/studio?tool=editor&job=${jobId}` });
+    }
+
+    // The original upload, streamed to the editor page (owner only).
+    if (pathname.startsWith("/api/editor/source/") && req.method === "GET") {
+      const id = pathname.split("/").pop();
+      if (!/^[a-f0-9]+$/i.test(id || "")) return send(res, 400, { ok: false, error: "Bad job id" });
+      const job = readJob(id);
+      const me = auth.currentUser(req);
+      if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
+      const src = job.review && job.review.sourcePath;
+      if (!src || !fs.existsSync(src)) return send(res, 410, { ok: false, error: "Source video is gone" });
+      const st = fs.statSync(src);
+      const type = MIME[path.extname(src).toLowerCase()] || "video/mp4";
+      if (streamVideo(req, res, src, st, type, "no-store")) return;
+      res.writeHead(200, { "Content-Type": type, "Content-Length": st.size, "Accept-Ranges": "bytes", "Cache-Control": "no-store" });
+      fs.createReadStream(src).pipe(res);
+      return;
+    }
+
+    // Approve the (edited) plan and render it.
+    if (pathname === "/api/editor/render" && req.method === "POST") {
+      const buf = await parseBody(req, 2e6);
+      let body = {};
+      try { body = JSON.parse(buf.toString("utf8") || "{}"); } catch { body = {}; }
+      const id = String(body.jobId || "");
+      if (!/^[a-f0-9]+$/i.test(id)) return send(res, 400, { ok: false, error: "Bad job id" });
+      const job = readJob(id);
+      const me = auth.currentUser(req);
+      if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
+      if (job.status !== "review") return send(res, 409, { ok: false, error: "This job is not waiting for review." });
+      const approved = Array.isArray(body.clips) ? body.clips.slice(0, 30) : [];
+      if (!approved.length) return send(res, 400, { ok: false, error: "Keep at least one clip." });
+      let q;
+      try {
+        q = enqueueItem({ type: "editor-render", meta: { jobId: id }, approved });
+      } catch (e) {
+        return send(res, 503, { ok: false, error: e.message, retry: true });
+      }
+      const { writeJob } = require("./lib/clipEngine");
+      job.status = "queued";
+      job.stage = "queued";
+      job.pendingRender = true;
+      writeJob(job);
+      return send(res, 202, { ok: true, jobId: id, ...q, jobUrl: `/job/${id}` });
+    }
+
     // Job status
     if (pathname.startsWith("/api/clip/status/") && req.method === "GET") {
       const id = pathname.split("/").pop();
@@ -1010,6 +1113,11 @@ const server = http.createServer(async (req, res) => {
       const me = auth.currentUser(req);
       if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) {
         return send(res, 404, { ok: false, error: "Job not found" });
+      }
+      // Keep server paths and the raw transcript out of the browser.
+      if (job.review) {
+        const rv = job.review;
+        return send(res, 200, { ok: true, job: { ...job, review: { meta: rv.meta, options: rv.options } } });
       }
       return send(res, 200, { ok: true, job });
     }
