@@ -1,0 +1,437 @@
+diff --git a/clipery/.env.example b/clipery/.env.example
+index 3f2e376..90e08e5 100644
+--- a/clipery/.env.example
++++ b/clipery/.env.example
+@@ -50,3 +50,8 @@ CLIPERY_WHISPER_MODEL=base
+ # x264 encoder speed / quality. Lower CRF = better quality, bigger file.
+ # CLIPERY_PRESET=veryfast
+ # CLIPERY_CRF=24
++
++# Brain 3 editor moves (all on by default). Set to 0 to switch one off.
++# CLIPERY_PUNCH_IN=0    no gentle zoom on the key line
++# CLIPERY_TRIM=0        keep long pauses inside clips instead of cutting them
++# CLIPERY_EMPHASIS=0    plain captions, no bold key words
+diff --git a/clipery/lib/brain/edit.js b/clipery/lib/brain/edit.js
+index a13786f..0c3ba64 100644
+--- a/clipery/lib/brain/edit.js
++++ b/clipery/lib/brain/edit.js
+@@ -169,4 +169,118 @@ function plan(o) {
+   };
+ }
+ 
+-module.exports = { decideCut, snapToSilence, deadAir, emphasisWords, decideFraming, plan };
++/* ------------------------------------------------------------------ *
++ * Punch-in: a gentle zoom on the line the clip is built around
++ * ------------------------------------------------------------------ */
++
++/**
++ * Where the anchor sentence sits inside the clip, from the clip's own word
++ * timings (clip-relative seconds). Returns {from,to} or null.
++ */
++function locateLine(words, lineText, clipDur) {
++  if (!Array.isArray(words) || !words.length || !lineText) return null;
++  const norm = (t) => String(t).toLowerCase().replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
++  const target = norm(lineText).split(" ").filter(Boolean);
++  if (target.length < 3) return null;
++  const ws = words.map((w) => norm(w.w));
++  const key = target.slice(0, 3).join(" ");
++  for (let i = 0; i + 2 < ws.length; i++) {
++    if (ws[i] + " " + ws[i + 1] + " " + ws[i + 2] !== key) continue;
++    const j = Math.min(words.length - 1, i + target.length - 1);
++    const from = Number(words[i].s);
++    const to = Number(words[j].e || words[j].s) + 0.3;
++    if (to <= from || from < 0 || (clipDur && from > clipDur)) return null;
++    return { from: +from.toFixed(2), to: +Math.min(to, clipDur || to).toFixed(2) };
++  }
++  return null;
++}
++
++/**
++ * ffmpeg filter that zooms in `amount` (0.08 = 8%) between `from` and `to`,
++ * easing in and out over `ramp` seconds. Goes AFTER the 9:16 crop/scale so it
++ * works for every layout, and keeps the frame size unchanged. It is one
++ * per-frame scale + centre crop: cheap, unlike zoompan.
++ */
++function punchInFilter(from, to, outW, outH, amount = 0.08, ramp = 0.35) {
++  if (!(to > from)) return null;
++  const n2 = (v) => (Math.round(v * 100) / 100).toString();
++  const rise = `min(1\\,max(0\\,(t-${n2(from)})/${n2(ramp)}))`;
++  const fall = `min(1\\,max(0\\,(${n2(to)}-t)/${n2(ramp)}))`;
++  const z = `(1+${n2(amount)}*${rise}*${fall})`;
++  return (
++    `scale=w='trunc(${outW}*${z}/2)*2':h='trunc(${outH}*${z}/2)*2':eval=frame,` +
++    `crop=${outW}:${outH}`
++  );
++}
++
++/* ------------------------------------------------------------------ *
++ * Dead-air trim: drop long silent stretches inside the clip
++ * ------------------------------------------------------------------ */
++
++/**
++ * Which stretches to remove. Keeps `keep` seconds of each pause so speech
++ * still breathes, never cuts the first or last second, and gives up if the
++ * cuts would remove more than a third of the clip (that is a bad clip, not
++ * a trimming job).
++ */
++function trimPlan(gaps, clipDur, opts = {}) {
++  const keep = opts.keep != null ? opts.keep : 0.5;
++  const minCut = opts.minCut != null ? opts.minCut : 0.9;
++  const cuts = [];
++  for (const g of gaps || []) {
++    const from = g.from + keep / 2;
++    const to = g.to - keep / 2;
++    if (to - from < minCut) continue;
++    if (from < 1 || to > clipDur - 1) continue;
++    cuts.push({ from: +from.toFixed(2), to: +to.toFixed(2) });
++  }
++  const removed = cuts.reduce((a, c) => a + (c.to - c.from), 0);
++  if (!cuts.length || removed > clipDur / 3) return { cuts: [], removed: 0 };
++  return { cuts, removed: +removed.toFixed(2) };
++}
++
++/**
++ * Video + audio select expressions that skip the cut ranges, with timestamps
++ * re-based so the result plays continuously. `t` here is the clip-relative
++ * time because the input was already seeked with -ss.
++ */
++function trimFilters(cuts) {
++  if (!cuts || !cuts.length) return null;
++  const n2 = (v) => (Math.round(v * 100) / 100).toString();
++  const keepExpr = cuts.map((c) => `between(t\\,${n2(c.from)}\\,${n2(c.to)})`).join("+");
++  return {
++    video: `select='not(${keepExpr})',setpts=N/FRAME_RATE/TB`,
++    audio: `aselect='not(${keepExpr})',asetpts=N/SR/TB`,
++  };
++}
++
++/**
++ * Shift the caption timings so they still line up after the cuts.
++ * Words that fall inside a removed range snap to the cut point.
++ */
++function shiftWords(words, cuts) {
++  if (!cuts || !cuts.length) return words;
++  const shift = (t) => {
++    let d = 0;
++    for (const c of cuts) {
++      if (t >= c.to) d += c.to - c.from;
++      else if (t > c.from) d += t - c.from;
++    }
++    return +(t - d).toFixed(3);
++  };
++  return (words || []).map((w) => ({ ...w, s: shift(Number(w.s)), e: shift(Number(w.e != null ? w.e : w.s)) }));
++}
++
++module.exports = {
++  decideCut,
++  snapToSilence,
++  deadAir,
++  emphasisWords,
++  decideFraming,
++  plan,
++  locateLine,
++  punchInFilter,
++  trimPlan,
++  trimFilters,
++  shiftWords,
++};
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 5b0928e..7620d62 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -539,6 +539,11 @@ function ENCODE_TIMEOUT_MS(dur) {
+   return Math.max(5 * 60 * 1000, Math.round((Number(dur) || 60) * 20 * 1000));
+ }
+ 
++// Brain 3 editor moves. Each can be switched off in .env:
++//   CLIPERY_PUNCH_IN=0   no zoom on the key line
++//   CLIPERY_TRIM=0       keep dead air inside clips
++//   CLIPERY_EMPHASIS=0   plain captions, no bold key words
++const offFlag = (k) => /^(0|off|false)$/i.test(String(process.env[k] || ""));
+ const ENCODE_PRESET = process.env.CLIPERY_PRESET || (FAST_MODE ? "ultrafast" : "veryfast");
+ const ENCODE_CRF = String(process.env.CLIPERY_CRF || (FAST_MODE ? 26 : 24));
+ 
+@@ -567,22 +572,85 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+ 
+   // Captions are prepared from the source audio BEFORE the encode so they can
+   // ride along in this same filter chain. Two encodes per clip became one.
++  const editPlan = (subOpts && subOpts.edit) || null;
++  const EDIT_PUNCH_IN = !offFlag("CLIPERY_PUNCH_IN");
++  const EDIT_TRIM = !offFlag("CLIPERY_TRIM");
++  const EDIT_EMPHASIS = !offFlag("CLIPERY_EMPHASIS");
+   let sub = null;
+   if (subOpts) {
+     try {
+-      sub = await prepareClipAss(source, start, dur, outFile, subOpts);
++      sub = await prepareClipAss(source, start, dur, outFile, {
++        ...subOpts,
++        emphasis: EDIT_EMPHASIS && editPlan ? editPlan.emphasis : null,
++      });
+     } catch (e) {
+       console.warn("[subtitles] prepare failed:", e.message);
+     }
+   }
++
++  // ---- Brain 3 editor moves ------------------------------------------
++  // They need the clip's own word timings, which the caption pass just made.
++  const clipWords = (sub && sub.words) || null;
++  const edits = { punchIn: null, trimmed: 0, emphasis: 0 };
++  const editV = [];   // video filters, after the 9:16 crop
++  let editA = null;   // audio filter (only for trims)
++
++  // Dead air: drop long pauses inside the clip, keep the speech breathing.
++  // Captions are re-timed to match, so the words still land on the voice.
++  let trimmedWords = clipWords;
++  if (EDIT_TRIM && clipWords && clipWords.length && srcMeta && srcMeta.hasAudio !== false) {
++    const gaps = brains.edit.deadAir(clipWords, 0, dur, 1.6);
++    const tp = brains.edit.trimPlan(gaps, dur);
++    if (tp.cuts.length) {
++      const tf = brains.edit.trimFilters(tp.cuts);
++      editV.push(tf.video);
++      editA = tf.audio;
++      edits.trimmed = tp.removed;
++      trimmedWords = brains.edit.shiftWords(clipWords, tp.cuts);
++      // Rebuild the captions on the new clock.
++      if (sub && sub.assPath && subOpts) {
++        try {
++          const again = await prepareClipAss(source, start, dur, outFile, {
++            ...subOpts,
++            emphasis: EDIT_EMPHASIS && editPlan ? editPlan.emphasis : null,
++            wordsOverride: trimmedWords,
++          });
++          if (again) sub = again;
++        } catch (_) {}
++      }
++    }
++  }
++
++  // Punch-in: a gentle 8% zoom while the line the clip is built around is
++  // spoken. Works for every layout because it sits after the crop/scale.
++  if (EDIT_PUNCH_IN && editPlan && editPlan.anchor && trimmedWords && rf.layout !== "wide") {
++    const where = brains.edit.locateLine(trimmedWords, editPlan.anchor, dur - edits.trimmed);
++    if (where && where.to - where.from >= 1 && where.to - where.from <= 12) {
++      editV.push(brains.edit.punchInFilter(where.from, where.to, targetW, targetH));
++      edits.punchIn = where;
++    }
++  }
++  if (EDIT_EMPHASIS && editPlan && editPlan.emphasis) edits.emphasis = editPlan.emphasis.length;
++  if (edits.trimmed || edits.punchIn) {
++    console.log(
++      `[edit] clip @${start.toFixed(1)}s:` +
++        (edits.trimmed ? ` trimmed ${edits.trimmed}s of dead air` : "") +
++        (edits.punchIn ? ` punch-in ${edits.punchIn.from}-${edits.punchIn.to}s` : "")
++    );
++  }
++
+   const subFilter = sub ? [sub.filter] : [];
+ 
+   // The zoom-out layout needs split/overlay, so it must go through
+   // -filter_complex; the simple crop chains stay on -vf exactly as before.
+-  const graph = [rf.filter, ...extras, ...subFilter].join(",");
+-  const flag = rf.filter.includes("split=") ? "-filter_complex" : "-vf";
+-
+-  const encode = (filterFlag, filterGraph) =>
++  // Trims must run on the audio too, so they force the complex graph.
++  const vChain = [rf.filter, ...editV, ...extras, ...subFilter].join(",");
++  const useComplex = rf.filter.includes("split=") || !!editA;
++  const graph = useComplex && editA ? `[0:v]${vChain}[v];[0:a]${editA}[a]` : vChain;
++  const flag = useComplex ? "-filter_complex" : "-vf";
++  const mapArgs = useComplex && editA ? ["-map", "[v]", "-map", "[a]"] : [];
++
++  const encode = (filterFlag, filterGraph, maps) =>
+     run(
+       "ffmpeg",
+       [
+@@ -598,6 +666,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+         String(dur),
+         filterFlag,
+         filterGraph,
++        ...(maps || []),
+         "-c:v",
+         "libx264",
+         "-preset",
+@@ -628,10 +697,11 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+     subtitlesApplied: !!(sub && sub.subtitlesApplied),
+     hookApplied: !!(sub && sub.hookApplied),
+     hookText: sub ? sub.hookText : null,
++    edits,
+   });
+ 
+   try {
+-    await encode(flag, graph);
++    await encode(flag, graph, mapArgs);
+   } catch (e) {
+     // Never fail a clip over a fancy filter: fall back to the plain,
+     // never-zoomed centre crop that every ffmpeg build can do.
+@@ -1139,9 +1209,15 @@ async function processVideo(sourcePath, options = {}) {
+               subStyle: options.subtitles ? options.subStyle : null,
+               hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+               trends: options.trends,
++              edit: c.edit || null,
+             }
+           : null
+       );
++      if (c.edit && rendered.edits) {
++        c.edit.applied = rendered.edits;
++        if (rendered.edits.trimmed) c.edit.trimmed = rendered.edits.trimmed;
++        if (rendered.edits.punchIn) c.edit.punchIn = rendered.edits.punchIn;
++      }
+       if (rendered.broken) {
+         console.warn(`[render] clip ${i + 1} could not be produced - leaving it out`);
+         job.renderNote = "one clip could not be rendered and was left out";
+@@ -1352,6 +1428,7 @@ function getLinkBoard(id) {
+ module.exports = {
+   MODES,
+   processVideo,
++  renderClip,
+   readJob,
+   writeJob,
+   listJobs,
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index 0df1d46..3ddbd69 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -352,6 +352,16 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+   const size = SUB_SIZES[s.size];
+   const marginV = SUB_POSITIONS[s.pos];
+   const primary = FIXED_PRIMARY[s.style] || SUB_COLORS[s.color];
++  // Words that carry the punch (numbers, "never", "worst", "lost"...). Brain 3
++  // picks them per clip (arguments[3]); the caption renders them bold, a step
++  // larger and, once spoken, in a warm yellow.
++  const emphasis = arguments.length > 3 ? arguments[3] : null;
++  const EMPHASIS_SCALE = 118; // bold and a step larger
++  const EMPHASIS_COLOUR = "&H0000E5FF"; // once spoken: warm yellow (ASS is BGR)
++  const stress = new Set((emphasis || []).map((w) => String(w).toLowerCase()));
++  const isStressed = (w) => stress.size > 0 && stress.has(cleanWord(String(w)).toLowerCase().replace(/[^a-z0-9$%.,]/g, ""));
++  const stressOpen = `{\\b1\\fscx${EMPHASIS_SCALE}\\fscy${EMPHASIS_SCALE}}`;
++  const stressClose = "{\\b0\\fscx100\\fscy100}";
+   // Fields: OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut,
+   // ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow
+   const deco = DECO[s.style] || "&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,2.5,0"; // karaoke outline
+@@ -441,7 +451,9 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     if (wholeBox) {
+       // calm static block: every word in the final colour, one event per page
+       const parts = [];
+-      for (let j = 0; j < allWords.length; j++) parts.push(wordText(j));
++      for (let j = 0; j < allWords.length; j++) {
++        parts.push(isStressed(allWords[j].w) ? stressOpen + wordText(j) + stressClose : wordText(j));
++      }
+       if (!parts.length) continue;
+       const text = hasTwoRows
+         ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
+@@ -454,16 +466,20 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     // switches to full colour AND pops to 112% (10-15% scale rule).
+     const tag = (j, state) => {
+       if (state === "upcoming") return hideKaraoke ? "{\\alpha&HFF&}" : `{\\1c${whiteKaraoke ? "&H00FFFFFF" : KARAOKE_DIM}}`;
+-      const col = palette ? palette[(spokenBase + j) % palette.length] : primary;
++      const hot = isStressed(allWords[j].w);
++      const col = hot && !palette ? EMPHASIS_COLOUR : palette ? palette[(spokenBase + j) % palette.length] : primary;
++      const big = hot ? EMPHASIS_SCALE : 100;
+       if (state === "active") {
+-        return `{\\1c${col}\\fscx100\\fscy100\\t(0,${ACTIVE_POP_MS},\\fscx${ACTIVE_SCALE}\\fscy${ACTIVE_SCALE})}`;
++        return `{\\1c${col}\\fscx${big}\\fscy${big}\\t(0,${ACTIVE_POP_MS},\\fscx${big + 12}\\fscy${big + 12})}`;
+       }
+-      return `{\\1c${col}}`;
++      return `{\\1c${col}\\fscx${big}\\fscy${big}}`;
+     };
+     const line = (active) => {
+       const parts = [];
+       for (let j = 0; j < allWords.length; j++) {
+-        parts.push(tag(j, j === active ? "active" : j < active ? "spoken" : "upcoming") + wordText(j));
++        const hot = isStressed(allWords[j].w);
++        const body = tag(j, j === active ? "active" : j < active ? "spoken" : "upcoming") + wordText(j);
++        parts.push(hot ? "{\\b1}" + body + "{\\b0}" : body);
+       }
+       return hasTwoRows
+         ? parts.slice(0, row1Len).join(" ") + "\\N" + parts.slice(row1Len).join(" ")
+@@ -589,30 +605,36 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
+   const assPath = noExt + ".subtitles.ass";
+ 
+   let words = [];
+-  try {
+-    await run(
+-      "ffmpeg",
+-      [
+-        "-y", "-hide_banner", "-loglevel", "error",
+-        "-ss", String(start),
+-        "-i", source,
+-        "-t", String(dur),
+-        "-vn", "-ac", "1", "-ar", "16000",
+-        wavPath,
+-      ],
+-      { timeout: 10 * 60 * 1000 }
+-    );
+-    const n = await transcribeToWords(wavPath, jsonPath);
+-    if (n) {
+-      try {
+-        words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
+-      } catch {}
++  if (Array.isArray(opts.wordsOverride)) {
++    // Re-timed words from the editor (after dead-air trims): no need to
++    // listen to the audio again.
++    words = opts.wordsOverride;
++  } else {
++    try {
++      await run(
++        "ffmpeg",
++        [
++          "-y", "-hide_banner", "-loglevel", "error",
++          "-ss", String(start),
++          "-i", source,
++          "-t", String(dur),
++          "-vn", "-ac", "1", "-ar", "16000",
++          wavPath,
++        ],
++        { timeout: 10 * 60 * 1000 }
++      );
++      const n = await transcribeToWords(wavPath, jsonPath);
++      if (n) {
++        try {
++          words = JSON.parse(fs.readFileSync(jsonPath, "utf8")).words || [];
++        } catch {}
++      }
++    } catch (e) {
++      console.warn("[subtitles] clip audio failed:", e.message);
+     }
+-  } catch (e) {
+-    console.warn("[subtitles] clip audio failed:", e.message);
++    try { fs.unlinkSync(wavPath); } catch {}
++    try { fs.unlinkSync(jsonPath); } catch {}
+   }
+-  try { fs.unlinkSync(wavPath); } catch {}
+-  try { fs.unlinkSync(jsonPath); } catch {}
+ 
+   if (!words.length) return null;
+ 
+@@ -630,7 +652,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
+ 
+   if (!pages.length && !hook) return null;
+ 
+-  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook), "utf8");
++  fs.writeFileSync(assPath, buildKaraokeAss(pages, opts.subStyle || {}, hook, opts.emphasis), "utf8");
+   return {
+     assPath,
+     filter: `subtitles='${escFilterPath(assPath)}'`,
+@@ -638,6 +660,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
+     subtitlesApplied: pages.length > 0,
+     hookApplied: !!hook,
+     hookText: hook ? hook.text : null,
++    words, // clip-relative word timings, for Brain 3's punch-in and trims
+   };
+ }
+ 
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index 6b7cfe6..1340158 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -328,7 +328,9 @@
+     if (ed.anchor) edits.push("built around: " + ed.anchor);
+     if (ed.reasons && ed.reasons.length) edits.push(ed.reasons.join(", "));
+     if (ed.emphasis && ed.emphasis.length) edits.push("caption emphasis: " + ed.emphasis.slice(0, 5).join(", "));
+-    if (ed.trimmable >= 1) edits.push(ed.trimmable + "s of dead air could be trimmed");
++    if (ed.trimmed >= 0.5) edits.push("cut " + ed.trimmed + "s of dead air");
++    else if (ed.trimmable >= 1) edits.push(ed.trimmable + "s of dead air could be trimmed");
++    if (ed.punchIn) edits.push("punch-in on the key line");
+     return (
+       '<details class="brain-panel"><summary>Why this clip</summary>' +
+       (c.summary ? '<p class="brain-line"><b>What it is:</b> ' + esc(c.summary) + "</p>" : "") +
