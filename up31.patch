@@ -1,0 +1,194 @@
+diff --git a/clipery/lib/brain.js b/clipery/lib/brain.js
+index 3cfa600..cebc728 100644
+--- a/clipery/lib/brain.js
++++ b/clipery/lib/brain.js
+@@ -280,6 +280,43 @@ function speechSignals(list, energy, stats) {
+  * @param sceneTimes  all scene-cut timestamps of the source
+  * @param faceTrack   optional [{t, faces}] samples from the face detector
+  */
++/**
++ * How much things MOVE in this window compared with the rest of the video.
++ * The detector attaches a `motion` reading (0..100) to every sample; a
++ * talking head sits around 5-15, someone jumping around or fast gameplay
++ * goes 40+. Everything is measured against this video's own median, so a
++ * shaky vlog is not "all action" and a still podcast can still have peaks.
++ *
++ * @returns {{level:number, rel:number, bonus:number, reason:string|null}|null}
++ */
++function motionSignals(start, end, faceTrack) {
++  const all = (faceTrack || []).filter((s) => s && Number.isFinite(s.motion));
++  if (all.length < 6) return null;
++  const inside = all.filter((s) => s.t >= start && s.t <= end);
++  if (inside.length < 2) return null;
++  const sorted = all.map((s) => s.motion).sort((a, b) => a - b);
++  const median = sorted[Math.floor(sorted.length / 2)];
++  const level = inside.reduce((a, s) => a + s.motion, 0) / inside.length;
++  const peak = Math.max(...inside.map((s) => s.motion));
++  const rel = level - median;
++
++  let bonus = 0;
++  let reason = null;
++  if (rel >= 20 || (rel >= 10 && peak >= 60)) {
++    bonus = 16;
++    reason = "lots of action / movement";
++  } else if (rel >= 8) {
++    bonus = 9;
++    reason = "more movement than usual";
++  } else if (peak >= median + 35) {
++    bonus = 7; // one big burst (a jump, a hit, a fall) inside a calm clip
++    reason = "sudden burst of action";
++  } else if (rel <= -10 && median >= 12) {
++    bonus = -6; // the dull part of an otherwise lively video
++  }
++  return { level: Math.round(level), rel: Math.round(rel), peak: Math.round(peak), bonus, reason };
++}
++
+ function visualSignals(start, end, sceneTimes, faceTrack) {
+   const len = Math.max(1, end - start);
+   const cuts = (sceneTimes || []).filter((t) => t > start && t < end).length;
+@@ -287,12 +324,21 @@ function visualSignals(start, end, sceneTimes, faceTrack) {
+   const reasons = [];
+   let score = 50;
+ 
++  // Real movement in the picture, not just editing cuts.
++  const motion = motionSignals(start, end, faceTrack);
++  if (motion) {
++    score += motion.bonus;
++    if (motion.reason) reasons.unshift(motion.reason);
++  }
++
+   if (perMin >= 6 && perMin <= 30) {
+     score += 12;
+     reasons.push("visually active");
+   } else if (perMin > 30) {
+     score += 4; // frantic, could just be a montage
+-  } else if (perMin < 1) {
++  } else if (perMin < 1 && !(motion && motion.bonus > 0)) {
++    // No cuts AND nothing moving. (Plenty of movement inside one long take
++    // is action, not a static shot.)
+     score -= 6;
+     reasons.push("static shot");
+   }
+@@ -310,7 +356,7 @@ function visualSignals(start, end, sceneTimes, faceTrack) {
+     if (min >= 1) score += 4; // a face on screen the whole time holds attention
+   }
+ 
+-  return { score: Math.max(5, Math.min(99, Math.round(score))), cuts, reasons };
++  return { score: Math.max(5, Math.min(99, Math.round(score))), cuts, reasons, motion };
+ }
+ 
+ /* ------------------------------------------------------------------ *
+@@ -336,8 +382,8 @@ function analyzeMoment(opts) {
+ 
+   const isViral = !mode || mode.id === "viral";
+   const brain = isViral
+-    ? hook.score * 0.34 + content.score * 0.31 + speech.score * 0.22 + visual.score * 0.13
+-    : content.score * 0.38 + hook.score * 0.24 + speech.score * 0.22 + visual.score * 0.16;
++    ? hook.score * 0.32 + content.score * 0.28 + speech.score * 0.21 + visual.score * 0.19
++    : content.score * 0.36 + hook.score * 0.22 + speech.score * 0.21 + visual.score * 0.21;
+ 
+   const reasons = [];
+   if (hook.strong.length) reasons.push("Hook: " + hook.strong.slice(0, 2).join(" + "));
+@@ -352,6 +398,7 @@ function analyzeMoment(opts) {
+     content: content.score,
+     speech: speech.score,
+     visual: visual.score,
++    motion: visual.motion ? visual.motion.level : null,
+     wpm: speech.wpm,
+     quote: firstLine(list),
+     reasons: reasons.filter(Boolean).slice(0, 4),
+@@ -406,6 +453,7 @@ module.exports = {
+   contentSignals,
+   speechSignals,
+   visualSignals,
++  motionSignals,
+   snapToSentence,
+   wordsIn,
+   textOf,
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 8ca4d65..b46005c 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -84,7 +84,11 @@ async function faceTrack(source, start, end, opts = {}) {
+       return r;
+     }
+     if (r && r.ok) console.log("[reframe] no clear face -> centre crop");
+-    else if (r && r.reason === "no-cv2") console.warn("[reframe] off - run: pip install opencv-python-headless");
++    else if (r && r.reason === "no-faces") {
++      console.log("[reframe] no faces -> centre crop");
++      // Keep the motion readings: they still tell the scorer where the action is.
++      if (Array.isArray(r.track) && r.track.length) return { ...r, x: null, speakers: 0, spread: 0 };
++    } else if (r && r.reason === "no-cv2") console.warn("[reframe] off - run: pip install opencv-python-headless");
+     else console.warn(`[reframe] detector problem: ${(r && r.error) || (r && r.reason) || "unknown"} -> centre crop`);
+   } catch (e) {
+     const secs = ((Date.now() - t0) / 1000).toFixed(0);
+@@ -944,6 +948,17 @@ async function processVideo(sourcePath, options = {}) {
+         dims.complete = arc.complete;
+         dims.missing = arc.missing;
+       }
++      if (!read && visualTrack) {
++        // No usable speech here (gameplay, sport, music): let the picture
++        // itself rank the moment - action beats a static screen.
++        const motion = brain.motionSignals(c.start, c.end, visualTrack);
++        if (motion) {
++          dims.motion = motion.level;
++          dims.total = Math.min(99, Math.max(30, Math.round(dims.total + motion.bonus * 0.8)));
++          dims.viralScore = dims.total;
++          if (motion.reason) dims.reasons = [motion.reason[0].toUpperCase() + motion.reason.slice(1), ...(dims.reasons || [])].slice(0, 4);
++        }
++      }
+       if (read) {
+         dims.content = read.content;
+         dims.speech = read.speech;
+@@ -958,6 +973,7 @@ async function processVideo(sourcePath, options = {}) {
+         dims.total = Math.min(99, Math.max(30, Math.round(blended)));
+         dims.viralScore = dims.total;
+         dims.hook = Math.round(dims.hook * 0.35 + read.hook * 0.65);
++        if (read.motion != null) dims.motion = read.motion;
+         const arcWhy = [];
+         if (arc && arc.roles) {
+           if (arc.roles.includes("payoff")) arcWhy.push("Complete story with a payoff");
+diff --git a/clipery/lib/facedetect.py b/clipery/lib/facedetect.py
+index 7cb22af..ef94e26 100644
+--- a/clipery/lib/facedetect.py
++++ b/clipery/lib/facedetect.py
+@@ -222,6 +222,20 @@ def main() -> None:
+         small = cv2.resize(frame, (small_w, max(1, int(frame.shape[0] * small_w / frame.shape[1]))))
+         gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
+ 
++        # Motion: how much the picture changes to the VERY NEXT frame. Jumping,
++        # running, fast camera work all light this up; a talking head barely
++        # moves it. One extra decode per sample, so it stays cheap.
++        motion = None
++        if cap.grab():
++            frame_i += 1
++            ok2, nxt = cap.retrieve()
++            if ok2:
++                nxt_small = cv2.resize(nxt, (small.shape[1], small.shape[0]))
++                nxt_gray = cv2.cvtColor(nxt_small, cv2.COLOR_BGR2GRAY)
++                diff = cv2.absdiff(gray, nxt_gray)
++                # mean abs diff of 0..255; 12+ is already a lot of movement
++                motion = round(min(100.0, float(diff.mean()) / 12.0 * 100.0), 1)
++
+         faces = detector.faces(gray, small_w)
+ 
+         if faces:
+@@ -243,14 +257,16 @@ def main() -> None:
+                 "x": round(best_x, 4),
+                 "faces": len(faces),
+                 "xs": sorted(round(c[0], 4) for c in centres),
++                "motion": motion,
+             })
+         else:
+-            track.append({"t": round(t - start, 2), "x": None, "faces": 0})
++            track.append({"t": round(t - start, 2), "x": None, "faces": 0, "motion": motion})
+     cap.release()
+ 
+     seen = [p for p in track if p["x"] is not None]
+     if not seen:
+-        print(json.dumps({"ok": False, "reason": "no-faces", "track": []}))
++        # No faces, but the motion readings are still worth having for scoring.
++        print(json.dumps({"ok": False, "reason": "no-faces", "track": track}))
+         return
+ 
+     # Lost-face samples stay x=None on purpose. The reframer needs to know
