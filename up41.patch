@@ -1,0 +1,146 @@
+diff --git a/clipery/public/editor.js b/clipery/public/editor.js
+index de4c686..a92f6d4 100644
+--- a/clipery/public/editor.js
++++ b/clipery/public/editor.js
+@@ -40,15 +40,20 @@
+   function fmt2(t) { return (Math.round((Number(t) || 0) * 10) / 10).toFixed(1); }
+   function setMsg(el, text, err) { if (!el) return; el.textContent = text || ""; el.style.color = err ? "#ff6b6b" : ""; }
+   function stageLabel(s) {
+-    var map = { queued: "Waiting in line", probing: "Reading the file", detecting_moments: "Finding moments", listening: "Listening to the speech",
++    var map = { queued: "Waiting in line", downloading: "Downloading the video", probing: "Reading the file", detecting_moments: "Finding moments", listening: "Listening to the speech",
+       watching: "Watching the picture", scoring: "Scoring moments", checking_context: "Checking each moment makes sense", rendering: "Rendering clips", review: "Ready to review", complete: "Done" };
+     return map[s] || s || "Working";
+   }
+ 
+   /* ---------- 1. upload ---------- */
++  var urlIn = $("ed-url");
+   if (fileIn) fileIn.addEventListener("change", function () {
+     file = fileIn.files && fileIn.files[0] ? fileIn.files[0] : null;
+-    if (fname) fname.textContent = file ? file.name : "";
++    if (fname) { fname.textContent = file ? file.name : ""; fname.hidden = !file; }
++    if (file && urlIn) urlIn.value = "";
++  });
++  if (urlIn) urlIn.addEventListener("input", function () {
++    if (urlIn.value.trim() && file) { file = null; if (fileIn) fileIn.value = ""; if (fname) { fname.textContent = ""; fname.hidden = true; } }
+   });
+   var subsT = $("ed-subs"), subsG = $("ed-substyle");
+   if (subsT && subsG) {
+@@ -62,21 +67,30 @@
+   }
+ 
+   if (go) go.addEventListener("click", async function () {
+-    if (!file) { setMsg(msg, "Choose a video file first.", true); return; }
++    var link = urlIn ? urlIn.value.trim() : "";
++    if (!file && !link) { setMsg(msg, "Choose a video file or paste a YouTube link first.", true); return; }
++    if (link && !/^https?:\/\//i.test(link)) { setMsg(msg, "That link does not look right - it should start with https://", true); return; }
+     go.disabled = true; setMsg(msg, "");
+     try {
+-      var fd = new FormData();
+-      fd.append("video", file, file.name);
+-      fd.append("manual", how() === "manual" ? "1" : "0");
+-      fd.append("subtitles", subsT && subsT.checked ? "1" : "0");
+       var st = subStyleOf("ed");
+-      fd.append("subColor", st.color); fd.append("subSize", st.size); fd.append("subPos", st.pos); fd.append("subStyle", st.style);
+-      var res = await fetch("/api/editor/upload", { method: "POST", body: fd });
++      var res;
++      if (file) {
++        var fd = new FormData();
++        fd.append("video", file, file.name);
++        fd.append("manual", how() === "manual" ? "1" : "0");
++        fd.append("subtitles", subsT && subsT.checked ? "1" : "0");
++        fd.append("subColor", st.color); fd.append("subSize", st.size); fd.append("subPos", st.pos); fd.append("subStyle", st.style);
++        res = await fetch("/api/editor/upload", { method: "POST", body: fd });
++      } else {
++        res = await fetch("/api/editor/from-url", { method: "POST", headers: { "Content-Type": "application/json" },
++          body: JSON.stringify({ url: link, manual: how() === "manual" ? "1" : "0", subtitles: subsT && subsT.checked ? "1" : "0",
++            subColor: st.color, subSize: st.size, subPos: st.pos, subStyle: st.style }) });
++      }
+       var data = await res.json().catch(function () { return {}; });
+       if (!res.ok || !data.ok) throw new Error(data.error || ("Upload failed (" + res.status + ")"));
+       jobId = data.jobId;
+       try { history.replaceState({}, "", "/studio?tool=editor&job=" + jobId); } catch (e) {}
+-      showProgress({ stage: data.queued ? "queued" : "probing", progress: 2 });
++      showProgress({ stage: data.queued ? "queued" : link ? "downloading" : "probing", progress: 2 });
+       watch(function (j) { return j.status === "review"; }, openReview);
+     } catch (e) {
+       setMsg(msg, e.message, true);
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 7653c89..3e3983d 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -158,8 +158,10 @@
+                 <input id="ed-file" type="file" accept="video/*,.mp4,.mov,.webm" hidden />
+                 Add file
+               </label>
+-              <span class="pro-filename" id="ed-fname" style="margin:0"></span>
++              <span class="pro-or">or</span>
++              <input id="ed-url" class="pro-input" type="text" inputmode="url" placeholder="https://youtube.com/watch?v=..." />
+             </div>
++            <p class="pro-filename" id="ed-fname" hidden></p>
+ 
+             <div class="ed-choice">
+               <label class="ed-radio"><input type="radio" name="ed-how" value="ai" checked /> <span><b>AI suggests clips</b><small>AI finds the moments, you review and adjust</small></span></label>
+diff --git a/clipery/server.js b/clipery/server.js
+index a90f043..6342283 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -108,6 +108,7 @@ const PROTECTED_API = [
+   "/api/rank/links",
+   "/api/jobs",
+   "/api/editor/upload",
++  "/api/editor/from-url",
+   "/api/editor/render",
+   "/api/editor/source",
+ ];
+@@ -447,10 +448,9 @@ async function runQueueItem(item) {
+         job.sourceName = got.title || item.url;
+         writeJob(job);
+       }
+-      await processVideo(got.file, {
+-        ...item.meta,
+-        sourceName: got.title || item.meta.sourceName || "video",
+-      });
++      const srcMeta = { ...item.meta, sourceName: got.title || item.meta.sourceName || "video" };
++      if (item.meta.manual) await planManual(got.file, srcMeta);
++      else await processVideo(got.file, srcMeta);
+     } else if (item.type === "editor-manual") {
+       await planManual(item.sourcePath, item.meta);
+     } else if (item.type === "editor-render") {
+@@ -1059,6 +1059,37 @@ const server = http.createServer(async (req, res) => {
+       return send(res, 202, { ok: true, jobId, ...q, editorUrl: `/studio?tool=editor&job=${jobId}` });
+     }
+ 
++    // Editor from a link (YouTube etc.): download first, then review.
++    if (pathname === "/api/editor/from-url" && req.method === "POST") {
++      const buf = await parseBody(req, 1e6);
++      let body = {};
++      try { body = JSON.parse(buf.toString("utf8") || "{}"); } catch { body = {}; }
++      const videoUrl = String(body.url || "").trim();
++      if (!videoUrl || !/^https?:\/\//i.test(videoUrl)) {
++        return send(res, 400, { ok: false, error: "Paste a valid video link (YouTube works best)." });
++      }
++      const manual = wantSubtitles(body.manual);
++      const mode = normalizeMode(body.mode || "viral");
++      const subtitles = wantSubtitles(body.subtitles);
++      const subStyle = readSubStyle((n) => body[n]);
++      const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = chargeVideo(req, res);
++      if (!owner) return;
++      const meta = {
++        userId: owner.id, ...owner.planLimits, jobId, sourceName: videoUrl.slice(0, 120), mode,
++        subtitles, subStyle, hook: false, hookMode: "intro", trends: [],
++        review: true, manual, editor: true,
++      };
++      seedJob(jobId, meta);
++      let q;
++      try {
++        q = enqueueItem({ type: "from-url", url: videoUrl, meta });
++      } catch (e) {
++        return send(res, 503, { ok: false, error: e.message, retry: true });
++      }
++      return send(res, 202, { ok: true, jobId, ...q, editorUrl: `/studio?tool=editor&job=${jobId}` });
++    }
++
+     // The original upload, streamed to the editor page (owner only).
+     if (pathname.startsWith("/api/editor/source/") && req.method === "GET") {
+       const id = pathname.split("/").pop();
