@@ -271,23 +271,24 @@
     }
   }
 
+  function wireSubControl(prefix, key) {
+    var el = $(prefix + "-sub-" + key);
+    if (!el) return;
+    el.addEventListener("change", function () {
+      // Position is always yours to change, template or not. Only
+      // hand-tuning colour/size/style means leaving the template behind.
+      if (key !== "pos") {
+        clearTplChips(prefix);
+        setTplLock(prefix, false);
+        setTplWords(prefix, "");
+      }
+      updateSubPreview(prefix);
+    });
+  }
+
   function wireSubPreview(prefix) {
     var keys = ["color", "size", "pos", "style"];
-    for (var i = 0; i < keys.length; i++) {
-      var el = $(prefix + "-sub-" + keys[i]);
-      if (el) {
-        var key = keys[i];
-        el.addEventListener("change", function () {
-          if (key !== "pos") {
-            // hand-tuning colour/size/style = leaving the template behind
-            clearTplChips(prefix);
-            setTplLock(prefix, false);
-            setTplWords(prefix, "");
-          }
-          updateSubPreview(prefix);
-        });
-      }
-    }
+    for (var i = 0; i < keys.length; i++) wireSubControl(prefix, keys[i]);
     wireSubTabs(prefix);
     wireStyleCards(prefix);
     wireTemplates(prefix);
