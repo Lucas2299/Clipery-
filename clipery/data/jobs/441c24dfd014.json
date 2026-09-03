@@ -1,0 +1,1885 @@
+{
+  "id": "441c24dfd014",
+  "userId": "a5fdcea12490c893",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-09-03T09:52:56.122Z",
+  "sourceName": "441c24dfd014-src.mp4.part",
+  "subtitles": true,
+  "hook": false,
+  "hookMode": "intro",
+  "clips": [
+    {
+      "rank": 1,
+      "reframe": "follow",
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: opens with a question",
+        "No payoff",
+        "Reaction shot / second person",
+        "Dramatic pause"
+      ],
+      "quote": "Who would feel good out here, man?",
+      "title": "Cold-open hook",
+      "start": 7.63,
+      "end": 41.64,
+      "duration": 34.01,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: opens with a question",
+          "No payoff",
+          "Reaction shot / second person",
+          "Dramatic pause"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 93,
+        "retention": 96,
+        "cta": 45,
+        "replay": 94,
+        "energy": 62,
+        "punch": 100,
+        "scores": {
+          "hook": 71,
+          "curiosity": 62,
+          "emotion": 61,
+          "value": 62,
+          "completion": 61,
+          "surprise": 58,
+          "payoff": 62,
+          "retention": 36
+        },
+        "brain": {
+          "topic": [
+            "muhammad",
+            "where's",
+            "saleh",
+            "egypt"
+          ],
+          "words": 64,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 60,
+          "punchline": 25,
+          "conclusion": 60,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "has a payoff",
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about muhammad, where's, with a payoff"
+        },
+        "summary": "a talking moment about muhammad, where's, with a payoff",
+        "topic": [
+          "muhammad",
+          "where's",
+          "saleh",
+          "egypt"
+        ],
+        "quote": "Who would feel good out here, man?",
+        "wpm": 112,
+        "motion": 72,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Who would feel good out here, man?"
+      },
+      "scores": {
+        "hook": 71,
+        "curiosity": 62,
+        "emotion": 61,
+        "value": 62,
+        "completion": 61,
+        "surprise": 58,
+        "payoff": 62,
+        "retention": 36
+      },
+      "summary": "a talking moment about muhammad, where's, with a payoff",
+      "edit": {
+        "start": 7.63,
+        "end": 41.64,
+        "duration": 34.01,
+        "anchor": "Who would feel good out here, man?",
+        "reasons": [],
+        "captions": true,
+        "emphasis": [],
+        "deadAir": [
+          {
+            "from": 30.88,
+            "to": 40.2,
+            "secs": 9.32
+          }
+        ],
+        "trimmable": 8.7,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 2.08,
+          "emphasis": 0
+        },
+        "trimmed": 2.08
+      },
+      "url": "/clips/441c24dfd014/clip-1.mp4",
+      "downloadName": "viral-61-rank1-441c24dfd014.mp4",
+      "postTip": "Post this first - highest viral chance"
+    },
+    {
+      "rank": 2,
+      "reframe": "follow",
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Hook: opens with a question",
+        "No payoff",
+        "Strong cold-open hook",
+        "Good pacing"
+      ],
+      "quote": "What does cow drink?",
+      "title": "Cold-open hook",
+      "start": 135.21,
+      "end": 167.98,
+      "duration": 32.77,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Hook: opens with a question",
+          "No payoff",
+          "Strong cold-open hook",
+          "Good pacing"
+        ],
+        "hook": 74,
+        "length": 98,
+        "pacing": 77,
+        "retention": 90,
+        "cta": 45,
+        "replay": 87,
+        "energy": 48,
+        "punch": 82,
+        "scores": {
+          "hook": 71,
+          "curiosity": 62,
+          "emotion": 57,
+          "value": 58,
+          "completion": 61,
+          "surprise": 47,
+          "payoff": 38,
+          "retention": 28
+        },
+        "brain": {
+          "topic": [
+            "drink",
+            "wait",
+            "made",
+            "fuck"
+          ],
+          "words": 40,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 40,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about drink, wait, without a clear payoff"
+        },
+        "summary": "a talking moment about drink, wait, without a clear payoff",
+        "topic": [
+          "drink",
+          "wait",
+          "made",
+          "fuck"
+        ],
+        "quote": "What does cow drink?",
+        "wpm": 74,
+        "motion": 97,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "What does cow drink?"
+      },
+      "scores": {
+        "hook": 71,
+        "curiosity": 62,
+        "emotion": 57,
+        "value": 58,
+        "completion": 61,
+        "surprise": 47,
+        "payoff": 38,
+        "retention": 28
+      },
+      "summary": "a talking moment about drink, wait, without a clear payoff",
+      "edit": {
+        "start": 135.21,
+        "end": 167.98,
+        "duration": 32.77,
+        "anchor": "What does cow drink?",
+        "reasons": [],
+        "captions": true,
+        "emphasis": [],
+        "deadAir": [
+          {
+            "from": 137.36,
+            "to": 144.62,
+            "secs": 7.26
+          },
+          {
+            "from": 146.46,
+            "to": 150.7,
+            "secs": 4.24
+          },
+          {
+            "from": 152.36,
+            "to": 155,
+            "secs": 2.64
+          },
+          {
+            "from": 157.82,
+            "to": 166.58,
+            "secs": 8.76
+          }
+        ],
+        "trimmable": 20.5,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "url": "/clips/441c24dfd014/clip-3.mp4",
+      "downloadName": "viral-57-rank3-441c24dfd014.mp4",
+      "postTip": "Strong follow-up post"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: opens with a question",
+        "No payoff",
+        "Reaction shot / second person",
+        "Dramatic pause"
+      ],
+      "quote": "Who would feel good out here, man?",
+      "title": "Cold-open hook",
+      "start": 7.05,
+      "end": 41.64,
+      "duration": 34.59,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: opens with a question",
+          "No payoff",
+          "Reaction shot / second person",
+          "Dramatic pause"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 93,
+        "retention": 96,
+        "cta": 45,
+        "replay": 94,
+        "energy": 62,
+        "punch": 100,
+        "scores": {
+          "hook": 71,
+          "curiosity": 62,
+          "emotion": 61,
+          "value": 62,
+          "completion": 61,
+          "surprise": 58,
+          "payoff": 62,
+          "retention": 36
+        },
+        "brain": {
+          "topic": [
+            "muhammad",
+            "where's",
+            "saleh",
+            "egypt"
+          ],
+          "words": 64,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 60,
+          "punchline": 25,
+          "conclusion": 60,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "has a payoff",
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about muhammad, where's, with a payoff"
+        },
+        "summary": "a talking moment about muhammad, where's, with a payoff",
+        "topic": [
+          "muhammad",
+          "where's",
+          "saleh",
+          "egypt"
+        ],
+        "quote": "Who would feel good out here, man?",
+        "wpm": 112,
+        "motion": 72,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Who would feel good out here, man?"
+      }
+    },
+    {
+      "rank": 2,
+      "score": 60,
+      "viralScore": 60,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "No payoff",
+        "Visually active",
+        "Dramatic pause",
+        "Emotional moment"
+      ],
+      "quote": "You say February when I say what is the only month in the year has 28 days?",
+      "title": "Cold-open hook",
+      "start": 90.73,
+      "end": 121.13,
+      "duration": 30.4,
+      "dimensions": {
+        "total": 60,
+        "viralScore": 60,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "No payoff",
+          "Visually active",
+          "Dramatic pause",
+          "Emotional moment"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 80,
+        "retention": 91,
+        "cta": 45,
+        "replay": 89,
+        "energy": 54,
+        "punch": 81,
+        "scores": {
+          "hook": 57,
+          "curiosity": 70,
+          "emotion": 65,
+          "value": 69,
+          "completion": 65,
+          "surprise": 70,
+          "payoff": 38,
+          "retention": 49
+        },
+        "brain": {
+          "topic": [
+            "silk",
+            "faster",
+            "spell",
+            "february"
+          ],
+          "words": 72,
+          "story": 70,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 80,
+          "punchline": 45,
+          "conclusion": 25,
+          "educational": 58,
+          "emotional": 25,
+          "roles": [
+            "statement",
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "ends on an unanswered question"
+          ],
+          "selfContained": 65,
+          "notes": [
+            "tells a story",
+            "concrete numbers",
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a story and a big reaction about silk, faster, without a clear payoff"
+        },
+        "summary": "a story and a big reaction about silk, faster, without a clear payoff",
+        "topic": [
+          "silk",
+          "faster",
+          "spell",
+          "february"
+        ],
+        "quote": "You say February when I say what is the only month in the year has 28 days?",
+        "wpm": 144,
+        "motion": 76,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "arc": 65,
+        "anchor": "You say February when I say what is the only month in the year has 28 days?"
+      }
+    },
+    {
+      "rank": 3,
+      "score": 58,
+      "viralScore": 58,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 1485,
+      "end": 1525,
+      "duration": 40,
+      "dimensions": {
+        "total": 58,
+        "viralScore": 58,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 90,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 4,
+      "score": 58,
+      "viralScore": 58,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 1440,
+      "end": 1480,
+      "duration": 40,
+      "dimensions": {
+        "total": 58,
+        "viralScore": 58,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 90,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 5,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Hook: opens with a question",
+        "No payoff",
+        "Strong cold-open hook",
+        "Good pacing"
+      ],
+      "quote": "What does cow drink?",
+      "title": "Cold-open hook",
+      "start": 135.21,
+      "end": 167.98,
+      "duration": 32.77,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Hook: opens with a question",
+          "No payoff",
+          "Strong cold-open hook",
+          "Good pacing"
+        ],
+        "hook": 74,
+        "length": 98,
+        "pacing": 77,
+        "retention": 90,
+        "cta": 45,
+        "replay": 87,
+        "energy": 48,
+        "punch": 82,
+        "scores": {
+          "hook": 71,
+          "curiosity": 62,
+          "emotion": 57,
+          "value": 58,
+          "completion": 61,
+          "surprise": 47,
+          "payoff": 38,
+          "retention": 28
+        },
+        "brain": {
+          "topic": [
+            "drink",
+            "wait",
+            "made",
+            "fuck"
+          ],
+          "words": 40,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 40,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about drink, wait, without a clear payoff"
+        },
+        "summary": "a talking moment about drink, wait, without a clear payoff",
+        "topic": [
+          "drink",
+          "wait",
+          "made",
+          "fuck"
+        ],
+        "quote": "What does cow drink?",
+        "wpm": 74,
+        "motion": 97,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "What does cow drink?"
+      }
+    },
+    {
+      "rank": 6,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 540,
+      "end": 580,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 7,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 855,
+      "end": 895,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 8,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 1170,
+      "end": 1210,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 70,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 9,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 585,
+      "end": 625,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 10,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 720,
+      "end": 760,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 11,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 900,
+      "end": 940,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 12,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 1035,
+      "end": 1075,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 70,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 13,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 1260,
+      "end": 1300,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 90,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 14,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 1350,
+      "end": 1390,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 90,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 15,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 675,
+      "end": 715,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 16,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 810,
+      "end": 850,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 17,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 990,
+      "end": 1030,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 70,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 18,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 1125,
+      "end": 1165,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 70,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 19,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 1305,
+      "end": 1345,
+      "duration": 40,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 90,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 20,
+      "score": 56,
+      "viralScore": 56,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Kept the build-up",
+        "Hook: opens with a question",
+        "No payoff",
+        "Reaction shot / second person"
+      ],
+      "quote": "How you get a motorcycle here?",
+      "title": "High-energy cut",
+      "start": 389.2,
+      "end": 416.85,
+      "duration": 27.65,
+      "dimensions": {
+        "total": 56,
+        "viralScore": 56,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Kept the build-up",
+          "Hook: opens with a question",
+          "No payoff",
+          "Reaction shot / second person"
+        ],
+        "hook": 78,
+        "length": 98,
+        "pacing": 83,
+        "retention": 92,
+        "cta": 45,
+        "replay": 89,
+        "energy": 55,
+        "punch": 86,
+        "scores": {
+          "hook": 76,
+          "curiosity": 62,
+          "emotion": 53,
+          "value": 58,
+          "completion": 61,
+          "surprise": 52,
+          "payoff": 38,
+          "retention": 61
+        },
+        "brain": {
+          "topic": [
+            "yalla",
+            "can't",
+            "wait",
+            "motorcycle"
+          ],
+          "words": 64,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about yalla, can't, without a clear payoff"
+        },
+        "summary": "a talking moment about yalla, can't, without a clear payoff",
+        "topic": [
+          "yalla",
+          "can't",
+          "wait",
+          "motorcycle"
+        ],
+        "quote": "How you get a motorcycle here?",
+        "wpm": 140,
+        "motion": 89,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Come on, come on, come on, where can we see it?"
+      }
+    },
+    {
+      "rank": 21,
+      "score": 56,
+      "viralScore": 56,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Kept the build-up",
+        "Hook: opens with a question",
+        "No payoff",
+        "Reaction shot / second person"
+      ],
+      "quote": "How you get a motorcycle here?",
+      "title": "High-energy cut",
+      "start": 389.2,
+      "end": 416.85,
+      "duration": 27.65,
+      "dimensions": {
+        "total": 56,
+        "viralScore": 56,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Kept the build-up",
+          "Hook: opens with a question",
+          "No payoff",
+          "Reaction shot / second person"
+        ],
+        "hook": 75,
+        "length": 98,
+        "pacing": 83,
+        "retention": 92,
+        "cta": 45,
+        "replay": 90,
+        "energy": 52,
+        "punch": 89,
+        "scores": {
+          "hook": 76,
+          "curiosity": 62,
+          "emotion": 53,
+          "value": 58,
+          "completion": 61,
+          "surprise": 52,
+          "payoff": 38,
+          "retention": 61
+        },
+        "brain": {
+          "topic": [
+            "yalla",
+            "can't",
+            "wait",
+            "motorcycle"
+          ],
+          "words": 64,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about yalla, can't, without a clear payoff"
+        },
+        "summary": "a talking moment about yalla, can't, without a clear payoff",
+        "topic": [
+          "yalla",
+          "can't",
+          "wait",
+          "motorcycle"
+        ],
+        "quote": "How you get a motorcycle here?",
+        "wpm": 140,
+        "motion": 89,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Come on, come on, come on, where can we see it?"
+      }
+    },
+    {
+      "rank": 22,
+      "score": 53,
+      "viralScore": 53,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "No payoff",
+        "More movement than usual",
+        "Dramatic pause",
+        "Hook: opens with a question"
+      ],
+      "quote": "I",
+      "title": "Cold-open hook",
+      "start": 224.71,
+      "end": 250.33,
+      "duration": 25.62,
+      "dimensions": {
+        "total": 53,
+        "viralScore": 53,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "No payoff",
+          "More movement than usual",
+          "Dramatic pause",
+          "Hook: opens with a question"
+        ],
+        "hook": 63,
+        "length": 98,
+        "pacing": 81,
+        "retention": 91,
+        "cta": 45,
+        "replay": 89,
+        "energy": 54,
+        "punch": 83,
+        "scores": {
+          "hook": 52,
+          "curiosity": 40,
+          "emotion": 57,
+          "value": 58,
+          "completion": 61,
+          "surprise": 55,
+          "payoff": 38,
+          "retention": 72
+        },
+        "brain": {
+          "topic": [
+            "classic",
+            "that's",
+            "looks",
+            "cool"
+          ],
+          "words": 56,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 40,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about classic, that's, without a clear payoff"
+        },
+        "summary": "a talking moment about classic, that's, without a clear payoff",
+        "topic": [
+          "classic",
+          "that's",
+          "looks",
+          "cool"
+        ],
+        "quote": "I",
+        "wpm": 133,
+        "motion": 100,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "That is looks cool Oh my costume the most famous Arab singer ever who where?"
+      }
+    },
+    {
+      "rank": 23,
+      "score": 53,
+      "viralScore": 53,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "No payoff",
+        "Dramatic pause",
+        "Strong cold-open hook",
+        "Good pacing"
+      ],
+      "quote": "You were a singer?",
+      "title": "High-energy cut",
+      "start": 269.27,
+      "end": 296.14,
+      "duration": 26.87,
+      "dimensions": {
+        "total": 53,
+        "viralScore": 53,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "No payoff",
+          "Dramatic pause",
+          "Strong cold-open hook",
+          "Good pacing"
+        ],
+        "hook": 68,
+        "length": 98,
+        "pacing": 77,
+        "retention": 90,
+        "cta": 45,
+        "replay": 86,
+        "energy": 46,
+        "punch": 84,
+        "scores": {
+          "hook": 65,
+          "curiosity": 62,
+          "emotion": 53,
+          "value": 58,
+          "completion": 61,
+          "surprise": 52,
+          "payoff": 38,
+          "retention": 39
+        },
+        "brain": {
+          "topic": [
+            "heart",
+            "baby",
+            "adranini",
+            "getting"
+          ],
+          "words": 38,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about heart, baby, without a clear payoff"
+        },
+        "summary": "a talking moment about heart, baby, without a clear payoff",
+        "topic": [
+          "heart",
+          "baby",
+          "adranini",
+          "getting"
+        ],
+        "quote": "You were a singer?",
+        "wpm": 87,
+        "motion": 61,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "You were a singer?"
+      }
+    },
+    {
+      "rank": 24,
+      "score": 50,
+      "viralScore": 50,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 450,
+      "end": 490,
+      "duration": 40,
+      "dimensions": {
+        "total": 50,
+        "viralScore": 50,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 52,
+        "length": 98,
+        "pacing": 18,
+        "retention": 66,
+        "cta": 45,
+        "replay": 50,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 44
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40
+      }
+    }
+  ],
+  "error": null,
+  "duration": 1541.18,
+  "candidateCount": 24,
+  "sceneCount": 80,
+  "stageNote": null,
+  "transcribed": true,
+  "viralAnalysis": {
+    "analyzed": 24,
+    "topViralScore": 61,
+    "likelyViral": 0,
+    "postOrder": [
+      {
+        "rank": 1,
+        "title": "Cold-open hook",
+        "viralScore": 61,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 2,
+        "title": "Closer punch",
+        "viralScore": 58,
+        "verdict": "Low priority"
+      },
+      {
+        "rank": 3,
+        "title": "Cold-open hook",
+        "viralScore": 57,
+        "verdict": "Low priority"
+      },
+      {
+        "rank": 4,
+        "title": "Viral angle",
+        "viralScore": 57,
+        "verdict": "Low priority"
+      },
+      {
+        "rank": 5,
+        "title": "Viral angle",
+        "viralScore": 57,
+        "verdict": "Low priority"
+      },
+      {
+        "rank": 6,
+        "title": "Viral angle",
+        "viralScore": 57,
+        "verdict": "Low priority"
+      },
+      {
+        "rank": 7,
+        "title": "Viral angle",
+        "viralScore": 57,
+        "verdict": "Low priority"
+      },
+      {
+        "rank": 8,
+        "title": "Viral angle",
+        "viralScore": 57,
+        "verdict": "Low priority"
+      }
+    ],
+    "summary": "AI analyzed 24 moments. Best clip scored 61 - still worth testing."
+  },
+  "subtitlesApplied": true,
+  "renderNote": "one clip could not be rendered and was left out",
+  "completedAt": "2026-09-03T10:03:04.438Z"
+}

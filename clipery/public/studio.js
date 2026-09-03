@@ -37,23 +37,47 @@
     return { enabled: !!(t && t.checked), mode: m ? m.value : "intro" };
   }
 
+  // Hook title and subtitles are either/or: both at once fight for the
+  // same screen. Turning one on switches the other off.
   function wireHookToggle(prefix) {
     var t = $(prefix + "-hook");
     var g = $(prefix + "-hookgrid");
-    var pv = $(prefix + "-sub-preview");
+    var subs = $(prefix + "-subs");
     if (!t) return;
     function sync() {
       if (g) g.classList.toggle("subs-off", !t.checked);
-      if (pv) {
-        var chip = pv.querySelector(".sub-preview-hook");
-        if (chip) chip.hidden = !t.checked;
-      }
     }
-    t.addEventListener("change", sync);
+    t.addEventListener("change", function () {
+      if (t.checked && subs && subs.checked) {
+        subs.checked = false;
+        subs.dispatchEvent(new Event("change"));
+      }
+      sync();
+    });
+    if (subs) {
+      subs.addEventListener("change", function () {
+        if (subs.checked && t.checked) {
+          t.checked = false;
+          sync();
+        }
+      });
+    }
+    // Subtitles are on by default, so the hook starts off.
+    if (t.checked && subs && subs.checked) t.checked = false;
     sync();
   }
   wireHookToggle("long");
   wireHookToggle("rank");
+
+  // The little caption preview box is gone: the style cards already show
+  // the real look, and the box only took space.
+  (function removePreviews() {
+    var ids = ["long-sub-preview", "rank-sub-preview"];
+    for (var i = 0; i < ids.length; i++) {
+      var el = $(ids[i]);
+      if (el && el.parentNode) el.parentNode.removeChild(el);
+    }
+  })();
 
   /* --- live subtitle style preview --- */
   var SUB_PREV = {

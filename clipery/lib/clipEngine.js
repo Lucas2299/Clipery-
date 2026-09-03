@@ -881,6 +881,8 @@ function applyThought(dims, thought, hasWords, baseTotal) {
 
 async function processVideo(sourcePath, options = {}) {
   const mode = MODES[options.mode] || MODES.viral;
+  // Hook title and subtitles never run together: subtitles win.
+  if (options.subtitles && options.hook) options = { ...options, hook: false };
   const id = options.jobId || crypto.randomBytes(6).toString("hex");
   const outDir = path.join(CLIPS_PUBLIC, id);
   fs.mkdirSync(outDir, { recursive: true });
