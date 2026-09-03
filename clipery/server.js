@@ -108,6 +108,7 @@ const PROTECTED_API = [
   "/api/rank/links",
   "/api/jobs",
   "/api/editor/upload",
+  "/api/editor/from-url",
   "/api/editor/render",
   "/api/editor/source",
 ];
@@ -447,10 +448,9 @@ async function runQueueItem(item) {
         job.sourceName = got.title || item.url;
         writeJob(job);
       }
-      await processVideo(got.file, {
-        ...item.meta,
-        sourceName: got.title || item.meta.sourceName || "video",
-      });
+      const srcMeta = { ...item.meta, sourceName: got.title || item.meta.sourceName || "video" };
+      if (item.meta.manual) await planManual(got.file, srcMeta);
+      else await processVideo(got.file, srcMeta);
     } else if (item.type === "editor-manual") {
       await planManual(item.sourcePath, item.meta);
     } else if (item.type === "editor-render") {
@@ -1053,6 +1053,37 @@ const server = http.createServer(async (req, res) => {
       let q;
       try {
         q = enqueueItem(manual ? { type: "editor-manual", sourcePath: dest, meta } : { sourcePath: dest, meta });
+      } catch (e) {
+        return send(res, 503, { ok: false, error: e.message, retry: true });
+      }
+      return send(res, 202, { ok: true, jobId, ...q, editorUrl: `/studio?tool=editor&job=${jobId}` });
+    }
+
+    // Editor from a link (YouTube etc.): download first, then review.
+    if (pathname === "/api/editor/from-url" && req.method === "POST") {
+      const buf = await parseBody(req, 1e6);
+      let body = {};
+      try { body = JSON.parse(buf.toString("utf8") || "{}"); } catch { body = {}; }
+      const videoUrl = String(body.url || "").trim();
+      if (!videoUrl || !/^https?:\/\//i.test(videoUrl)) {
+        return send(res, 400, { ok: false, error: "Paste a valid video link (YouTube works best)." });
+      }
+      const manual = wantSubtitles(body.manual);
+      const mode = normalizeMode(body.mode || "viral");
+      const subtitles = wantSubtitles(body.subtitles);
+      const subStyle = readSubStyle((n) => body[n]);
+      const jobId = crypto.randomBytes(6).toString("hex");
+      const owner = chargeVideo(req, res);
+      if (!owner) return;
+      const meta = {
+        userId: owner.id, ...owner.planLimits, jobId, sourceName: videoUrl.slice(0, 120), mode,
+        subtitles, subStyle, hook: false, hookMode: "intro", trends: [],
+        review: true, manual, editor: true,
+      };
+      seedJob(jobId, meta);
+      let q;
+      try {
+        q = enqueueItem({ type: "from-url", url: videoUrl, meta });
       } catch (e) {
         return send(res, 503, { ok: false, error: e.message, retry: true });
       }

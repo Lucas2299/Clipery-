@@ -40,15 +40,20 @@
   function fmt2(t) { return (Math.round((Number(t) || 0) * 10) / 10).toFixed(1); }
   function setMsg(el, text, err) { if (!el) return; el.textContent = text || ""; el.style.color = err ? "#ff6b6b" : ""; }
   function stageLabel(s) {
-    var map = { queued: "Waiting in line", probing: "Reading the file", detecting_moments: "Finding moments", listening: "Listening to the speech",
+    var map = { queued: "Waiting in line", downloading: "Downloading the video", probing: "Reading the file", detecting_moments: "Finding moments", listening: "Listening to the speech",
       watching: "Watching the picture", scoring: "Scoring moments", checking_context: "Checking each moment makes sense", rendering: "Rendering clips", review: "Ready to review", complete: "Done" };
     return map[s] || s || "Working";
   }
 
   /* ---------- 1. upload ---------- */
+  var urlIn = $("ed-url");
   if (fileIn) fileIn.addEventListener("change", function () {
     file = fileIn.files && fileIn.files[0] ? fileIn.files[0] : null;
-    if (fname) fname.textContent = file ? file.name : "";
+    if (fname) { fname.textContent = file ? file.name : ""; fname.hidden = !file; }
+    if (file && urlIn) urlIn.value = "";
+  });
+  if (urlIn) urlIn.addEventListener("input", function () {
+    if (urlIn.value.trim() && file) { file = null; if (fileIn) fileIn.value = ""; if (fname) { fname.textContent = ""; fname.hidden = true; } }
   });
   var subsT = $("ed-subs"), subsG = $("ed-substyle");
   if (subsT && subsG) {
@@ -62,21 +67,30 @@
   }
 
   if (go) go.addEventListener("click", async function () {
-    if (!file) { setMsg(msg, "Choose a video file first.", true); return; }
+    var link = urlIn ? urlIn.value.trim() : "";
+    if (!file && !link) { setMsg(msg, "Choose a video file or paste a YouTube link first.", true); return; }
+    if (link && !/^https?:\/\//i.test(link)) { setMsg(msg, "That link does not look right - it should start with https://", true); return; }
     go.disabled = true; setMsg(msg, "");
     try {
-      var fd = new FormData();
-      fd.append("video", file, file.name);
-      fd.append("manual", how() === "manual" ? "1" : "0");
-      fd.append("subtitles", subsT && subsT.checked ? "1" : "0");
       var st = subStyleOf("ed");
-      fd.append("subColor", st.color); fd.append("subSize", st.size); fd.append("subPos", st.pos); fd.append("subStyle", st.style);
-      var res = await fetch("/api/editor/upload", { method: "POST", body: fd });
+      var res;
+      if (file) {
+        var fd = new FormData();
+        fd.append("video", file, file.name);
+        fd.append("manual", how() === "manual" ? "1" : "0");
+        fd.append("subtitles", subsT && subsT.checked ? "1" : "0");
+        fd.append("subColor", st.color); fd.append("subSize", st.size); fd.append("subPos", st.pos); fd.append("subStyle", st.style);
+        res = await fetch("/api/editor/upload", { method: "POST", body: fd });
+      } else {
+        res = await fetch("/api/editor/from-url", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: link, manual: how() === "manual" ? "1" : "0", subtitles: subsT && subsT.checked ? "1" : "0",
+            subColor: st.color, subSize: st.size, subPos: st.pos, subStyle: st.style }) });
+      }
       var data = await res.json().catch(function () { return {}; });
       if (!res.ok || !data.ok) throw new Error(data.error || ("Upload failed (" + res.status + ")"));
       jobId = data.jobId;
       try { history.replaceState({}, "", "/studio?tool=editor&job=" + jobId); } catch (e) {}
-      showProgress({ stage: data.queued ? "queued" : "probing", progress: 2 });
+      showProgress({ stage: data.queued ? "queued" : link ? "downloading" : "probing", progress: 2 });
       watch(function (j) { return j.status === "review"; }, openReview);
     } catch (e) {
       setMsg(msg, e.message, true);
