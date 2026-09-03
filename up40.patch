@@ -1,0 +1,1108 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 934791d..229c8fc 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -555,15 +555,18 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+   // Smart reframing: follow the speaker instead of cropping dead centre.
+   // Track times come back relative to the clip start, which is exactly what
+   // the crop expression needs (ffmpeg `t` restarts at 0 for the cut).
+-  const det = await faceTrack(source, start, end);
++  // The editor can pin the framing per clip: "follow" | "static" | "wide" | "center".
++  const forced = subOpts && subOpts.layout && ["follow", "static", "wide", "center"].includes(subOpts.layout) ? subOpts.layout : null;
++  const det = forced === "wide" || forced === "center" ? null : await faceTrack(source, start, end);
+   const rf = reframeFilter({
+     samples: (det && det.track) || [],
+     srcW: (srcMeta && srcMeta.width) || 1920,
+     srcH: (srcMeta && srcMeta.height) || 1080,
+     outW: targetW,
+     outH: targetH,
++    force: forced,
+   });
+-  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)`);
++  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : ""}`);
+ 
+   const extras = [
+     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
+@@ -1183,19 +1186,91 @@ async function processVideo(sourcePath, options = {}) {
+       }
+     }
+ 
++    // ---- Editor: stop here and let the user review the plan -------------
++    // Nothing heavy has run for these clips yet (rendering is the expensive
++    // part), so the review costs nothing and saves every clip they drop.
++    if (options.review) {
++      job.status = "review";
++      job.stage = "review";
++      job.progress = 50;
++      job.review = {
++        sourcePath,
++        meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
++        words: videoWords || null,
++        options: {
++          subtitles: !!options.subtitles,
++          subStyle: options.subStyle || null,
++          hook: !!options.hook,
++          hookMode: options.hookMode || "intro",
++          trends: options.trends || [],
++          maxClips: clipBudget,
++        },
++      };
++      job.plan = top.map((c, i) => planEntry({ ...c, captions: !!options.subtitles }, i));
++      writeJob(job);
++      return job;
++    }
++
++    await renderPlan(job, sourcePath, meta, mode, top, options, outDir);
++    return job;
++  } catch (err) {
++    job.status = "error";
++    job.error = err.message || String(err);
++    job.progress = 0;
++    writeJob(job);
++    throw err;
++  }
++}
++
++/** One reviewable clip, as the editor page shows it. */
++function planEntry(c, i) {
++  const d = c.dimensions || {};
++  return {
++    id: c.planId || crypto.randomBytes(3).toString("hex"),
++    order: i + 1,
++    start: +Number(c.start).toFixed(2),
++    end: +Number(c.end).toFixed(2),
++    duration: +(c.end - c.start).toFixed(2),
++    title: c.title || `Clip ${i + 1}`,
++    score: c.score,
++    viralScore: d.viralScore || c.score,
++    verdict: d.verdict || null,
++    verdictKey: d.verdictKey || null,
++    reasons: d.reasons || [],
++    quote: d.quote || null,
++    scores: d.scores || null,
++    summary: d.summary || null,
++    edit: c.edit || null,
++    layout: c.layout || "auto",        // auto | follow | static | wide | center
++    captions: c.captions != null ? c.captions : true,
++    subStyle: c.subStyle || null,       // per-clip caption look (null = job default)
++    source: c.source || "ai",           // ai | user
++  };
++}
++
++/**
++ * Render a list of planned clips. Shared by the one-click flow and the
++ * editor's "Render N clips" button.
++ */
++async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
++    job.status = "processing";
+     job.stage = "rendering";
+     job.progress = 52;
+     writeJob(job);
++    const id = job.id;
+ 
+     const clips = [];
+     for (let i = 0; i < top.length; i++) {
+       const c = top[i];
++      c.dimensions = c.dimensions || {};
+       const filename = `clip-${i + 1}.mp4`;
+       const outFile = path.join(outDir, filename);
+-      const vScore = c.dimensions.viralScore || c.score;
++      const vScore = c.dimensions.viralScore || c.score || 0;
+       const label = `#${i + 1} VIRAL ${vScore}`;
+       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
+-      const wantExtras = !!(options.subtitles || options.hook);
++      const clipCaptions = c.captions != null ? !!c.captions : !!options.subtitles;
++      const clipHook = !clipCaptions && !!options.hook;
++      const wantExtras = clipCaptions || clipHook || (c.layout && c.layout !== "auto");
+       const rendered = await renderClip(
+         sourcePath,
+         outFile,
+@@ -1208,10 +1283,11 @@ async function processVideo(sourcePath, options = {}) {
+         wantExtras
+           ? {
+               clipDur: +(c.end - c.start).toFixed(2),
+-              subStyle: options.subtitles ? options.subStyle : null,
+-              hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
++              subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
++              hook: clipHook ? { enabled: true, mode: options.hookMode } : null,
+               trends: options.trends,
+               edit: c.edit || null,
++              layout: c.layout && c.layout !== "auto" ? c.layout : null,
+             }
+           : null
+       );
+@@ -1245,7 +1321,7 @@ async function processVideo(sourcePath, options = {}) {
+         verdictKey: c.dimensions.verdictKey,
+         reasons: c.dimensions.reasons || [],
+         quote: c.dimensions.quote || null,
+-        title: c.title,
++        title: c.title || `Clip ${i + 1}`,
+         start: c.start,
+         end: c.end,
+         duration: +(c.end - c.start).toFixed(2),
+@@ -1272,6 +1348,152 @@ async function processVideo(sourcePath, options = {}) {
+     job.progress = 100;
+     job.completedAt = new Date().toISOString();
+     job.clips = clips;
++    delete job.review; // the source path and transcript are not needed any more
++    writeJob(job);
++    return job;
++}
++
++/**
++ * Editor: render the clips the user approved for a job that is in review.
++ * `approved` is the (edited) plan from the page: [{id,start,end,layout,captions,subStyle,title}].
++ */
++async function renderReviewed(jobId, approved) {
++  const job = readJob(jobId);
++  if (!job || job.status !== "review" || !job.review) throw new Error("This job is not waiting for review.");
++  const rv = job.review;
++  if (!fs.existsSync(rv.sourcePath)) throw new Error("The source video has been cleaned up. Upload it again.");
++  const mode = MODES[job.mode] || MODES.viral;
++  const meta = rv.meta;
++  const options = { ...rv.options, jobId };
++  const outDir = path.join(CLIPS_PUBLIC, jobId);
++  fs.mkdirSync(outDir, { recursive: true });
++
++  const byId = new Map((job.plan || []).map((p) => [p.id, p]));
++  const top = [];
++  const maxClips = Math.max(1, Number(rv.options.maxClips) || 10);
++  for (const a of approved || []) {
++    const base = byId.get(a.id) || {};
++    let start = Number(a.start != null ? a.start : base.start);
++    let end = Number(a.end != null ? a.end : base.end);
++    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
++    start = Math.max(0, Math.min(start, meta.duration - 1));
++    end = Math.max(start + 3, Math.min(end, meta.duration));
++    if (end - start > 180) end = start + 180;
++    const moved = Math.abs(start - (base.start || 0)) > 0.05 || Math.abs(end - (base.end || 0)) > 0.05;
++    const c = {
++      planId: a.id || base.id,
++      start: +start.toFixed(2),
++      end: +end.toFixed(2),
++      title: String(a.title || base.title || `Clip ${top.length + 1}`).slice(0, 80),
++      score: base.score || 0,
++      dimensions: base.scores ? { scores: base.scores, viralScore: base.viralScore, verdict: base.verdict, verdictKey: base.verdictKey, reasons: base.reasons, quote: base.quote, summary: base.summary } : {},
++      layout: ["auto", "follow", "static", "wide", "center"].includes(a.layout) ? a.layout : base.layout || "auto",
++      captions: a.captions != null ? !!a.captions : base.captions != null ? base.captions : !!rv.options.subtitles,
++      subStyle: a.subStyle ? normalizeSubStyleSafe(a.subStyle) : base.subStyle || null,
++      edit: base.edit || null,
++      source: base.source || (byId.has(a.id) ? "ai" : "user"),
++    };
++    // Re-think a moved or brand-new clip so scores and the edit plan match.
++    if ((moved || !byId.has(a.id)) && rv.words) {
++      try {
++        const thought = brains.think({ words: rv.words, start: c.start, end: c.end, energy: { energy: 55, punch: 55 }, stats: { avgEnergy: 55, avgPunch: 55 }, sceneTimes: [], faceTrack: null, mode });
++        if (thought) {
++          c.dimensions = { scores: thought.scores, viralScore: thought.total, verdict: thought.verdict, verdictKey: thought.verdictKey, reasons: thought.reasons, quote: thought.quote, summary: thought.summary };
++          c.score = thought.total;
++        }
++        c.edit = brains.edit.plan({ words: rv.words, start: c.start, end: c.end, duration: meta.duration, mode, captions: c.captions });
++        c.edit.start = c.start; c.edit.end = c.end; c.edit.duration = +(c.end - c.start).toFixed(2);
++      } catch (_) {}
++    }
++    top.push(c);
++    if (top.length >= maxClips) break;
++  }
++  if (!top.length) throw new Error("Nothing to render - keep at least one clip.");
++
++  // Fresh output folder: a second render of the same job must not mix files.
++  for (const f of fs.readdirSync(outDir)) {
++    try { fs.unlinkSync(path.join(outDir, f)); } catch (_) {}
++  }
++  job.plan = top.map((c, i) => planEntry(c, i));
++  job.clips = [];
++  job.error = null;
++  await renderPlan(job, rv.sourcePath, meta, mode, top, options, outDir);
++  return job;
++}
++
++function normalizeSubStyleSafe(st) {
++  try {
++    return require("./subtitles").normalizeSubStyle(st || {});
++  } catch (_) {
++    return null;
++  }
++}
++
++/**
++ * Editor without AI: the user marks the ranges, we probe the file, make a
++ * review job straight away (no analysis), and wait for "Render".
++ */
++async function planManual(sourcePath, options = {}) {
++  const mode = MODES[options.mode] || MODES.viral;
++  const id = options.jobId || crypto.randomBytes(6).toString("hex");
++  const outDir = path.join(CLIPS_PUBLIC, id);
++  fs.mkdirSync(outDir, { recursive: true });
++  const job = {
++    id,
++    userId: options.userId || (readJob(id) || {}).userId || null,
++    status: "processing",
++    stage: "probing",
++    progress: 10,
++    mode: mode.id,
++    modeLabel: mode.label,
++    createdAt: new Date().toISOString(),
++    sourceName: options.sourceName || path.basename(sourcePath),
++    subtitles: !!options.subtitles,
++    hook: false,
++    manual: true,
++    clips: [],
++    rankings: [],
++    error: null,
++  };
++  writeJob(job);
++  try {
++    const meta = await probe(sourcePath);
++    if (!meta.duration || meta.duration < 3) throw new Error("Video is too short.");
++    const maxMinutes = Number(options.maxMinutes) || 20;
++    if (meta.duration > maxMinutes * 60) {
++      throw new Error(`Your ${options.planLabel || "current"} plan allows videos up to ${maxMinutes} minutes.`);
++    }
++    job.duration = +meta.duration.toFixed(2);
++    // Words are only needed for captions; skip the transcription when off.
++    let words = null;
++    if (options.subtitles) {
++      job.stage = "listening";
++      job.progress = 30;
++      writeJob(job);
++      const tmpWords = path.join(outDir, "source.words.json");
++      try {
++        const n = await transcribeToWords(sourcePath, tmpWords);
++        if (n) words = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
++      } catch (_) {}
++      try { fs.unlinkSync(tmpWords); } catch (_) {}
++    }
++    job.status = "review";
++    job.stage = "review";
++    job.progress = 50;
++    job.review = {
++      sourcePath,
++      meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
++      words,
++      options: {
++        subtitles: !!options.subtitles,
++        subStyle: options.subStyle || null,
++        hook: false,
++        hookMode: "intro",
++        trends: [],
++        maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
++      },
++    };
++    job.plan = [];
+     writeJob(job);
+     return job;
+   } catch (err) {
+@@ -1431,6 +1653,8 @@ module.exports = {
+   MODES,
+   processVideo,
+   renderClip,
++  renderReviewed,
++  planManual,
+   readJob,
+   writeJob,
+   listJobs,
+diff --git a/clipery/lib/reframe.js b/clipery/lib/reframe.js
+index 68c8989..15f265b 100644
+--- a/clipery/lib/reframe.js
++++ b/clipery/lib/reframe.js
+@@ -262,7 +262,11 @@ function reframeFilter(o) {
+   // The 9:16 window at full source height - this is the tightest we ever crop.
+   const cropW = Math.min(srcW, Math.round((srcH * outW) / outH));
+   const cropFrac = cropW / srcW;
+-  const layout = chooseLayout(o.samples, srcW, srcH, cropFrac);
++  // The editor can pin a layout; "follow"/"static" still need faces to work
++  // with, so they fall back to centre when the detector saw nobody.
++  let layout = chooseLayout(o.samples, srcW, srcH, cropFrac);
++  if (o.force === "wide" || o.force === "center") layout = o.force;
++  else if (o.force === "follow" || o.force === "static") layout = seenOnly(o.samples).length >= 2 ? o.force : "center";
+ 
+   if (layout === "wide") {
+     // Two people too far apart: show the ENTIRE frame, no zoom, blurred backdrop.
+diff --git a/clipery/public/editor.js b/clipery/public/editor.js
+new file mode 100644
+index 0000000..de4c686
+--- /dev/null
++++ b/clipery/public/editor.js
+@@ -0,0 +1,343 @@
++/* Clipery Editor - review where the AI would cut, adjust, then render.
++ *
++ * Flow:  pick file -> /api/editor/upload (review=1 or manual=1)
++ *        poll /api/clip/status/:id until status === "review"
++ *        show source video + timeline + one card per planned clip
++ *        user edits -> POST /api/editor/render {jobId, clips:[...]}
++ *        poll until done -> show rendered clips
++ */
++(function () {
++  "use strict";
++  var $ = function (id) { return document.getElementById(id); };
++  if (!$("view-editor")) return;
++
++  var fileIn = $("ed-file"), fname = $("ed-fname"), go = $("ed-go"), msg = $("ed-msg");
++  var status = $("ed-status"), stage = $("ed-stage"), pct = $("ed-pct"), fill = $("ed-fill"), detail = $("ed-detail");
++  var setup = $("ed-setup"), work = $("ed-work"), results = $("ed-results"), grid = $("ed-grid");
++  var video = $("ed-video"), tl = $("ed-timeline"), track = $("ed-tl-track"), cursor = $("ed-tl-cursor");
++  var timeEl = $("ed-time"), durEl = $("ed-dur"), list = $("ed-list"), count = $("ed-count");
++  var addBtn = $("ed-add"), renderBtn = $("ed-render"), renderMsg = $("ed-render-msg");
++
++  var file = null, jobId = null, job = null, plan = [], duration = 0, poll = null, playStop = null;
++  var LAYOUTS = [
++    ["auto", "Let AI decide"],
++    ["follow", "Zoomed in, follows the speaker"],
++    ["static", "Zoomed in, locked"],
++    ["wide", "Full picture, no zoom"],
++    ["center", "Zoomed in, centre"]
++  ];
++  var STYLES = ["outline", "highlight", "box", "pop", "classic", "rainbow", "hormozi", "mrbeast", "reels"];
++  var COLORS = ["white", "yellow", "pink", "orange", "red", "green", "cyan", "blue", "purple"];
++
++  function esc(s) {
++    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
++  }
++  function fmt(t) {
++    t = Math.max(0, Number(t) || 0);
++    var m = Math.floor(t / 60), s = Math.floor(t % 60);
++    return m + ":" + (s < 10 ? "0" : "") + s;
++  }
++  function fmt2(t) { return (Math.round((Number(t) || 0) * 10) / 10).toFixed(1); }
++  function setMsg(el, text, err) { if (!el) return; el.textContent = text || ""; el.style.color = err ? "#ff6b6b" : ""; }
++  function stageLabel(s) {
++    var map = { queued: "Waiting in line", probing: "Reading the file", detecting_moments: "Finding moments", listening: "Listening to the speech",
++      watching: "Watching the picture", scoring: "Scoring moments", checking_context: "Checking each moment makes sense", rendering: "Rendering clips", review: "Ready to review", complete: "Done" };
++    return map[s] || s || "Working";
++  }
++
++  /* ---------- 1. upload ---------- */
++  if (fileIn) fileIn.addEventListener("change", function () {
++    file = fileIn.files && fileIn.files[0] ? fileIn.files[0] : null;
++    if (fname) fname.textContent = file ? file.name : "";
++  });
++  var subsT = $("ed-subs"), subsG = $("ed-substyle");
++  if (subsT && subsG) {
++    var syncSubs = function () { subsG.classList.toggle("subs-off", !subsT.checked); };
++    subsT.addEventListener("change", syncSubs); syncSubs();
++  }
++  function how() { var r = document.querySelector('input[name="ed-how"]:checked'); return r ? r.value : "ai"; }
++  function subStyleOf(prefix) {
++    var gv = function (k) { var e = $(prefix + "-sub-" + k); return e ? e.value : ""; };
++    return { color: gv("color"), size: gv("size"), pos: gv("pos"), style: gv("style") };
++  }
++
++  if (go) go.addEventListener("click", async function () {
++    if (!file) { setMsg(msg, "Choose a video file first.", true); return; }
++    go.disabled = true; setMsg(msg, "");
++    try {
++      var fd = new FormData();
++      fd.append("video", file, file.name);
++      fd.append("manual", how() === "manual" ? "1" : "0");
++      fd.append("subtitles", subsT && subsT.checked ? "1" : "0");
++      var st = subStyleOf("ed");
++      fd.append("subColor", st.color); fd.append("subSize", st.size); fd.append("subPos", st.pos); fd.append("subStyle", st.style);
++      var res = await fetch("/api/editor/upload", { method: "POST", body: fd });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) throw new Error(data.error || ("Upload failed (" + res.status + ")"));
++      jobId = data.jobId;
++      try { history.replaceState({}, "", "/studio?tool=editor&job=" + jobId); } catch (e) {}
++      showProgress({ stage: data.queued ? "queued" : "probing", progress: 2 });
++      watch(function (j) { return j.status === "review"; }, openReview);
++    } catch (e) {
++      setMsg(msg, e.message, true);
++      go.disabled = false;
++    }
++  });
++
++  function showProgress(j) {
++    if (status) status.style.display = "block";
++    if (stage) stage.textContent = stageLabel(j.stage) + (j.stageNote ? " - " + j.stageNote : "");
++    if (pct) pct.textContent = (j.progress || 0) + "%";
++    if (fill) fill.style.width = (j.progress || 0) + "%";
++    if (detail) detail.textContent = j.status === "queued" ? "Another video is rendering. Yours starts right after." : "";
++  }
++
++  function watch(untilFn, then) {
++    if (poll) clearInterval(poll);
++    var tick = async function () {
++      try {
++        var res = await fetch("/api/clip/status/" + jobId);
++        var data = await res.json();
++        if (!data.ok) return;
++        job = data.job;
++        showProgress(job);
++        if (job.status === "error") {
++          clearInterval(poll); poll = null;
++          setMsg(msg, job.error || "Something went wrong.", true);
++          setMsg(renderMsg, job.error || "Something went wrong.", true);
++          if (go) go.disabled = false;
++          if (renderBtn) renderBtn.disabled = false;
++          return;
++        }
++        if (untilFn(job)) { clearInterval(poll); poll = null; then(job); }
++      } catch (e) {}
++    };
++    tick();
++    poll = setInterval(tick, 1500);
++  }
++
++  /* ---------- 2. review ---------- */
++  function openReview(j) {
++    if (status) status.style.display = "none";
++    if (setup) setup.hidden = true;
++    if (work) work.hidden = false;
++    duration = Number(j.duration || (j.review && j.review.meta && j.review.meta.duration) || 0);
++    plan = (j.plan || []).map(function (p) { return Object.assign({}, p); });
++    video.src = "/api/editor/source/" + jobId;
++    video.addEventListener("loadedmetadata", function () {
++      if (video.duration && isFinite(video.duration)) duration = video.duration;
++      if (durEl) durEl.textContent = fmt(duration);
++      drawTimeline();
++    });
++    video.addEventListener("timeupdate", function () {
++      if (timeEl) timeEl.textContent = fmt(video.currentTime);
++      if (cursor && duration) cursor.style.left = (video.currentTime / duration * 100) + "%";
++      if (playStop != null && video.currentTime >= playStop) { video.pause(); playStop = null; }
++    });
++    if (durEl) durEl.textContent = fmt(duration);
++    if (!plan.length && !(j.manual)) setMsg(renderMsg, "The AI found no clear moments - add clips yourself.", false);
++    if (j.manual && !plan.length) setMsg(renderMsg, "Play the video and press 'Add clip at playhead' where a clip should start.", false);
++    renderList();
++    drawTimeline();
++  }
++
++  function drawTimeline() {
++    if (!track || !duration) return;
++    track.innerHTML = "";
++    plan.forEach(function (p, i) {
++      var seg = document.createElement("div");
++      seg.className = "ed-seg" + (p.source === "user" ? " user" : "");
++      seg.style.left = (p.start / duration * 100) + "%";
++      seg.style.width = (Math.max(0.3, (p.end - p.start)) / duration * 100) + "%";
++      seg.title = "#" + (i + 1) + " " + fmt(p.start) + " - " + fmt(p.end);
++      seg.textContent = String(i + 1);
++      seg.addEventListener("click", function () { playRange(p); focusCard(p.id); });
++      track.appendChild(seg);
++    });
++  }
++  if (tl) tl.addEventListener("click", function (ev) {
++    if (ev.target && ev.target.classList.contains("ed-seg")) return;
++    var r = tl.getBoundingClientRect();
++    var x = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
++    if (duration) { playStop = null; video.currentTime = x * duration; }
++  });
++
++  function playRange(p) {
++    playStop = p.end;
++    video.currentTime = p.start;
++    video.play().catch(function () {});
++  }
++  function focusCard(id) {
++    var el = document.querySelector('.ed-card[data-id="' + id + '"]');
++    if (el) { el.scrollIntoView({ behavior: "smooth", block: "nearest" }); el.classList.add("flash"); setTimeout(function () { el.classList.remove("flash"); }, 900); }
++  }
++
++  function layoutDefault(p) {
++    return p.layout && p.layout !== "auto" ? p.layout : "auto";
++  }
++
++  function scoreBars(p) {
++    if (!p.scores) return "";
++    var keys = ["hook", "curiosity", "emotion", "value", "completion", "surprise", "payoff", "retention"];
++    return '<div class="brain-scores">' + keys.map(function (k) {
++      var v = p.scores[k] != null ? p.scores[k] : 0;
++      var cls = v >= 75 ? "hi" : v >= 55 ? "mid" : "lo";
++      return '<div class="bscore"><span class="bscore-k">' + k + '</span><span class="bscore-bar"><i class="' + cls + '" style="width:' + v + '%"></i></span><span class="bscore-v">' + v + "</span></div>";
++    }).join("") + "</div>";
++  }
++
++  function card(p, i) {
++    var st = p.subStyle || (job && job.review && job.review.options && job.review.options.subStyle) || {};
++    var caps = p.captions != null ? !!p.captions : !!(job && job.subtitles);
++    var why = (p.reasons || []).slice(0, 3);
++    return (
++      '<article class="ed-card" data-id="' + esc(p.id) + '">' +
++      '<div class="ed-card-head">' +
++      '<span class="clip-rank-pill">#' + (i + 1) + "</span>" +
++      (p.viralScore ? '<span class="viral-score-pill ' + (p.viralScore >= 82 ? "v-strong" : p.viralScore >= 72 ? "v-good" : "v-avg") + '">' + p.viralScore + " viral</span>" : '<span class="ed-user-tag">your clip</span>') +
++      '<input class="ed-title" data-k="title" value="' + esc(p.title || "") + '" maxlength="80" />' +
++      '<button type="button" class="ed-del" title="Remove this clip">Remove</button>' +
++      "</div>" +
++      (p.summary ? '<p class="ed-summary">' + esc(p.summary) + "</p>" : "") +
++      (p.quote ? '<p class="clip-quote">&quot;' + esc(p.quote) + "&quot;</p>" : "") +
++      '<div class="ed-range">' +
++      '<label>Start <input type="number" step="0.1" min="0" data-k="start" value="' + fmt2(p.start) + '" /></label>' +
++      '<label>End <input type="number" step="0.1" min="0" data-k="end" value="' + fmt2(p.end) + '" /></label>' +
++      '<span class="ed-len">' + fmt2(p.end - p.start) + "s</span>" +
++      '<button type="button" class="btn btn-ghost ed-play">Play this</button>' +
++      '<button type="button" class="btn btn-ghost ed-set-start" title="Use the current video position as the start">Start = playhead</button>' +
++      '<button type="button" class="btn btn-ghost ed-set-end" title="Use the current video position as the end">End = playhead</button>' +
++      "</div>" +
++      '<div class="ed-opts">' +
++      '<label>Framing <select data-k="layout">' + LAYOUTS.map(function (l) { return '<option value="' + l[0] + '"' + (layoutDefault(p) === l[0] ? " selected" : "") + ">" + l[1] + "</option>"; }).join("") + "</select></label>" +
++      '<label class="ed-caps"><input type="checkbox" data-k="captions"' + (caps ? " checked" : "") + " /> Captions</label>" +
++      '<label>Style <select data-k="style">' + STYLES.map(function (x) { return '<option value="' + x + '"' + ((st.style || "outline") === x ? " selected" : "") + ">" + x + "</option>"; }).join("") + "</select></label>" +
++      '<label>Colour <select data-k="color">' + COLORS.map(function (x) { return '<option value="' + x + '"' + ((st.color || "white") === x ? " selected" : "") + ">" + x + "</option>"; }).join("") + "</select></label>" +
++      "</div>" +
++      (why.length || p.scores ? '<details class="brain-panel"><summary>Why this clip</summary>' +
++        (why.length ? '<ul class="viral-reasons">' + why.map(function (r) { return "<li>" + esc(r) + "</li>"; }).join("") + "</ul>" : "") +
++        scoreBars(p) + "</details>" : "") +
++      "</article>"
++    );
++  }
++
++  function renderList() {
++    if (!list) return;
++    plan.sort(function (a, b) { return a.start - b.start; });
++    list.innerHTML = plan.map(card).join("");
++    if (count) count.textContent = plan.length + " clip" + (plan.length === 1 ? "" : "s");
++    if (renderBtn) { renderBtn.textContent = "Render " + plan.length + " clip" + (plan.length === 1 ? "" : "s"); renderBtn.disabled = !plan.length; }
++    drawTimeline();
++  }
++
++  function findPlan(id) { for (var i = 0; i < plan.length; i++) if (plan[i].id === id) return plan[i]; return null; }
++
++  if (list) {
++    list.addEventListener("click", function (ev) {
++      var cardEl = ev.target.closest ? ev.target.closest(".ed-card") : null;
++      if (!cardEl) return;
++      var p = findPlan(cardEl.getAttribute("data-id"));
++      if (!p) return;
++      if (ev.target.classList.contains("ed-del")) {
++        plan = plan.filter(function (x) { return x !== p; });
++        renderList();
++      } else if (ev.target.classList.contains("ed-play")) {
++        playRange(p);
++      } else if (ev.target.classList.contains("ed-set-start")) {
++        p.start = Math.min(video.currentTime, p.end - 3);
++        p.start = Math.max(0, +p.start.toFixed(2));
++        renderList();
++      } else if (ev.target.classList.contains("ed-set-end")) {
++        p.end = Math.max(video.currentTime, p.start + 3);
++        p.end = Math.min(duration || p.end, +p.end.toFixed(2));
++        renderList();
++      }
++    });
++    list.addEventListener("change", function (ev) {
++      var cardEl = ev.target.closest ? ev.target.closest(".ed-card") : null;
++      if (!cardEl) return;
++      var p = findPlan(cardEl.getAttribute("data-id"));
++      if (!p) return;
++      var k = ev.target.getAttribute("data-k");
++      if (k === "start" || k === "end") {
++        var v = Number(ev.target.value);
++        if (!isFinite(v)) return;
++        if (k === "start") p.start = Math.max(0, Math.min(v, p.end - 3));
++        else p.end = Math.min(duration || v, Math.max(v, p.start + 3));
++        p.start = +p.start.toFixed(2); p.end = +p.end.toFixed(2);
++        renderList();
++      } else if (k === "title") {
++        p.title = ev.target.value;
++      } else if (k === "layout") {
++        p.layout = ev.target.value;
++      } else if (k === "captions") {
++        p.captions = ev.target.checked;
++      } else if (k === "style" || k === "color") {
++        var base = p.subStyle || (job && job.review && job.review.options && job.review.options.subStyle) || {};
++        p.subStyle = { color: base.color || "white", size: base.size || "medium", pos: base.pos || "bottom", style: base.style || "outline" };
++        p.subStyle[k] = ev.target.value;
++      }
++    });
++  }
++
++  if (addBtn) addBtn.addEventListener("click", function () {
++    var start = Math.max(0, +video.currentTime.toFixed(2));
++    var end = Math.min(duration || start + 30, start + 30);
++    if (end - start < 3) { setMsg(renderMsg, "Too close to the end of the video.", true); return; }
++    var id = "u" + Math.random().toString(16).slice(2, 8);
++    plan.push({ id: id, start: start, end: +end.toFixed(2), title: "My clip " + (plan.length + 1), layout: "auto",
++      captions: !!(job && job.subtitles), source: "user", reasons: [], scores: null });
++    setMsg(renderMsg, "");
++    renderList();
++    focusCard(id);
++  });
++
++  /* ---------- 3. render ---------- */
++  if (renderBtn) renderBtn.addEventListener("click", async function () {
++    if (!plan.length) return;
++    renderBtn.disabled = true; setMsg(renderMsg, "");
++    try {
++      var body = { jobId: jobId, clips: plan.map(function (p) {
++        return { id: p.id, start: p.start, end: p.end, title: p.title, layout: p.layout || "auto", captions: p.captions, subStyle: p.subStyle || null };
++      }) };
++      var res = await fetch("/api/editor/render", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) throw new Error(data.error || ("Render failed (" + res.status + ")"));
++      if (work) work.hidden = true;
++      if (setup) setup.hidden = false;
++      if (status) status.style.display = "block";
++      showProgress({ stage: data.queued ? "queued" : "rendering", progress: 52 });
++      watch(function (j) { return j.status === "done"; }, showResults);
++    } catch (e) {
++      setMsg(renderMsg, e.message, true);
++      renderBtn.disabled = false;
++    }
++  });
++
++  function showResults(j) {
++    if (status) status.style.display = "none";
++    if (results) results.hidden = false;
++    if (grid) grid.innerHTML = (j.clips || []).map(function (c) {
++      return '<article class="clip-card viral-card"><video src="' + esc(c.url) + '" controls playsinline preload="metadata"></video>' +
++        '<div class="clip-card-body"><div class="viral-top"><span class="clip-rank-pill">#' + c.rank + "</span>" +
++        (c.viralScore ? '<span class="viral-score-pill v-good">' + c.viralScore + " viral</span>" : "") + "</div>" +
++        "<h4>" + esc(c.title || "Clip") + "</h4>" +
++        '<div class="meta">' + fmt(c.start) + " - " + fmt(c.end) + (c.reframe ? " &middot; " + esc(c.reframe === "wide" ? "full picture" : c.reframe === "follow" ? "follows the speaker" : c.reframe === "static" ? "locked" : "centre") : "") + "</div>" +
++        '<div class="clip-actions"><a href="' + esc(c.url) + '" download>Download</a></div></div></article>';
++    }).join("");
++    setMsg(msg, "Done. Your clips are below and in the Library.");
++    if (go) go.disabled = false;
++    if (results) results.scrollIntoView({ behavior: "smooth", block: "start" });
++  }
++
++  /* ---------- resume from URL ---------- */
++  var params = new URLSearchParams(location.search);
++  var resume = params.get("job");
++  if (resume && /^[a-f0-9]+$/i.test(resume) && params.get("tool") === "editor") {
++    jobId = resume;
++    showProgress({ stage: "queued", progress: 1 });
++    watch(function (j) { return j.status === "review" || j.status === "done"; }, function (j) {
++      if (j.status === "done") showResults(j); else openReview(j);
++    });
++  }
++})();
+diff --git a/clipery/public/job.js b/clipery/public/job.js
+index d766ee9..0a921e0 100644
+--- a/clipery/public/job.js
++++ b/clipery/public/job.js
+@@ -57,7 +57,12 @@
+       statusBox.classList.add("hide");
+     }
+ 
+-    if (job.status === "error") {
++    if (job.status === "review") {
++      errEl.innerHTML =
++        'This video is waiting for your review. <a href="/studio?tool=editor&job=' +
++        encodeURIComponent(job.id) +
++        '" style="color:var(--accent-2);font-weight:600">Open it in the Editor</a> to adjust the clips and render.';
++    } else if (job.status === "error") {
+       errEl.textContent = job.error || "Job failed";
+     } else {
+       errEl.textContent = "";
+diff --git a/clipery/public/library.js b/clipery/public/library.js
+index 54e4ec5..8e5cb8e 100644
+--- a/clipery/public/library.js
++++ b/clipery/public/library.js
+@@ -21,8 +21,8 @@
+         .map(function (j) {
+           const st = j.status || "unknown";
+           return (
+-            '<a class="job-row" href="/job/' +
+-            j.id +
++            '<a class="job-row" href="' +
++            (st === "review" ? "/studio?tool=editor&job=" + j.id : "/job/" + j.id) +
+             '">' +
+             "<div><h3>" +
+             CF.escapeHtml(j.sourceName || "Video") +
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 5616caa..7653c89 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -140,8 +140,92 @@
+         <div class="mode-btns" id="mode-btns">
+           <button type="button" class="btn mode-btn on" id="btn-long" onclick="window.setStudioMode('long')">Long form</button>
+           <button type="button" class="btn mode-btn off" id="btn-rank" onclick="window.setStudioMode('rank')">Rank video</button>
++          <button type="button" class="btn mode-btn off" id="btn-editor" onclick="window.setStudioMode('editor')">Editor</button>
+         </div>
+ 
++        <!-- EDITOR: review the AI plan or mark your own clips, then render -->
++        <section class="pro-card is-hidden" id="view-editor">
++          <div class="pro-card-head">
++            <div>
++              <h2>Editor</h2>
++              <p>See where the AI would cut <strong>before</strong> anything renders. Move the cuts, pick zoomed-in or full picture for every clip, drop the ones you do not want - or skip the AI and mark your own.</p>
++            </div>
++          </div>
++
++          <div id="ed-setup">
++            <div class="one-source">
++              <label class="btn btn-ghost" for="ed-file" style="cursor:pointer;margin:0">
++                <input id="ed-file" type="file" accept="video/*,.mp4,.mov,.webm" hidden />
++                Add file
++              </label>
++              <span class="pro-filename" id="ed-fname" style="margin:0"></span>
++            </div>
++
++            <div class="ed-choice">
++              <label class="ed-radio"><input type="radio" name="ed-how" value="ai" checked /> <span><b>AI suggests clips</b><small>AI finds the moments, you review and adjust</small></span></label>
++              <label class="ed-radio"><input type="radio" name="ed-how" value="manual" /> <span><b>I mark my own clips</b><small>No AI picks - you set start and end for each clip</small></span></label>
++            </div>
++
++            <label class="sub-toggle" for="ed-subs">
++              <input type="checkbox" id="ed-subs" checked />
++              <span>Captions <span class="sub-hint">default for all clips - you can switch per clip in the review</span></span>
++            </label>
++            <div class="sub-style-grid" id="ed-substyle">
++              <label>Colour
++                <select id="ed-sub-color">
++                  <option value="white" selected>White</option><option value="yellow">Yellow</option><option value="pink">Pink</option><option value="orange">Orange</option><option value="red">Red</option><option value="green">Green</option><option value="cyan">Cyan</option><option value="blue">Blue</option><option value="purple">Purple</option>
++                </select>
++              </label>
++              <label>Size
++                <select id="ed-sub-size"><option value="medium" selected>Medium</option><option value="small">Small</option></select>
++              </label>
++              <label>Position
++                <select id="ed-sub-pos"><option value="bottom" selected>Bottom</option><option value="middle">Middle</option><option value="top">Top</option></select>
++              </label>
++              <label>Style
++                <select id="ed-sub-style">
++                  <option value="outline" selected>Karaoke</option><option value="highlight">White + colored word</option><option value="box">Highlight box</option><option value="pop">Pop-in words</option><option value="classic">Plain</option><option value="rainbow">Rainbow</option><option value="hormozi">Hormozi</option><option value="mrbeast">MrBeast</option><option value="reels">Reels</option>
++                </select>
++              </label>
++            </div>
++
++            <div class="pro-actions">
++              <button class="btn btn-primary" id="ed-go" type="button">Open in editor</button>
++              <span class="pro-msg" id="ed-msg"></span>
++            </div>
++            <div class="pro-status" id="ed-status" style="display:none">
++              <div class="pro-status-row"><span id="ed-stage">Working</span><span id="ed-pct">0%</span></div>
++              <div class="pro-bar"><div class="pro-fill" id="ed-fill" style="width:0%"></div></div>
++              <p class="pro-detail" id="ed-detail"></p>
++            </div>
++          </div>
++
++          <div id="ed-work" hidden>
++            <div class="ed-player">
++              <video id="ed-video" controls playsinline preload="metadata"></video>
++              <div class="ed-timeline" id="ed-timeline">
++                <div class="ed-tl-track" id="ed-tl-track"></div>
++                <div class="ed-tl-cursor" id="ed-tl-cursor"></div>
++              </div>
++              <div class="ed-tl-legend"><span id="ed-time">0:00</span><span id="ed-dur">0:00</span></div>
++            </div>
++
++            <div class="ed-toolbar">
++              <button class="btn btn-ghost" id="ed-add" type="button">+ Add clip at playhead</button>
++              <span class="ed-count" id="ed-count"></span>
++              <button class="btn btn-primary" id="ed-render" type="button">Render clips</button>
++              <span class="pro-msg" id="ed-render-msg"></span>
++            </div>
++
++            <div class="ed-list" id="ed-list"></div>
++          </div>
++
++          <div id="ed-results" hidden>
++            <h3 style="margin:1.2rem 0 .6rem">Your clips</h3>
++            <div class="clip-grid studio-clip-grid" id="ed-grid"></div>
++          </div>
++        </section>
++
+         <!-- LONG FORM: 1 source -->
+         <section class="pro-card" id="view-long">
+           <div class="pro-card-head">
+@@ -458,44 +542,39 @@
+     <!-- Mode switch INLINE so it always works even if studio.js fails -->
+     <script>
+       window.setStudioMode = function (mode) {
+-        var isLong = mode !== "rank";
+-        var vl = document.getElementById("view-long");
+-        var vr = document.getElementById("view-rank");
+-        var bl = document.getElementById("btn-long");
+-        var br = document.getElementById("btn-rank");
+-        if (vl) {
+-          vl.classList.toggle("is-hidden", !isLong);
+-          vl.style.display = isLong ? "block" : "none";
+-        }
+-        if (vr) {
+-          vr.classList.toggle("is-hidden", isLong);
+-          vr.style.display = isLong ? "none" : "block";
+-        }
+-        if (bl) {
+-          bl.classList.toggle("on", isLong);
+-          bl.classList.toggle("off", !isLong);
+-        }
+-        if (br) {
+-          br.classList.toggle("on", !isLong);
+-          br.classList.toggle("off", isLong);
++        var modes = ["long", "rank", "editor"];
++        if (modes.indexOf(mode) < 0) mode = "long";
++        for (var i = 0; i < modes.length; i++) {
++          var m = modes[i];
++          var v = document.getElementById("view-" + m);
++          var b = document.getElementById("btn-" + m);
++          var on = m === mode;
++          if (v) {
++            v.classList.toggle("is-hidden", !on);
++            v.style.display = on ? "block" : "none";
++          }
++          if (b) {
++            b.classList.toggle("on", on);
++            b.classList.toggle("off", !on);
++          }
+         }
+         try {
+           var u = new URL(location.href);
+-          if (isLong) u.searchParams.delete("tool");
+-          else u.searchParams.set("tool", "rank");
++          if (mode === "long") u.searchParams.delete("tool");
++          else u.searchParams.set("tool", mode);
+           history.replaceState({}, "", u.pathname + (u.searchParams.toString() ? "?" + u.searchParams.toString() : ""));
+         } catch (e) {}
+       };
+       // boot from URL
+       try {
+-        if (new URLSearchParams(location.search).get("tool") === "rank") window.setStudioMode("rank");
+-        else window.setStudioMode("long");
++        window.setStudioMode(new URLSearchParams(location.search).get("tool") || "long");
+       } catch (e) {
+         window.setStudioMode("long");
+       }
+       document.getElementById("year").textContent = new Date().getFullYear();
+     </script>
+     <script src="/shared.js?v=2"></script>
+-    <script src="/studio.js?v=3"></script>
++    <script src="/studio.js?v=4"></script>
++    <script src="/editor.js?v=1"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index fa032ee..d9c72ca 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2732,3 +2732,41 @@ body.studio-app {
+ .bscore-bar i.hi { background: #3ddc84; }
+ .bscore-bar i.lo { background: #8a86a0; }
+ .bscore-v { text-align: right; font-variant-numeric: tabular-nums; }
++
++/* ---- Editor tab (review before render) ---- */
++.ed-choice { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin: .9rem 0; }
++.ed-radio { display: flex; gap: .6rem; align-items: flex-start; padding: .7rem .8rem; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; cursor: pointer; background: rgba(255,255,255,.03); }
++.ed-radio:has(input:checked) { border-color: var(--accent-2, #7c5cff); background: rgba(124,92,255,.10); }
++.ed-radio input { margin-top: .25rem; }
++.ed-radio b { display: block; font-size: .95rem; }
++.ed-radio small { display: block; opacity: .7; font-size: .8rem; margin-top: .15rem; }
++.ed-player video { width: 100%; max-height: 420px; background: #000; border-radius: 12px; display: block; }
++.ed-timeline { position: relative; height: 34px; margin-top: .6rem; border-radius: 8px; background: rgba(255,255,255,.07); cursor: pointer; overflow: hidden; }
++.ed-tl-track { position: absolute; inset: 0; }
++.ed-seg { position: absolute; top: 4px; bottom: 4px; min-width: 6px; border-radius: 5px; background: rgba(124,92,255,.75); color: #fff; font-size: .7rem; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; }
++.ed-seg.user { background: rgba(46,204,113,.75); }
++.ed-seg:hover { filter: brightness(1.2); }
++.ed-tl-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: #fff; pointer-events: none; }
++.ed-tl-legend { display: flex; justify-content: space-between; font-size: .78rem; opacity: .7; margin-top: .25rem; }
++.ed-toolbar { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin: 1rem 0 .8rem; }
++.ed-count { opacity: .75; font-size: .9rem; }
++.ed-list { display: grid; gap: .8rem; }
++.ed-card { border: 1px solid rgba(255,255,255,.12); border-radius: 12px; padding: .9rem 1rem; background: rgba(255,255,255,.03); transition: box-shadow .3s; }
++.ed-card.flash { box-shadow: 0 0 0 2px var(--accent-2, #7c5cff); }
++.ed-card-head { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
++.ed-title { flex: 1 1 200px; min-width: 160px; background: transparent; border: 1px solid transparent; border-radius: 6px; color: inherit; font-weight: 600; font-size: 1rem; padding: .25rem .4rem; }
++.ed-title:hover, .ed-title:focus { border-color: rgba(255,255,255,.2); outline: none; }
++.ed-del { background: transparent; border: 1px solid rgba(255,107,107,.5); color: #ff6b6b; border-radius: 6px; padding: .25rem .6rem; cursor: pointer; font-size: .8rem; }
++.ed-del:hover { background: rgba(255,107,107,.12); }
++.ed-user-tag { font-size: .72rem; padding: .15rem .5rem; border-radius: 999px; background: rgba(46,204,113,.2); color: #7ee2a8; font-weight: 600; }
++.ed-summary { opacity: .8; font-size: .88rem; margin: .5rem 0 .2rem; }
++.ed-range, .ed-opts { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .7rem; font-size: .85rem; }
++.ed-range label, .ed-opts label { display: flex; align-items: center; gap: .35rem; opacity: .9; }
++.ed-range input[type=number] { width: 84px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15); border-radius: 6px; color: inherit; padding: .3rem .4rem; }
++.ed-opts select { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15); border-radius: 6px; color: inherit; padding: .3rem .4rem; }
++.ed-opts select option { color: #111; }
++.ed-len { opacity: .7; min-width: 44px; }
++.ed-range .btn { padding: .3rem .7rem; font-size: .8rem; }
++.ed-card .brain-panel { margin-top: .6rem; }
++@media (max-width: 640px) { .ed-choice { grid-template-columns: 1fr; } }
++.status-pill.review { background: rgba(255, 196, 66, 0.15); color: #ffc442; }
+diff --git a/clipery/server.js b/clipery/server.js
+index 0aa7c59..a90f043 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -8,6 +8,8 @@ const { URL } = require("url");
+ const crypto = require("crypto");
+ const {
+   processVideo,
++  renderReviewed,
++  planManual,
+   readJob,
+   listJobs,
+   createLinkBoard,
+@@ -105,6 +107,9 @@ const PROTECTED_API = [
+   "/api/rank/video/upload",
+   "/api/rank/links",
+   "/api/jobs",
++  "/api/editor/upload",
++  "/api/editor/render",
++  "/api/editor/source",
+ ];
+ 
+ // Guarded by FILE, not by URL spelling: whatever path a request uses, if it
+@@ -266,24 +271,7 @@ function serveFile(req, res, fullPath) {
+     }
+     const ext = path.extname(fullPath).toLowerCase();
+     const type = MIME[ext] || "application/octet-stream";
+-    const range = req.headers.range;
+-    if (range && (ext === ".mp4" || ext === ".webm" || ext === ".mov")) {
+-      const m = /bytes=(\d+)-(\d*)/.exec(range);
+-      if (m) {
+-        const start = parseInt(m[1], 10);
+-        const end = m[2] ? parseInt(m[2], 10) : st.size - 1;
+-        const chunk = end - start + 1;
+-        res.writeHead(206, {
+-          "Content-Range": `bytes ${start}-${end}/${st.size}`,
+-          "Accept-Ranges": "bytes",
+-          "Content-Length": chunk,
+-          "Content-Type": type,
+-          "Cache-Control": "public, max-age=3600",
+-        });
+-        fs.createReadStream(fullPath, { start, end }).pipe(res);
+-        return;
+-      }
+-    }
++    if ((ext === ".mp4" || ext === ".webm" || ext === ".mov") && streamVideo(req, res, fullPath, st, type)) return;
+     res.writeHead(200, {
+       "Content-Type": type,
+       "Content-Length": st.size,
+@@ -317,6 +305,29 @@ function canSeeClipFile(req, fullPath) {
+   return job.userId === me.id || auth.isAdmin(me);
+ }
+ 
++/** Stream a video file with Range support (the browser scrubber needs it). */
++function streamVideo(req, res, fullPath, st, type, cacheControl) {
++  const range = req.headers.range;
++  if (range) {
++    const m = /bytes=(\d+)-(\d*)/.exec(range);
++    if (m) {
++      const start = parseInt(m[1], 10);
++      const end = m[2] ? parseInt(m[2], 10) : st.size - 1;
++      const chunk = end - start + 1;
++      res.writeHead(206, {
++        "Content-Range": `bytes ${start}-${end}/${st.size}`,
++        "Accept-Ranges": "bytes",
++        "Content-Length": chunk,
++        "Content-Type": type,
++        "Cache-Control": cacheControl || "public, max-age=3600",
++      });
++      fs.createReadStream(fullPath, { start, end }).pipe(res);
++      return true;
++    }
++  }
++  return false;
++}
++
+ function serveStatic(req, res, pathname, search) {
+   // One canonical form, so "//studio" and "/studio" take the same road
+   const clean = normalizePath(pathname);
+@@ -440,6 +451,10 @@ async function runQueueItem(item) {
+         ...item.meta,
+         sourceName: got.title || item.meta.sourceName || "video",
+       });
++    } else if (item.type === "editor-manual") {
++      await planManual(item.sourcePath, item.meta);
++    } else if (item.type === "editor-render") {
++      await renderReviewed(item.meta.jobId, item.approved);
+     } else {
+       await processVideo(item.sourcePath, item.meta);
+     }
+@@ -1000,6 +1015,94 @@ const server = http.createServer(async (req, res) => {
+       });
+     }
+ 
++    // ---- Editor ------------------------------------------------------------
++    // Upload for the editor. review=1: AI proposes clips, then waits.
++    // manual=1: no AI, user marks the ranges themselves.
++    if (pathname === "/api/editor/upload" && req.method === "POST") {
++      const ct = req.headers["content-type"] || "";
++      if (!ct.includes("multipart/form-data")) return send(res, 400, { ok: false, error: "Send multipart form with field 'video'." });
++      const buf = await parseBody(req);
++      const parts = parseMultipart(buf, ct);
++      const get = (n) => {
++        const p = parts.find((x) => x.name === n);
++        return p ? p.body.toString("utf8") : "";
++      };
++      const filePart = parts.find((p) => (p.name === "video" || p.name === "file") && p.body && p.body.length > 1000);
++      if (!filePart) return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
++      if (filePart.body.length > 100 * 1024 * 1024) return send(res, 400, { ok: false, error: "Max upload size is 100MB." });
++      const orig = filePart.filename || "upload.mp4";
++      let ext = path.extname(orig).toLowerCase() || ".mp4";
++      if (![".mp4", ".mov", ".webm", ".mkv", ".m4v"].includes(ext)) ext = ".mp4";
++      const manual = wantSubtitles(get("manual"));
++      const mode = normalizeMode(get("mode") || "viral");
++      const subtitles = wantSubtitles(get("subtitles"));
++      const subStyle = readSubStyle(get);
++      const hookOpts = readHook(get);
++      const trends = readTrends(get);
++      const jobId = crypto.randomBytes(6).toString("hex");
++      const owner = chargeVideo(req, res);
++      if (!owner) return;
++      const dest = path.join(UPLOADS, `${jobId}${ext}`);
++      fs.writeFileSync(dest, filePart.body);
++      const meta = {
++        userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
++        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, trends,
++        review: true, manual, editor: true,
++      };
++      seedJob(jobId, meta);
++      let q;
++      try {
++        q = enqueueItem(manual ? { type: "editor-manual", sourcePath: dest, meta } : { sourcePath: dest, meta });
++      } catch (e) {
++        return send(res, 503, { ok: false, error: e.message, retry: true });
++      }
++      return send(res, 202, { ok: true, jobId, ...q, editorUrl: `/studio?tool=editor&job=${jobId}` });
++    }
++
++    // The original upload, streamed to the editor page (owner only).
++    if (pathname.startsWith("/api/editor/source/") && req.method === "GET") {
++      const id = pathname.split("/").pop();
++      if (!/^[a-f0-9]+$/i.test(id || "")) return send(res, 400, { ok: false, error: "Bad job id" });
++      const job = readJob(id);
++      const me = auth.currentUser(req);
++      if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
++      const src = job.review && job.review.sourcePath;
++      if (!src || !fs.existsSync(src)) return send(res, 410, { ok: false, error: "Source video is gone" });
++      const st = fs.statSync(src);
++      const type = MIME[path.extname(src).toLowerCase()] || "video/mp4";
++      if (streamVideo(req, res, src, st, type, "no-store")) return;
++      res.writeHead(200, { "Content-Type": type, "Content-Length": st.size, "Accept-Ranges": "bytes", "Cache-Control": "no-store" });
++      fs.createReadStream(src).pipe(res);
++      return;
++    }
++
++    // Approve the (edited) plan and render it.
++    if (pathname === "/api/editor/render" && req.method === "POST") {
++      const buf = await parseBody(req, 2e6);
++      let body = {};
++      try { body = JSON.parse(buf.toString("utf8") || "{}"); } catch { body = {}; }
++      const id = String(body.jobId || "");
++      if (!/^[a-f0-9]+$/i.test(id)) return send(res, 400, { ok: false, error: "Bad job id" });
++      const job = readJob(id);
++      const me = auth.currentUser(req);
++      if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
++      if (job.status !== "review") return send(res, 409, { ok: false, error: "This job is not waiting for review." });
++      const approved = Array.isArray(body.clips) ? body.clips.slice(0, 30) : [];
++      if (!approved.length) return send(res, 400, { ok: false, error: "Keep at least one clip." });
++      let q;
++      try {
++        q = enqueueItem({ type: "editor-render", meta: { jobId: id }, approved });
++      } catch (e) {
++        return send(res, 503, { ok: false, error: e.message, retry: true });
++      }
++      const { writeJob } = require("./lib/clipEngine");
++      job.status = "queued";
++      job.stage = "queued";
++      job.pendingRender = true;
++      writeJob(job);
++      return send(res, 202, { ok: true, jobId: id, ...q, jobUrl: `/job/${id}` });
++    }
++
+     // Job status
+     if (pathname.startsWith("/api/clip/status/") && req.method === "GET") {
+       const id = pathname.split("/").pop();
+@@ -1011,6 +1114,11 @@ const server = http.createServer(async (req, res) => {
+       if (!job || !me || (job.userId !== me.id && !auth.isAdmin(me))) {
+         return send(res, 404, { ok: false, error: "Job not found" });
+       }
++      // Keep server paths and the raw transcript out of the browser.
++      if (job.review) {
++        const rv = job.review;
++        return send(res, 200, { ok: true, job: { ...job, review: { meta: rv.meta, options: rv.options } } });
++      }
+       return send(res, 200, { ok: true, job });
+     }
+ 
