@@ -21,8 +21,8 @@
         .map(function (j) {
           const st = j.status || "unknown";
           return (
-            '<a class="job-row" href="/job/' +
-            j.id +
+            '<a class="job-row" href="' +
+            (st === "review" ? "/studio?tool=editor&job=" + j.id : "/job/" + j.id) +
             '">' +
             "<div><h3>" +
             CF.escapeHtml(j.sourceName || "Video") +

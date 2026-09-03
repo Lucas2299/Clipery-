@@ -555,15 +555,18 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
   // Smart reframing: follow the speaker instead of cropping dead centre.
   // Track times come back relative to the clip start, which is exactly what
   // the crop expression needs (ffmpeg `t` restarts at 0 for the cut).
-  const det = await faceTrack(source, start, end);
+  // The editor can pin the framing per clip: "follow" | "static" | "wide" | "center".
+  const forced = subOpts && subOpts.layout && ["follow", "static", "wide", "center"].includes(subOpts.layout) ? subOpts.layout : null;
+  const det = forced === "wide" || forced === "center" ? null : await faceTrack(source, start, end);
   const rf = reframeFilter({
     samples: (det && det.track) || [],
     srcW: (srcMeta && srcMeta.width) || 1920,
     srcH: (srcMeta && srcMeta.height) || 1080,
     outW: targetW,
     outH: targetH,
+    force: forced,
   });
-  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)`);
+  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : ""}`);
 
   const extras = [
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
@@ -1183,19 +1186,91 @@ async function processVideo(sourcePath, options = {}) {
       }
     }
 
+    // ---- Editor: stop here and let the user review the plan -------------
+    // Nothing heavy has run for these clips yet (rendering is the expensive
+    // part), so the review costs nothing and saves every clip they drop.
+    if (options.review) {
+      job.status = "review";
+      job.stage = "review";
+      job.progress = 50;
+      job.review = {
+        sourcePath,
+        meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
+        words: videoWords || null,
+        options: {
+          subtitles: !!options.subtitles,
+          subStyle: options.subStyle || null,
+          hook: !!options.hook,
+          hookMode: options.hookMode || "intro",
+          trends: options.trends || [],
+          maxClips: clipBudget,
+        },
+      };
+      job.plan = top.map((c, i) => planEntry({ ...c, captions: !!options.subtitles }, i));
+      writeJob(job);
+      return job;
+    }
+
+    await renderPlan(job, sourcePath, meta, mode, top, options, outDir);
+    return job;
+  } catch (err) {
+    job.status = "error";
+    job.error = err.message || String(err);
+    job.progress = 0;
+    writeJob(job);
+    throw err;
+  }
+}
+
+/** One reviewable clip, as the editor page shows it. */
+function planEntry(c, i) {
+  const d = c.dimensions || {};
+  return {
+    id: c.planId || crypto.randomBytes(3).toString("hex"),
+    order: i + 1,
+    start: +Number(c.start).toFixed(2),
+    end: +Number(c.end).toFixed(2),
+    duration: +(c.end - c.start).toFixed(2),
+    title: c.title || `Clip ${i + 1}`,
+    score: c.score,
+    viralScore: d.viralScore || c.score,
+    verdict: d.verdict || null,
+    verdictKey: d.verdictKey || null,
+    reasons: d.reasons || [],
+    quote: d.quote || null,
+    scores: d.scores || null,
+    summary: d.summary || null,
+    edit: c.edit || null,
+    layout: c.layout || "auto",        // auto | follow | static | wide | center
+    captions: c.captions != null ? c.captions : true,
+    subStyle: c.subStyle || null,       // per-clip caption look (null = job default)
+    source: c.source || "ai",           // ai | user
+  };
+}
+
+/**
+ * Render a list of planned clips. Shared by the one-click flow and the
+ * editor's "Render N clips" button.
+ */
+async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+    job.status = "processing";
     job.stage = "rendering";
     job.progress = 52;
     writeJob(job);
+    const id = job.id;
 
     const clips = [];
     for (let i = 0; i < top.length; i++) {
       const c = top[i];
+      c.dimensions = c.dimensions || {};
       const filename = `clip-${i + 1}.mp4`;
       const outFile = path.join(outDir, filename);
-      const vScore = c.dimensions.viralScore || c.score;
+      const vScore = c.dimensions.viralScore || c.score || 0;
       const label = `#${i + 1} VIRAL ${vScore}`;
       const sub = `${c.dimensions.verdict || c.title}`.slice(0, 42);
-      const wantExtras = !!(options.subtitles || options.hook);
+      const clipCaptions = c.captions != null ? !!c.captions : !!options.subtitles;
+      const clipHook = !clipCaptions && !!options.hook;
+      const wantExtras = clipCaptions || clipHook || (c.layout && c.layout !== "auto");
       const rendered = await renderClip(
         sourcePath,
         outFile,
@@ -1208,10 +1283,11 @@ async function processVideo(sourcePath, options = {}) {
         wantExtras
           ? {
               clipDur: +(c.end - c.start).toFixed(2),
-              subStyle: options.subtitles ? options.subStyle : null,
-              hook: options.hook ? { enabled: true, mode: options.hookMode } : null,
+              subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
+              hook: clipHook ? { enabled: true, mode: options.hookMode } : null,
               trends: options.trends,
               edit: c.edit || null,
+              layout: c.layout && c.layout !== "auto" ? c.layout : null,
             }
           : null
       );
@@ -1245,7 +1321,7 @@ async function processVideo(sourcePath, options = {}) {
         verdictKey: c.dimensions.verdictKey,
         reasons: c.dimensions.reasons || [],
         quote: c.dimensions.quote || null,
-        title: c.title,
+        title: c.title || `Clip ${i + 1}`,
         start: c.start,
         end: c.end,
         duration: +(c.end - c.start).toFixed(2),
@@ -1272,6 +1348,152 @@ async function processVideo(sourcePath, options = {}) {
     job.progress = 100;
     job.completedAt = new Date().toISOString();
     job.clips = clips;
+    delete job.review; // the source path and transcript are not needed any more
+    writeJob(job);
+    return job;
+}
+
+/**
+ * Editor: render the clips the user approved for a job that is in review.
+ * `approved` is the (edited) plan from the page: [{id,start,end,layout,captions,subStyle,title}].
+ */
+async function renderReviewed(jobId, approved) {
+  const job = readJob(jobId);
+  if (!job || job.status !== "review" || !job.review) throw new Error("This job is not waiting for review.");
+  const rv = job.review;
+  if (!fs.existsSync(rv.sourcePath)) throw new Error("The source video has been cleaned up. Upload it again.");
+  const mode = MODES[job.mode] || MODES.viral;
+  const meta = rv.meta;
+  const options = { ...rv.options, jobId };
+  const outDir = path.join(CLIPS_PUBLIC, jobId);
+  fs.mkdirSync(outDir, { recursive: true });
+
+  const byId = new Map((job.plan || []).map((p) => [p.id, p]));
+  const top = [];
+  const maxClips = Math.max(1, Number(rv.options.maxClips) || 10);
+  for (const a of approved || []) {
+    const base = byId.get(a.id) || {};
+    let start = Number(a.start != null ? a.start : base.start);
+    let end = Number(a.end != null ? a.end : base.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+    start = Math.max(0, Math.min(start, meta.duration - 1));
+    end = Math.max(start + 3, Math.min(end, meta.duration));
+    if (end - start > 180) end = start + 180;
+    const moved = Math.abs(start - (base.start || 0)) > 0.05 || Math.abs(end - (base.end || 0)) > 0.05;
+    const c = {
+      planId: a.id || base.id,
+      start: +start.toFixed(2),
+      end: +end.toFixed(2),
+      title: String(a.title || base.title || `Clip ${top.length + 1}`).slice(0, 80),
+      score: base.score || 0,
+      dimensions: base.scores ? { scores: base.scores, viralScore: base.viralScore, verdict: base.verdict, verdictKey: base.verdictKey, reasons: base.reasons, quote: base.quote, summary: base.summary } : {},
+      layout: ["auto", "follow", "static", "wide", "center"].includes(a.layout) ? a.layout : base.layout || "auto",
+      captions: a.captions != null ? !!a.captions : base.captions != null ? base.captions : !!rv.options.subtitles,
+      subStyle: a.subStyle ? normalizeSubStyleSafe(a.subStyle) : base.subStyle || null,
+      edit: base.edit || null,
+      source: base.source || (byId.has(a.id) ? "ai" : "user"),
+    };
+    // Re-think a moved or brand-new clip so scores and the edit plan match.
+    if ((moved || !byId.has(a.id)) && rv.words) {
+      try {
+        const thought = brains.think({ words: rv.words, start: c.start, end: c.end, energy: { energy: 55, punch: 55 }, stats: { avgEnergy: 55, avgPunch: 55 }, sceneTimes: [], faceTrack: null, mode });
+        if (thought) {
+          c.dimensions = { scores: thought.scores, viralScore: thought.total, verdict: thought.verdict, verdictKey: thought.verdictKey, reasons: thought.reasons, quote: thought.quote, summary: thought.summary };
+          c.score = thought.total;
+        }
+        c.edit = brains.edit.plan({ words: rv.words, start: c.start, end: c.end, duration: meta.duration, mode, captions: c.captions });
+        c.edit.start = c.start; c.edit.end = c.end; c.edit.duration = +(c.end - c.start).toFixed(2);
+      } catch (_) {}
+    }
+    top.push(c);
+    if (top.length >= maxClips) break;
+  }
+  if (!top.length) throw new Error("Nothing to render - keep at least one clip.");
+
+  // Fresh output folder: a second render of the same job must not mix files.
+  for (const f of fs.readdirSync(outDir)) {
+    try { fs.unlinkSync(path.join(outDir, f)); } catch (_) {}
+  }
+  job.plan = top.map((c, i) => planEntry(c, i));
+  job.clips = [];
+  job.error = null;
+  await renderPlan(job, rv.sourcePath, meta, mode, top, options, outDir);
+  return job;
+}
+
+function normalizeSubStyleSafe(st) {
+  try {
+    return require("./subtitles").normalizeSubStyle(st || {});
+  } catch (_) {
+    return null;
+  }
+}
+
+/**
+ * Editor without AI: the user marks the ranges, we probe the file, make a
+ * review job straight away (no analysis), and wait for "Render".
+ */
+async function planManual(sourcePath, options = {}) {
+  const mode = MODES[options.mode] || MODES.viral;
+  const id = options.jobId || crypto.randomBytes(6).toString("hex");
+  const outDir = path.join(CLIPS_PUBLIC, id);
+  fs.mkdirSync(outDir, { recursive: true });
+  const job = {
+    id,
+    userId: options.userId || (readJob(id) || {}).userId || null,
+    status: "processing",
+    stage: "probing",
+    progress: 10,
+    mode: mode.id,
+    modeLabel: mode.label,
+    createdAt: new Date().toISOString(),
+    sourceName: options.sourceName || path.basename(sourcePath),
+    subtitles: !!options.subtitles,
+    hook: false,
+    manual: true,
+    clips: [],
+    rankings: [],
+    error: null,
+  };
+  writeJob(job);
+  try {
+    const meta = await probe(sourcePath);
+    if (!meta.duration || meta.duration < 3) throw new Error("Video is too short.");
+    const maxMinutes = Number(options.maxMinutes) || 20;
+    if (meta.duration > maxMinutes * 60) {
+      throw new Error(`Your ${options.planLabel || "current"} plan allows videos up to ${maxMinutes} minutes.`);
+    }
+    job.duration = +meta.duration.toFixed(2);
+    // Words are only needed for captions; skip the transcription when off.
+    let words = null;
+    if (options.subtitles) {
+      job.stage = "listening";
+      job.progress = 30;
+      writeJob(job);
+      const tmpWords = path.join(outDir, "source.words.json");
+      try {
+        const n = await transcribeToWords(sourcePath, tmpWords);
+        if (n) words = JSON.parse(fs.readFileSync(tmpWords, "utf8")).words || null;
+      } catch (_) {}
+      try { fs.unlinkSync(tmpWords); } catch (_) {}
+    }
+    job.status = "review";
+    job.stage = "review";
+    job.progress = 50;
+    job.review = {
+      sourcePath,
+      meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
+      words,
+      options: {
+        subtitles: !!options.subtitles,
+        subStyle: options.subStyle || null,
+        hook: false,
+        hookMode: "intro",
+        trends: [],
+        maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+      },
+    };
+    job.plan = [];
     writeJob(job);
     return job;
   } catch (err) {
@@ -1431,6 +1653,8 @@ module.exports = {
   MODES,
   processVideo,
   renderClip,
+  renderReviewed,
+  planManual,
   readJob,
   writeJob,
   listJobs,

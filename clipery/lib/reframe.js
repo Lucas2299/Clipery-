@@ -262,7 +262,11 @@ function reframeFilter(o) {
   // The 9:16 window at full source height - this is the tightest we ever crop.
   const cropW = Math.min(srcW, Math.round((srcH * outW) / outH));
   const cropFrac = cropW / srcW;
-  const layout = chooseLayout(o.samples, srcW, srcH, cropFrac);
+  // The editor can pin a layout; "follow"/"static" still need faces to work
+  // with, so they fall back to centre when the detector saw nobody.
+  let layout = chooseLayout(o.samples, srcW, srcH, cropFrac);
+  if (o.force === "wide" || o.force === "center") layout = o.force;
+  else if (o.force === "follow" || o.force === "static") layout = seenOnly(o.samples).length >= 2 ? o.force : "center";
 
   if (layout === "wide") {
     // Two people too far apart: show the ENTIRE frame, no zoom, blurred backdrop.

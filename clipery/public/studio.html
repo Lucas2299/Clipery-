@@ -140,7 +140,91 @@
         <div class="mode-btns" id="mode-btns">
           <button type="button" class="btn mode-btn on" id="btn-long" onclick="window.setStudioMode('long')">Long form</button>
           <button type="button" class="btn mode-btn off" id="btn-rank" onclick="window.setStudioMode('rank')">Rank video</button>
+          <button type="button" class="btn mode-btn off" id="btn-editor" onclick="window.setStudioMode('editor')">Editor</button>
         </div>
+
+        <!-- EDITOR: review the AI plan or mark your own clips, then render -->
+        <section class="pro-card is-hidden" id="view-editor">
+          <div class="pro-card-head">
+            <div>
+              <h2>Editor</h2>
+              <p>See where the AI would cut <strong>before</strong> anything renders. Move the cuts, pick zoomed-in or full picture for every clip, drop the ones you do not want - or skip the AI and mark your own.</p>
+            </div>
+          </div>
+
+          <div id="ed-setup">
+            <div class="one-source">
+              <label class="btn btn-ghost" for="ed-file" style="cursor:pointer;margin:0">
+                <input id="ed-file" type="file" accept="video/*,.mp4,.mov,.webm" hidden />
+                Add file
+              </label>
+              <span class="pro-filename" id="ed-fname" style="margin:0"></span>
+            </div>
+
+            <div class="ed-choice">
+              <label class="ed-radio"><input type="radio" name="ed-how" value="ai" checked /> <span><b>AI suggests clips</b><small>AI finds the moments, you review and adjust</small></span></label>
+              <label class="ed-radio"><input type="radio" name="ed-how" value="manual" /> <span><b>I mark my own clips</b><small>No AI picks - you set start and end for each clip</small></span></label>
+            </div>
+
+            <label class="sub-toggle" for="ed-subs">
+              <input type="checkbox" id="ed-subs" checked />
+              <span>Captions <span class="sub-hint">default for all clips - you can switch per clip in the review</span></span>
+            </label>
+            <div class="sub-style-grid" id="ed-substyle">
+              <label>Colour
+                <select id="ed-sub-color">
+                  <option value="white" selected>White</option><option value="yellow">Yellow</option><option value="pink">Pink</option><option value="orange">Orange</option><option value="red">Red</option><option value="green">Green</option><option value="cyan">Cyan</option><option value="blue">Blue</option><option value="purple">Purple</option>
+                </select>
+              </label>
+              <label>Size
+                <select id="ed-sub-size"><option value="medium" selected>Medium</option><option value="small">Small</option></select>
+              </label>
+              <label>Position
+                <select id="ed-sub-pos"><option value="bottom" selected>Bottom</option><option value="middle">Middle</option><option value="top">Top</option></select>
+              </label>
+              <label>Style
+                <select id="ed-sub-style">
+                  <option value="outline" selected>Karaoke</option><option value="highlight">White + colored word</option><option value="box">Highlight box</option><option value="pop">Pop-in words</option><option value="classic">Plain</option><option value="rainbow">Rainbow</option><option value="hormozi">Hormozi</option><option value="mrbeast">MrBeast</option><option value="reels">Reels</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="pro-actions">
+              <button class="btn btn-primary" id="ed-go" type="button">Open in editor</button>
+              <span class="pro-msg" id="ed-msg"></span>
+            </div>
+            <div class="pro-status" id="ed-status" style="display:none">
+              <div class="pro-status-row"><span id="ed-stage">Working</span><span id="ed-pct">0%</span></div>
+              <div class="pro-bar"><div class="pro-fill" id="ed-fill" style="width:0%"></div></div>
+              <p class="pro-detail" id="ed-detail"></p>
+            </div>
+          </div>
+
+          <div id="ed-work" hidden>
+            <div class="ed-player">
+              <video id="ed-video" controls playsinline preload="metadata"></video>
+              <div class="ed-timeline" id="ed-timeline">
+                <div class="ed-tl-track" id="ed-tl-track"></div>
+                <div class="ed-tl-cursor" id="ed-tl-cursor"></div>
+              </div>
+              <div class="ed-tl-legend"><span id="ed-time">0:00</span><span id="ed-dur">0:00</span></div>
+            </div>
+
+            <div class="ed-toolbar">
+              <button class="btn btn-ghost" id="ed-add" type="button">+ Add clip at playhead</button>
+              <span class="ed-count" id="ed-count"></span>
+              <button class="btn btn-primary" id="ed-render" type="button">Render clips</button>
+              <span class="pro-msg" id="ed-render-msg"></span>
+            </div>
+
+            <div class="ed-list" id="ed-list"></div>
+          </div>
+
+          <div id="ed-results" hidden>
+            <h3 style="margin:1.2rem 0 .6rem">Your clips</h3>
+            <div class="clip-grid studio-clip-grid" id="ed-grid"></div>
+          </div>
+        </section>
 
         <!-- LONG FORM: 1 source -->
         <section class="pro-card" id="view-long">
@@ -458,44 +542,39 @@
     <!-- Mode switch INLINE so it always works even if studio.js fails -->
     <script>
       window.setStudioMode = function (mode) {
-        var isLong = mode !== "rank";
-        var vl = document.getElementById("view-long");
-        var vr = document.getElementById("view-rank");
-        var bl = document.getElementById("btn-long");
-        var br = document.getElementById("btn-rank");
-        if (vl) {
-          vl.classList.toggle("is-hidden", !isLong);
-          vl.style.display = isLong ? "block" : "none";
-        }
-        if (vr) {
-          vr.classList.toggle("is-hidden", isLong);
-          vr.style.display = isLong ? "none" : "block";
-        }
-        if (bl) {
-          bl.classList.toggle("on", isLong);
-          bl.classList.toggle("off", !isLong);
-        }
-        if (br) {
-          br.classList.toggle("on", !isLong);
-          br.classList.toggle("off", isLong);
+        var modes = ["long", "rank", "editor"];
+        if (modes.indexOf(mode) < 0) mode = "long";
+        for (var i = 0; i < modes.length; i++) {
+          var m = modes[i];
+          var v = document.getElementById("view-" + m);
+          var b = document.getElementById("btn-" + m);
+          var on = m === mode;
+          if (v) {
+            v.classList.toggle("is-hidden", !on);
+            v.style.display = on ? "block" : "none";
+          }
+          if (b) {
+            b.classList.toggle("on", on);
+            b.classList.toggle("off", !on);
+          }
         }
         try {
           var u = new URL(location.href);
-          if (isLong) u.searchParams.delete("tool");
-          else u.searchParams.set("tool", "rank");
+          if (mode === "long") u.searchParams.delete("tool");
+          else u.searchParams.set("tool", mode);
           history.replaceState({}, "", u.pathname + (u.searchParams.toString() ? "?" + u.searchParams.toString() : ""));
         } catch (e) {}
       };
       // boot from URL
       try {
-        if (new URLSearchParams(location.search).get("tool") === "rank") window.setStudioMode("rank");
-        else window.setStudioMode("long");
+        window.setStudioMode(new URLSearchParams(location.search).get("tool") || "long");
       } catch (e) {
         window.setStudioMode("long");
       }
       document.getElementById("year").textContent = new Date().getFullYear();
     </script>
     <script src="/shared.js?v=2"></script>
-    <script src="/studio.js?v=3"></script>
+    <script src="/studio.js?v=4"></script>
+    <script src="/editor.js?v=1"></script>
   </body>
 </html>

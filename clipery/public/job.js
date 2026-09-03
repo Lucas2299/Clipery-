@@ -57,7 +57,12 @@
       statusBox.classList.add("hide");
     }
 
-    if (job.status === "error") {
+    if (job.status === "review") {
+      errEl.innerHTML =
+        'This video is waiting for your review. <a href="/studio?tool=editor&job=' +
+        encodeURIComponent(job.id) +
+        '" style="color:var(--accent-2);font-weight:600">Open it in the Editor</a> to adjust the clips and render.';
+    } else if (job.status === "error") {
       errEl.textContent = job.error || "Job failed";
     } else {
       errEl.textContent = "";
