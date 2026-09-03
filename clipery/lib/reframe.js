@@ -40,6 +40,37 @@ function homeX(samples) {
   return clamp((lo + hi) / 2, 0, 1);
 }
 
+/**
+ * Two people close enough to share the window: aim between them, so neither
+ * gets sliced off at the edge while the camera sits on the bigger face.
+ * `fitFrac` is the window width as a fraction of the source (0 = off).
+ */
+function aimBetween(samples, fitFrac) {
+  if (!(fitFrac > 0)) return seenOnly(samples);
+  const sorted = seenOnly(samples).sort((a, b) => a.t - b.t);
+  let pair = null; // last moment both were seen: {t, lo, hi}
+  return sorted.map((s) => {
+    if (Array.isArray(s.xs) && s.xs.length >= 2) {
+      const lo = Math.min(...s.xs);
+      const hi = Math.max(...s.xs);
+      if (hi - lo <= fitFrac * 0.8) {
+        pair = { t: s.t, lo, hi };
+        return { t: s.t, x: (lo + hi) / 2, xs: s.xs };
+      }
+      pair = null;
+      return s;
+    }
+    // The detector blinks on one of the two faces all the time. If the face
+    // it still sees is one of the pair, keep the pair framing instead of
+    // lurching over to that one person and back a moment later.
+    if (pair && s.t - pair.t <= 4 && s.x >= pair.lo - 0.05 && s.x <= pair.hi + 0.05) {
+      return { t: s.t, x: (pair.lo + pair.hi) / 2, xs: s.xs };
+    }
+    pair = null;
+    return s;
+  });
+}
+
 /** Share of samples that actually saw somebody, 0..1. */
 function faceCoverage(samples) {
   const all = (samples || []).filter((s) => s && Number.isFinite(s.t));
@@ -65,7 +96,9 @@ function buildCameraPath(samples, opts = {}) {
   const travel = opts.travel != null ? opts.travel : 0.5;        // seconds to move
   const gapFor = opts.gapFor != null ? opts.gapFor : 2.5;        // lost-subject timeout
 
-  const clean = seenOnly(samples).sort((a, b) => a.t - b.t);
+  const fitFrac = opts.fitFrac != null ? opts.fitFrac : 0;         // window width, 0..1
+
+  const clean = aimBetween(samples, fitFrac).sort((a, b) => a.t - b.t);
   if (!clean.length) return [];
   const home = homeX(clean);
 
@@ -101,9 +134,14 @@ function buildCameraPath(samples, opts = {}) {
     }
     if (Math.abs(s.x - heldX) < deadZone) continue;      // wobble, ignore
     if (s.t - heldSince < holdFor) continue;             // too soon, hold the shot
-    // Confirm the move is real: the next sample should agree.
+    // Confirm the move is real: the next sample should agree, OR the subject
+    // is clearly still walking in the same direction (a walk used to be
+    // rejected sample after sample, leaving the person outside the window).
     const ahead = med.filter((o) => o.t > s.t && o.t <= s.t + 0.9);
-    if (ahead.length && !ahead.some((o) => Math.abs(o.x - s.x) < deadZone)) continue;
+    const dir = Math.sign(s.x - heldX);
+    const agrees = ahead.some((o) => Math.abs(o.x - s.x) < deadZone);
+    const keepsGoing = ahead.some((o) => Math.sign(o.x - heldX) === dir && Math.abs(o.x - heldX) >= deadZone);
+    if (ahead.length && !agrees && !keepsGoing) continue;
 
     keys.push({ t: +Math.max(0, s.t - travel).toFixed(2), x: heldX }); // start of the move
     keys.push({ t: +s.t.toFixed(2), x: +s.x.toFixed(4) });             // end of the move
@@ -134,7 +172,9 @@ function spreadOf(samples) {
  */
 function simultaneousSpread(samples) {
   const multi = (samples || []).filter((s) => Array.isArray(s.xs) && s.xs.length >= 2);
-  if (multi.length < Math.max(2, (samples || []).length * 0.45)) return 0;
+  // Haar misses one of two faces quite often, so "both visible" only has to
+  // hold for a third of the clip, not nearly half of it.
+  if (multi.length < Math.max(2, seenOnly(samples).length * 0.3)) return 0;
   const spans = multi.map((s) => Math.max(...s.xs) - Math.min(...s.xs)).sort((a, b) => a - b);
   return spans[Math.floor(spans.length / 2)]; // median, so one bad frame cannot force a zoom-out
 }
@@ -155,9 +195,14 @@ function chooseLayout(samples, srcW, srcH, cropFrac) {
   // Guessing is what makes the frame wander off the people, so hold still.
   if (faceCoverage(samples) < 0.35) return "static";
   // Both people in frame together and too wide to fit -> stop cropping.
-  if (simultaneousSpread(samples) > cropFrac * 1.05) return "wide";
+  // Faces have width, so centres 80% of the window apart already means
+  // both are half chopped - that is the point where zooming out wins.
+  if (simultaneousSpread(samples) > cropFrac * 0.8) return "wide";
+  // One person who stands in two different places (walks over, sits down)
+  // cannot be served by a single locked frame either.
+  if (spreadOf(seen) > cropFrac * 0.8 && seen.length >= 6) return "follow";
   // Subject moves around (or speakers take turns) -> follow them.
-  if (buildCameraPath(samples).length > 1) return "follow";
+  if (buildCameraPath(samples, { fitFrac: cropFrac }).length > 1) return "follow";
   return "static";
 }
 
@@ -236,7 +281,7 @@ function reframeFilter(o) {
 
   let xExpr = null;
   if (layout === "follow") {
-    const keys = buildCameraPath(o.samples);
+    const keys = buildCameraPath(o.samples, { fitFrac: cropFrac });
     xExpr = cropExpr(keys, cropW, srcW);
     if (xExpr) {
       return {
@@ -248,7 +293,12 @@ function reframeFilter(o) {
   }
 
   if (layout === "static") {
-    const xs = seenOnly(o.samples).map((s) => s.x).sort((a, b) => a - b);
+    // If a second person is usually in shot too, a frame that fits both
+    // beats a frame centred on one with the other cut at the edge.
+    const aimed = aimBetween(o.samples, cropFrac);
+    const pairs = aimed.filter((s) => Array.isArray(s.xs) && s.xs.length >= 2);
+    const pool = pairs.length >= aimed.length * 0.3 ? pairs : aimed;
+    const xs = pool.map((s) => s.x).sort((a, b) => a - b);
     if (!xs.length) {
       return {
         layout: "center",
@@ -283,4 +333,5 @@ module.exports = {
   seenOnly,
   homeX,
   faceCoverage,
+  aimBetween,
 };

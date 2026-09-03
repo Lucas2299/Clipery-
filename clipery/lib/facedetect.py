@@ -192,6 +192,12 @@ def main() -> None:
     frame_i = -1
     next_t = 0.0            # next sample time, relative to `start`
     base = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0 or start
+    # Seeking lands on the nearest keyframe, which can be seconds BEFORE
+    # `start`. Track times must be measured from `start` (that is where
+    # ffmpeg's clock begins for the cut), never from where the seek landed,
+    # or every camera move happens a few seconds late.
+    if base > start:
+        base = start
     while True:
         # grab() pulls the next frame WITHOUT decoding it - skipping is then
         # nearly free. We only pay for a full decode at the sample points.
@@ -203,7 +209,9 @@ def main() -> None:
         t = base + frame_i / fps
         if t > end:
             break
-        if t - base < next_t - 1e-6:
+        if t < start - 1e-6:
+            continue        # still before the clip: keyframe run-up
+        if t - start < next_t - 1e-6:
             continue        # not a sample point yet, no decode needed
         next_t += step
         ok, frame = cap.retrieve()
@@ -231,13 +239,13 @@ def main() -> None:
             last_x = best_x
             all_x.extend([c[0] for c in centres])
             track.append({
-                "t": round(t - base, 2),
+                "t": round(t - start, 2),
                 "x": round(best_x, 4),
                 "faces": len(faces),
                 "xs": sorted(round(c[0], 4) for c in centres),
             })
         else:
-            track.append({"t": round(t - base, 2), "x": None, "faces": 0})
+            track.append({"t": round(t - start, 2), "x": None, "faces": 0})
     cap.release()
 
     seen = [p for p in track if p["x"] is not None]
@@ -245,15 +253,13 @@ def main() -> None:
         print(json.dumps({"ok": False, "reason": "no-faces", "track": []}))
         return
 
-    # Fill gaps by holding the last known position, so the camera does not
-    # snap back to centre every time the detector blinks.
-    hold = seen[0]["x"]
+    # Lost-face samples stay x=None on purpose. The reframer needs to know
+    # when nobody was seen: filling the gap with the old position made it
+    # believe the person was still standing there and keep the camera on
+    # an empty spot after they had walked off.
     for p in track:
         if p["x"] is None:
-            p["x"] = hold
             p["xs"] = []
-        else:
-            hold = p["x"]
 
     groups = cluster(all_x)
     xs = sorted(p["x"] for p in seen)
