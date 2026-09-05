@@ -1,0 +1,102 @@
+diff --git a/clipery/public/account.html b/clipery/public/account.html
+index cbe53d6..72f8b08 100644
+--- a/clipery/public/account.html
++++ b/clipery/public/account.html
+@@ -16,9 +16,9 @@
+       <div class="header-inner">
+         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+         <nav class="nav" aria-label="Primary">
+-          <a class="btn btn-primary btn-sm" href="/studio" data-nav>Studio</a>
+           <a href="/library" data-nav>Library</a>
+           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
+         </nav>
+       </div>
+     </header>
+diff --git a/clipery/public/job.html b/clipery/public/job.html
+index 676b62e..f2535a5 100644
+--- a/clipery/public/job.html
++++ b/clipery/public/job.html
+@@ -16,9 +16,9 @@
+       <div class="header-inner">
+         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+         <nav class="nav" aria-label="Primary">
+-          <a class="btn btn-primary btn-sm" href="/studio" data-nav>Studio</a>
+           <a href="/library" data-nav>Library</a>
+           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
+         </nav>
+       </div>
+     </header>
+diff --git a/clipery/public/library.html b/clipery/public/library.html
+index b43b6f4..298136e 100644
+--- a/clipery/public/library.html
++++ b/clipery/public/library.html
+@@ -17,9 +17,9 @@
+       <div class="header-inner">
+         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+         <nav class="nav" aria-label="Primary">
+-          <a class="btn btn-primary btn-sm" href="/studio" data-nav>Studio</a>
+           <a href="/library" data-nav>Library</a>
+           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
+         </nav>
+       </div>
+     </header>
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index 6d7887c..79558e3 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -16,9 +16,9 @@
+       <div class="header-inner">
+         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+         <nav class="nav" aria-label="Primary">
+-          <a class="btn btn-primary btn-sm" href="/studio" data-nav>Studio</a>
+           <a href="/library" data-nav>Library</a>
+           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
+         </nav>
+       </div>
+     </header>
+diff --git a/clipery/public/rank.html b/clipery/public/rank.html
+index 3085d47..218ef5e 100644
+--- a/clipery/public/rank.html
++++ b/clipery/public/rank.html
+@@ -17,9 +17,9 @@
+       <div class="header-inner">
+         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+         <nav class="nav" aria-label="Primary">
+-          <a class="btn btn-primary btn-sm" href="/studio" data-nav>Studio</a>
+           <a href="/library" data-nav>Library</a>
+           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
+         </nav>
+       </div>
+     </header>
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 0029244..af9be49 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -127,9 +127,9 @@
+       <div class="header-inner">
+         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+         <nav class="nav">
+-          <a class="btn btn-primary btn-sm" href="/studio">Studio</a>
+           <a href="/library">Library</a>
+           <a href="/pricing" class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary nav-studio" href="/studio">Studio</a>
+         </nav>
+       </div>
+     </header>
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index ba1cafc..f0224fd 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2820,3 +2820,7 @@ body.studio-app {
+ /* Pricing page: highlight the plan you are on */
+ .price-card.current { border-color: rgba(200, 245, 66, 0.5); box-shadow: 0 0 0 1px rgba(200, 245, 66, 0.25) inset; }
+ .price-card.current h3::after { content: "Current"; margin-left: 0.5rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(200, 245, 66, 0.15); color: #c8f542; vertical-align: middle; }
++
++/* Studio button in the page header: bigger, sits on the right */
++.nav .nav-studio { padding: 0.6rem 1.2rem; font-size: 0.92rem; margin-left: 0.4rem; color: #fff; }
++.nav .nav-studio.active { color: #fff; }
