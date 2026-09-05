@@ -78,6 +78,8 @@ const ROUTES = {
   "/library.html": "library.html",
   "/pricing": "pricing.html",
   "/pricing.html": "pricing.html",
+  "/account": "account.html",
+  "/account.html": "account.html",
   "/waitlist": "waitlist.html",
   "/waitlist.html": "waitlist.html",
   "/job": "job.html",
@@ -100,6 +102,8 @@ const PROTECTED_PAGES = [
   "/rank.html",
   "/job",
   "/job.html",
+  "/account",
+  "/account.html",
 ];
 const PROTECTED_API = [
   "/api/clip/upload",
@@ -117,7 +121,7 @@ const PROTECTED_API = [
 
 // Guarded by FILE, not by URL spelling: whatever path a request uses, if it
 // ends up serving one of these it must belong to a logged-in account.
-const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html"]);
+const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html", "account.html"]);
 // The dashboard is owner-only, a stricter club than the members pages.
 const OWNER_FILES = new Set(["admin.html"]);
 const CLIPS_DIR = path.join(PUBLIC, "clips");
@@ -670,6 +674,32 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
     }
 
+    // Account page: rename / change password. Plans are read-only here.
+    if (pathname === "/api/auth/profile" && req.method === "POST") {
+      const me = auth.currentUser(req);
+      if (!me) return send(res, 401, { ok: false, error: "Please log in." });
+      let body;
+      try {
+        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
+      } catch {
+        return send(res, 400, { ok: false, error: "Invalid request." });
+      }
+      const r = auth.updateProfile(me.id, { name: body.name });
+      return send(res, r.ok ? 200 : r.status || 400, r);
+    }
+    if (pathname === "/api/auth/password" && req.method === "POST") {
+      const me = auth.currentUser(req);
+      if (!me) return send(res, 401, { ok: false, error: "Please log in." });
+      let body;
+      try {
+        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
+      } catch {
+        return send(res, 400, { ok: false, error: "Invalid request." });
+      }
+      const r = auth.changePassword(me.id, body.current, body.next);
+      return send(res, r.ok ? 200 : r.status || 400, r);
+    }
+
     if (pathname === "/api/auth/logout" && req.method === "POST") {
       auth.destroySession(auth.parseCookies(req)[auth.COOKIE]);
       return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie(req) });
@@ -686,6 +716,8 @@ const server = http.createServer(async (req, res) => {
           isOwner: auth.isAdmin(user),
           planLabel: auth.planOf(user).label,
           videosLeft: left === Infinity ? null : left,
+          videosUsed: auth.usageOf ? auth.usageOf(user).videos : undefined,
+          videosTotal: auth.planOf(user).videos === Infinity ? null : auth.planOf(user).videos + (Number(user.bonusVideos) || 0),
           maxMinutes: auth.planOf(user).maxMinutes,
           maxClipsPerVideo: auth.planOf(user).maxClips,
         },

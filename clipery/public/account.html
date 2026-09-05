@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Account - Clipery</title>
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/studio" data-nav>Studio</a>
+          <a href="/library" data-nav>Library</a>
+          <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
+          <a class="btn btn-primary btn-sm" href="/studio">New clip job</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page container acct">
+      <div class="page-hero">
+        <div class="eyebrow">Account</div>
+        <h1>Your account</h1>
+        <p class="muted" id="acct-email"></p>
+      </div>
+
+      <section class="acct-card">
+        <div class="acct-card-head">
+          <h2>Your plan</h2>
+          <a class="btn btn-ghost btn-sm" href="/pricing">Change plan</a>
+        </div>
+        <div class="acct-plan">
+          <div class="acct-plan-name" id="acct-plan">-</div>
+          <div class="acct-plan-detail" id="acct-plan-detail"></div>
+        </div>
+        <div class="acct-usage">
+          <div class="acct-usage-row"><span>Videos left this month</span><strong id="acct-left">-</strong></div>
+          <div class="pro-bar"><div class="pro-fill" id="acct-fill" style="width:0%"></div></div>
+          <p class="muted" id="acct-usage-note"></p>
+        </div>
+      </section>
+
+      <section class="acct-card">
+        <h2>Your name</h2>
+        <form id="name-form" class="acct-form">
+          <input type="text" id="acct-name" maxlength="60" placeholder="Your name" required />
+          <button class="btn btn-primary" type="submit">Save name</button>
+          <span class="pro-msg" id="name-msg"></span>
+        </form>
+      </section>
+
+      <section class="acct-card" id="pw-card">
+        <h2>Password</h2>
+        <form id="pw-form" class="acct-form acct-form-col">
+          <input type="password" id="pw-current" placeholder="Current password" autocomplete="current-password" required />
+          <input type="password" id="pw-next" placeholder="New password (8+ characters)" autocomplete="new-password" minlength="8" required />
+          <div>
+            <button class="btn btn-primary" type="submit">Change password</button>
+            <span class="pro-msg" id="pw-msg"></span>
+          </div>
+        </form>
+        <p class="muted" id="pw-social" hidden>This account signs in with Google or Apple, so there is no password to change.</p>
+      </section>
+
+      <section class="acct-card acct-card-row">
+        <div><h2>Log out</h2><p class="muted">Sign out on this device.</p></div>
+        <button type="button" class="btn btn-ghost" id="acct-logout">Log out</button>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipery</a>
+        <div class="footer-links">
+          <a href="/studio">Studio</a>
+          <a href="/library">Library</a>
+          <a href="/pricing">Pricing</a>
+        </div>
+        <div>(c) <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="/shared.js?v=2"></script>
+    <script src="/account.js?v=1"></script>
+  </body>
+</html>

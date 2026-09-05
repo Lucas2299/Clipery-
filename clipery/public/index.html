@@ -85,11 +85,7 @@
       .nav-links a{color:var(--muted);font-size:.9rem;font-weight:500;transition:color .2s}
       .nav-links a:hover{color:var(--text)}
       .nav-cta{display:flex;gap:.55rem;align-items:center}
-      .nav-user{display:inline-flex;align-items:center;gap:.45rem;margin-right:.2rem;max-width:180px}
-      .nav-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ff4d6d,#ff8a4c);color:#fff;font-weight:800;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;flex:none}
-      .nav-name{font-size:.85rem;font-weight:700;color:#c9c5d8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .nav-logout{font-family:inherit;cursor:pointer}
-      @media (max-width:640px){.nav-name{display:none}.nav-cta .nav-logout{display:inline-flex}}
 
       /* BTN */
       .btn{
@@ -752,15 +748,13 @@
           var cta = document.getElementById("nav-cta");
           if (cta) {
             var u = d.user;
-            var who = String(u.name || u.email || "").replace(/[<>&]/g, "");
-            var initial = who ? who.charAt(0).toUpperCase() : "?";
+            var left = u.videosTotal == null ? "unlimited videos" : (u.videosLeft == null ? 0 : u.videosLeft) + " of " + u.videosTotal + " videos left";
             cta.innerHTML =
-              '<span class="nav-user" title="Logged in as ' + String(u.email || "").replace(/[<>&"]/g, "") + '">' +
-              '<span class="nav-avatar">' + initial + "</span>" +
-              '<span class="nav-name">' + who + "</span></span>" +
               '<a class="btn btn-ghost" href="/library">Library</a>' +
               '<a class="btn btn-primary" href="/studio">Open Studio</a>' +
-              '<button type="button" class="btn btn-ghost nav-logout" id="nav-logout">Log out</button>';
+              '<button type="button" class="btn btn-ghost nav-logout" id="nav-logout">Log out</button>' +
+              '<a class="nav-acct" href="/account" title="Account - ' + (u.planLabel || "Free") + " plan, " + left + '" aria-label="Account">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></a>';
             document.getElementById("nav-logout").addEventListener("click", function () {
               var b = this;
               b.disabled = true;
