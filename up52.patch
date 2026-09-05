@@ -1,0 +1,15 @@
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index 277ef3d..cac36d7 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2806,8 +2806,8 @@ body.studio-app {
+ .acct-plan-detail { opacity: 0.7; font-size: 0.9rem; margin-top: 0.15rem; }
+ .acct-usage-row { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.4rem; }
+ .acct-form { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+-.acct-form-col { flex-direction: column; align-items: stretch; }
+-.acct-form input { flex: 1 1 220px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: inherit; padding: 0.65rem 0.8rem; font: inherit; }
++.acct-form-col { flex-direction: column; align-items: flex-start; }
++.acct-form input { flex: 0 1 300px; width: 100%; max-width: 300px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: inherit; padding: 0.45rem 0.7rem; font: inherit; font-size: 0.9rem; }
+ .acct-form input:focus { outline: none; border-color: var(--accent-2, #7c5cff); }
+ .nav-acct { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #f4f1ea; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex: none; }
+ .nav-acct:hover { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.1); }
