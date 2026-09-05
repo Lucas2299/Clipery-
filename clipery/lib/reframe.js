@@ -206,6 +206,45 @@ function chooseLayout(samples, srcW, srcH, cropFrac) {
   return "static";
 }
 
+/**
+ * What kind of video is this? The user tells us, and it changes how eager
+ * the camera is:
+ *
+ *  podcast - people talking at a desk. Faces are everything: follow the
+ *            speaker, and if two people share the shot keep them both.
+ *  gaming  - the gameplay IS the content. A face cam is small and in a
+ *            corner, so never zoom into it: keep the full picture.
+ *  stream  - a streamer reacting. The person matters, but so does what is
+ *            happening around them: follow the face, allow more movement,
+ *            fall back to full picture when the face is lost.
+ *  talking - one person to camera (vlog, lecture). Lock on the face.
+ *  auto    - the old behaviour, decide from the face track alone.
+ */
+const GENRES = ["auto", "podcast", "gaming", "stream", "talking"];
+function applyGenre(layout, genre, samples, cropFrac) {
+  const g = GENRES.includes(genre) ? genre : "auto";
+  if (g === "auto") return layout;
+  const seen = seenOnly(samples);
+  const coverage = faceCoverage(samples);
+  if (g === "gaming") return "wide";
+  if (g === "podcast") {
+    if (seen.length < 2) return "center";
+    // Both hosts on screen most of the time -> keep both in the window
+    // rather than cutting one off at the edge.
+    if (simultaneousSpread(samples) > cropFrac * 0.8) return "wide";
+    return coverage < 0.2 ? "static" : "follow";
+  }
+  if (g === "stream") {
+    if (seen.length < 2 || coverage < 0.25) return "wide";
+    return "follow";
+  }
+  if (g === "talking") {
+    if (seen.length < 2) return "center";
+    return layout === "wide" ? "static" : layout === "follow" && coverage > 0.6 ? "follow" : "static";
+  }
+  return layout;
+}
+
 /** ffmpeg-safe number. */
 const n2 = (v) => (Math.round(v * 100) / 100).toString();
 
@@ -265,6 +304,7 @@ function reframeFilter(o) {
   // The editor can pin a layout; "follow"/"static" still need faces to work
   // with, so they fall back to centre when the detector saw nobody.
   let layout = chooseLayout(o.samples, srcW, srcH, cropFrac);
+  layout = applyGenre(layout, o.genre, o.samples, cropFrac);
   if (o.force === "wide" || o.force === "center") layout = o.force;
   else if (o.force === "follow" || o.force === "static") layout = seenOnly(o.samples).length >= 2 ? o.force : "center";
 
@@ -328,6 +368,8 @@ function reframeFilter(o) {
 }
 
 module.exports = {
+  GENRES,
+  applyGenre,
   buildCameraPath,
   cropExpr,
   chooseLayout,

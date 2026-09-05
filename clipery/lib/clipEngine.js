@@ -557,7 +557,10 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
   // the crop expression needs (ffmpeg `t` restarts at 0 for the cut).
   // The editor can pin the framing per clip: "follow" | "static" | "wide" | "center".
   const forced = subOpts && subOpts.layout && ["follow", "static", "wide", "center"].includes(subOpts.layout) ? subOpts.layout : null;
-  const det = forced === "wide" || forced === "center" ? null : await faceTrack(source, start, end);
+  const genre = (subOpts && subOpts.genre) || (srcMeta && srcMeta.genre) || "auto";
+  // Gaming never crops into the picture, so the face detector can be skipped.
+  const skipFaces = forced === "wide" || forced === "center" || (!forced && genre === "gaming");
+  const det = skipFaces ? null : await faceTrack(source, start, end);
   const rf = reframeFilter({
     samples: (det && det.track) || [],
     srcW: (srcMeta && srcMeta.width) || 1920,
@@ -565,8 +568,9 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
     outW: targetW,
     outH: targetH,
     force: forced,
+    genre,
   });
-  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : ""}`);
+  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : genre !== "auto" ? ` [${genre}]` : ""}`);
 
   const extras = [
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
@@ -626,7 +630,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
 
   // Punch-in: a gentle 8% zoom while the line the clip is built around is
   // spoken. Works for every layout because it sits after the crop/scale.
-  if (EDIT_PUNCH_IN && editPlan && editPlan.anchor && trimmedWords && rf.layout !== "wide") {
+  if (EDIT_PUNCH_IN && editPlan && editPlan.anchor && trimmedWords && rf.layout !== "wide" && genre !== "gaming") {
     const where = brains.edit.locateLine(trimmedWords, editPlan.anchor, dur - edits.trimmed);
     if (where && where.to - where.from >= 1 && where.to - where.from <= 12) {
       editV.push(brains.edit.punchInFilter(where.from, where.to, targetW, targetH));
@@ -973,6 +977,7 @@ async function processVideo(sourcePath, options = {}) {
     progress: 4,
     mode: mode.id,
     modeLabel: mode.label,
+    genre: options.genre || "auto",
     createdAt: new Date().toISOString(),
     sourceName: options.sourceName || path.basename(sourcePath),
     subtitles: !!options.subtitles,
@@ -986,6 +991,7 @@ async function processVideo(sourcePath, options = {}) {
 
   try {
     const meta = await probe(sourcePath);
+    meta.genre = options.genre || "auto";
     if (!meta.duration || meta.duration < 8) {
       throw new Error("Video is too short. Use at least ~15 seconds.");
     }
@@ -1269,7 +1275,7 @@ async function processVideo(sourcePath, options = {}) {
       job.progress = 50;
       job.review = {
         sourcePath,
-        meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
+        meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio, genre: meta.genre || "auto" },
         words: videoWords || null,
         options: {
           subtitles: !!options.subtitles,
@@ -1526,6 +1532,7 @@ async function planManual(sourcePath, options = {}) {
     subtitles: !!options.subtitles,
     hook: false,
     manual: true,
+    genre: options.genre || "auto",
     clips: [],
     rankings: [],
     error: null,
@@ -1533,6 +1540,7 @@ async function planManual(sourcePath, options = {}) {
   writeJob(job);
   try {
     const meta = await probe(sourcePath);
+    meta.genre = options.genre || "auto";
     if (!meta.duration || meta.duration < 3) throw new Error("Video is too short.");
     const maxMinutes = Number(options.maxMinutes) || 20;
     if (meta.duration > maxMinutes * 60) {
@@ -1557,7 +1565,7 @@ async function planManual(sourcePath, options = {}) {
     job.progress = 50;
     job.review = {
       sourcePath,
-      meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
+      meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio, genre: meta.genre || "auto" },
       words,
       options: {
         subtitles: !!options.subtitles,

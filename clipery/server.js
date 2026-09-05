@@ -520,6 +520,12 @@ function wantSubtitles(v) {
 }
 
 // get is a lookup: (fieldName) => string value (multipart part or JSON field)
+// What kind of video: changes how the camera behaves (see lib/reframe.js).
+function readGenre(v) {
+  const g = String(v || "auto").toLowerCase().trim();
+  return ["auto", "podcast", "gaming", "stream", "talking"].includes(g) ? g : "auto";
+}
+
 function readSubStyle(get) {
   return normalizeSubStyle({
     color: get("subColor"),
@@ -967,11 +973,12 @@ const server = http.createServer(async (req, res) => {
       if (!owner) return;
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.writeFileSync(dest, filePart.body);
-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
+      const genre = readGenre(get("genre"));
+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends, genre });
       const q = enqueue(dest, {
         userId: owner && owner.id,
         ...owner.planLimits,
-        jobId, sourceName: orig, mode, subtitles, subStyle,
+        jobId, sourceName: orig, mode, subtitles, subStyle, genre,
         hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
       });
       return send(res, 202, {
@@ -1005,8 +1012,10 @@ const server = http.createServer(async (req, res) => {
       const jobId = crypto.randomBytes(6).toString("hex");
       const owner = chargeVideo(req, res);
       if (!owner) return;
+      const genre = readGenre(body.genre);
       seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits,
         mode,
+        genre,
         sourceName: videoUrl.slice(0, 80),
         subtitles,
         subStyle,
@@ -1020,7 +1029,7 @@ const server = http.createServer(async (req, res) => {
         meta: {
           userId: owner && owner.id,
           ...owner.planLimits,
-          jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
+          jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
           hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
         },
       });
@@ -1066,6 +1075,7 @@ const server = http.createServer(async (req, res) => {
       const meta = {
         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
         subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, trends,
+        genre: readGenre(get("genre")),
         review: true, manual, editor: true,
       };
       seedJob(jobId, meta);
@@ -1097,6 +1107,7 @@ const server = http.createServer(async (req, res) => {
       const meta = {
         userId: owner.id, ...owner.planLimits, jobId, sourceName: videoUrl.slice(0, 120), mode,
         subtitles, subStyle, hook: false, hookMode: "intro", trends: [],
+        genre: readGenre(body.genre),
         review: true, manual, editor: true,
       };
       seedJob(jobId, meta);
