@@ -1,0 +1,25 @@
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 6182aac..e73f1bd 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -86,6 +86,10 @@
+       .nav-links a:hover{color:var(--text)}
+       .nav-cta{display:flex;gap:.55rem;align-items:center}
+       .nav-logout{font-family:inherit;cursor:pointer}
++      .nav-acct-txt{font-size:.85rem;font-weight:700}
++      .nav-acct{height:36px;padding:0 .8rem 0 .6rem;gap:.4rem;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#f4f1ea;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;flex:none}
++      .nav-acct:hover{border-color:#ff8a4c;background:rgba(255,138,76,.12)}
++      .nav-acct svg{width:18px;height:18px;display:block}
+ 
+       /* BTN */
+       .btn{
+@@ -754,7 +758,8 @@
+               '<a class="btn btn-primary" href="/studio">Open Studio</a>' +
+               '<button type="button" class="btn btn-ghost nav-logout" id="nav-logout">Log out</button>' +
+               '<a class="nav-acct" href="/account" title="Account - ' + (u.planLabel || "Free") + " plan, " + left + '" aria-label="Account">' +
+-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></a>';
++              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>' +
++              '<span class="nav-acct-txt">Account</span></a>';
+             document.getElementById("nav-logout").addEventListener("click", function () {
+               var b = this;
+               b.disabled = true;
