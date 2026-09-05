@@ -1,0 +1,74 @@
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index f17f53d..67d789b 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -359,6 +359,20 @@ function addBonusVideos(userId, amount) {
+   return { ok: true, bonusVideos: user.bonusVideos };
+ }
+ 
++/**
++ * Give one video back, e.g. when a job failed or the user deleted a job
++ * that never produced a clip. Never drops below zero.
++ */
++function refundVideo(userId) {
++  const users = readUsers();
++  const user = users.find((u) => u.id === userId);
++  if (!user) return { ok: false, error: "Account not found." };
++  const u = usageOf(user);
++  if (u.videos > 0) u.videos -= 1;
++  writeUsers(users);
++  return { ok: true, remaining: remainingVideos(user) };
++}
++
+ /** Owner action: wipe this month's usage for one account. */
+ function resetUsage(userId) {
+   const users = readUsers();
+@@ -389,6 +403,7 @@ module.exports = {
+   PLANS,
+   planOf,
+   remainingVideos,
++  refundVideo,
+   consumeVideo,
+   isAdmin,
+   listUsers,
+diff --git a/clipery/server.js b/clipery/server.js
+index 292b26b..ba41bb7 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -470,6 +470,14 @@ async function runQueueItem(item) {
+           job.status = "error";
+           job.error = e.message || String(e);
+           job.progress = 0;
++          // A failed job produced nothing, so it must not use up a video.
++          if (job.userId && !job.refunded && (!job.clips || !job.clips.length)) {
++            const r = auth.refundVideo(job.userId);
++            if (r.ok) {
++              job.refunded = true;
++              console.log(`[jobs] job ${id} failed - video given back to the account`);
++            }
++          }
+           writeJob(job);
+         }
+       }
+@@ -1148,9 +1156,19 @@ const server = http.createServer(async (req, res) => {
+       const job = readJob(id);
+       if (!job || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
+       if (job.status === "processing") return send(res, 409, { ok: false, error: "This video is still rendering. Wait until it finishes, then delete it." });
++      // A job that never produced a clip (failed, or deleted before
++      // rendering) should not cost a video. Finished jobs still count, so
++      // render -> download -> delete -> repeat cannot dodge the plan limit.
++      const empty = !Array.isArray(job.clips) || job.clips.length === 0;
++      const refund = empty && job.userId && !job.refunded;
+       deleteJob(id);
+-      console.log(`[jobs] ${me.email || me.id} deleted job ${id}`);
+-      return send(res, 200, { ok: true, id });
++      let remaining;
++      if (refund) {
++        const r = auth.refundVideo(job.userId);
++        if (r.ok) remaining = r.remaining === Infinity ? null : r.remaining;
++      }
++      console.log(`[jobs] ${me.email || me.id} deleted job ${id}${refund ? " (video refunded)" : ""}`);
++      return send(res, 200, { ok: true, id, refunded: !!refund, remaining });
+     }
+ 
+     // Job status
