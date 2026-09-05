@@ -359,6 +359,20 @@ function addBonusVideos(userId, amount) {
   return { ok: true, bonusVideos: user.bonusVideos };
 }
 
+/**
+ * Give one video back, e.g. when a job failed or the user deleted a job
+ * that never produced a clip. Never drops below zero.
+ */
+function refundVideo(userId) {
+  const users = readUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return { ok: false, error: "Account not found." };
+  const u = usageOf(user);
+  if (u.videos > 0) u.videos -= 1;
+  writeUsers(users);
+  return { ok: true, remaining: remainingVideos(user) };
+}
+
 /** Owner action: wipe this month's usage for one account. */
 function resetUsage(userId) {
   const users = readUsers();
@@ -389,6 +403,7 @@ module.exports = {
   PLANS,
   planOf,
   remainingVideos,
+  refundVideo,
   consumeVideo,
   isAdmin,
   listUsers,

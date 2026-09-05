@@ -470,6 +470,14 @@ async function runQueueItem(item) {
           job.status = "error";
           job.error = e.message || String(e);
           job.progress = 0;
+          // A failed job produced nothing, so it must not use up a video.
+          if (job.userId && !job.refunded && (!job.clips || !job.clips.length)) {
+            const r = auth.refundVideo(job.userId);
+            if (r.ok) {
+              job.refunded = true;
+              console.log(`[jobs] job ${id} failed - video given back to the account`);
+            }
+          }
           writeJob(job);
         }
       }
@@ -1148,9 +1156,19 @@ const server = http.createServer(async (req, res) => {
       const job = readJob(id);
       if (!job || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
       if (job.status === "processing") return send(res, 409, { ok: false, error: "This video is still rendering. Wait until it finishes, then delete it." });
+      // A job that never produced a clip (failed, or deleted before
+      // rendering) should not cost a video. Finished jobs still count, so
+      // render -> download -> delete -> repeat cannot dodge the plan limit.
+      const empty = !Array.isArray(job.clips) || job.clips.length === 0;
+      const refund = empty && job.userId && !job.refunded;
       deleteJob(id);
-      console.log(`[jobs] ${me.email || me.id} deleted job ${id}`);
-      return send(res, 200, { ok: true, id });
+      let remaining;
+      if (refund) {
+        const r = auth.refundVideo(job.userId);
+        if (r.ok) remaining = r.remaining === Infinity ? null : r.remaining;
+      }
+      console.log(`[jobs] ${me.email || me.id} deleted job ${id}${refund ? " (video refunded)" : ""}`);
+      return send(res, 200, { ok: true, id, refunded: !!refund, remaining });
     }
 
     // Job status
