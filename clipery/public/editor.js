@@ -16,7 +16,12 @@
   fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
     var owner = !!(d && d.user && d.user.isOwner);
     var b = $("btn-editor");
-    if (b) b.hidden = !owner;
+    if (b && owner) {
+      b.disabled = false;
+      b.removeAttribute("title");
+      var tag = b.querySelector(".soon-tag");
+      if (tag) tag.remove();
+    }
     if (!owner && new URLSearchParams(location.search).get("tool") === "editor") window.setStudioMode("long");
   }).catch(function () {});
 

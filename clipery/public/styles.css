@@ -2770,3 +2770,7 @@ body.studio-app {
 .ed-card .brain-panel { margin-top: .6rem; }
 @media (max-width: 640px) { .ed-choice { grid-template-columns: 1fr; } }
 .status-pill.review { background: rgba(255, 196, 66, 0.15); color: #ffc442; }
+
+/* Editor tab shown as "coming soon" until it opens to everyone */
+.mode-btn[disabled] { opacity: .55; cursor: not-allowed; pointer-events: none; }
+.soon-tag { display: inline-block; margin-left: .4rem; padding: .1rem .45rem; border-radius: 999px; font-size: .65rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; background: rgba(255,196,66,.18); color: #ffc442; vertical-align: middle; }
