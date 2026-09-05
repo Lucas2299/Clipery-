@@ -8,6 +8,7 @@ const { URL } = require("url");
 const crypto = require("crypto");
 const {
   processVideo,
+  deleteJob,
   renderReviewed,
   planManual,
   readJob,
@@ -1136,6 +1137,20 @@ const server = http.createServer(async (req, res) => {
       job.pendingRender = true;
       writeJob(job);
       return send(res, 202, { ok: true, jobId: id, ...q, jobUrl: `/job/${id}` });
+    }
+
+    // Delete one of your own jobs (clips, record and leftover source).
+    if (pathname.startsWith("/api/clip/") && req.method === "DELETE") {
+      const id = pathname.split("/").pop();
+      if (!/^[a-f0-9]+$/i.test(id || "")) return send(res, 400, { ok: false, error: "Bad job id" });
+      const me = auth.currentUser(req);
+      if (!me) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
+      const job = readJob(id);
+      if (!job || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
+      if (job.status === "processing") return send(res, 409, { ok: false, error: "This video is still rendering. Wait until it finishes, then delete it." });
+      deleteJob(id);
+      console.log(`[jobs] ${me.email || me.id} deleted job ${id}`);
+      return send(res, 200, { ok: true, id });
     }
 
     // Job status

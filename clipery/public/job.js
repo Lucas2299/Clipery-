@@ -134,3 +134,31 @@
     },
   });
 })();
+
+/* "Delete this video" under the title (your own videos only). */
+(function () {
+  var meta = document.getElementById("job-meta");
+  var m = /\/job\/([a-f0-9]+)/i.exec(location.pathname) || /[?&]id=([a-f0-9]+)/i.exec(location.search);
+  if (!meta || !m) return;
+  var id = m[1];
+  var b = document.createElement("button");
+  b.type = "button";
+  b.className = "job-del job-del-page";
+  b.textContent = "Delete this video";
+  b.addEventListener("click", async function () {
+    if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
+    b.disabled = true;
+    b.textContent = "Deleting...";
+    try {
+      var res = await fetch("/api/clip/" + encodeURIComponent(id), { method: "DELETE" });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
+      location.href = "/library";
+    } catch (e) {
+      alert(e.message);
+      b.disabled = false;
+      b.textContent = "Delete this video";
+    }
+  });
+  meta.parentNode.appendChild(b);
+})();

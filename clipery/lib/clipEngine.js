@@ -792,6 +792,35 @@ function readJob(id) {
   }
 }
 
+/**
+ * Delete a job for good: the record, the rendered clips and any source
+ * upload still lying around. Returns true when something was removed.
+ */
+function deleteJob(id) {
+  if (!/^[a-f0-9]+$/i.test(String(id || ""))) return false;
+  let removed = false;
+  const job = readJob(id);
+  const file = jobPath(id);
+  if (fs.existsSync(file)) {
+    fs.unlinkSync(file);
+    removed = true;
+  }
+  const dir = path.join(CLIPS_PUBLIC, id);
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+    removed = true;
+  }
+  try {
+    for (const f of fs.readdirSync(UPLOADS)) {
+      if (f.startsWith(id)) fs.rmSync(path.join(UPLOADS, f), { force: true });
+    }
+  } catch (_) {}
+  if (job && job.review && job.review.sourcePath) {
+    try { fs.rmSync(job.review.sourcePath, { force: true }); } catch (_) {}
+  }
+  return removed;
+}
+
 function writeJob(job) {
   fs.writeFileSync(jobPath(job.id), JSON.stringify(job, null, 2));
 }
@@ -1653,6 +1682,7 @@ module.exports = {
   MODES,
   processVideo,
   renderClip,
+  deleteJob,
   renderReviewed,
   planManual,
   readJob,

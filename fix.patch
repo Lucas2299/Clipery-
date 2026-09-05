@@ -1,43 +1,194 @@
-diff --git a/clipery/public/editor.js b/clipery/public/editor.js
-index 44e7c15..8a8ebf9 100644
---- a/clipery/public/editor.js
-+++ b/clipery/public/editor.js
-@@ -16,7 +16,12 @@
-   fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
-     var owner = !!(d && d.user && d.user.isOwner);
-     var b = $("btn-editor");
--    if (b) b.hidden = !owner;
-+    if (b && owner) {
-+      b.disabled = false;
-+      b.removeAttribute("title");
-+      var tag = b.querySelector(".soon-tag");
-+      if (tag) tag.remove();
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 229c8fc..bc31c7e 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -792,6 +792,35 @@ function readJob(id) {
+   }
+ }
+ 
++/**
++ * Delete a job for good: the record, the rendered clips and any source
++ * upload still lying around. Returns true when something was removed.
++ */
++function deleteJob(id) {
++  if (!/^[a-f0-9]+$/i.test(String(id || ""))) return false;
++  let removed = false;
++  const job = readJob(id);
++  const file = jobPath(id);
++  if (fs.existsSync(file)) {
++    fs.unlinkSync(file);
++    removed = true;
++  }
++  const dir = path.join(CLIPS_PUBLIC, id);
++  if (fs.existsSync(dir)) {
++    fs.rmSync(dir, { recursive: true, force: true });
++    removed = true;
++  }
++  try {
++    for (const f of fs.readdirSync(UPLOADS)) {
++      if (f.startsWith(id)) fs.rmSync(path.join(UPLOADS, f), { force: true });
 +    }
-     if (!owner && new URLSearchParams(location.search).get("tool") === "editor") window.setStudioMode("long");
-   }).catch(function () {});
- 
-diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index a226f2f..acefec9 100644
---- a/clipery/public/studio.html
-+++ b/clipery/public/studio.html
-@@ -140,7 +140,7 @@
-         <div class="mode-btns" id="mode-btns">
-           <button type="button" class="btn mode-btn on" id="btn-long" onclick="window.setStudioMode('long')">Long form</button>
-           <button type="button" class="btn mode-btn off" id="btn-rank" onclick="window.setStudioMode('rank')">Rank video</button>
--          <button type="button" class="btn mode-btn off" id="btn-editor" onclick="window.setStudioMode('editor')" hidden>Editor</button>
-+          <button type="button" class="btn mode-btn off" id="btn-editor" onclick="window.setStudioMode('editor')" disabled title="Coming soon">Editor <span class="soon-tag">Coming soon</span></button>
-         </div>
- 
-         <!-- EDITOR: review the AI plan or mark your own clips, then render -->
++  } catch (_) {}
++  if (job && job.review && job.review.sourcePath) {
++    try { fs.rmSync(job.review.sourcePath, { force: true }); } catch (_) {}
++  }
++  return removed;
++}
++
+ function writeJob(job) {
+   fs.writeFileSync(jobPath(job.id), JSON.stringify(job, null, 2));
+ }
+@@ -1653,6 +1682,7 @@ module.exports = {
+   MODES,
+   processVideo,
+   renderClip,
++  deleteJob,
+   renderReviewed,
+   planManual,
+   readJob,
+diff --git a/clipery/public/job.js b/clipery/public/job.js
+index 0a921e0..912cb50 100644
+--- a/clipery/public/job.js
++++ b/clipery/public/job.js
+@@ -134,3 +134,31 @@
+     },
+   });
+ })();
++
++/* "Delete this video" under the title (your own videos only). */
++(function () {
++  var meta = document.getElementById("job-meta");
++  var m = /\/job\/([a-f0-9]+)/i.exec(location.pathname) || /[?&]id=([a-f0-9]+)/i.exec(location.search);
++  if (!meta || !m) return;
++  var id = m[1];
++  var b = document.createElement("button");
++  b.type = "button";
++  b.className = "job-del job-del-page";
++  b.textContent = "Delete this video";
++  b.addEventListener("click", async function () {
++    if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
++    b.disabled = true;
++    b.textContent = "Deleting...";
++    try {
++      var res = await fetch("/api/clip/" + encodeURIComponent(id), { method: "DELETE" });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
++      location.href = "/library";
++    } catch (e) {
++      alert(e.message);
++      b.disabled = false;
++      b.textContent = "Delete this video";
++    }
++  });
++  meta.parentNode.appendChild(b);
++})();
+diff --git a/clipery/public/library.js b/clipery/public/library.js
+index 8e5cb8e..a965e15 100644
+--- a/clipery/public/library.js
++++ b/clipery/public/library.js
+@@ -65,3 +65,49 @@
+     } catch (_) {}
+   }, 4000);
+ })();
++
++/* Delete button on every row (your own videos only). */
++(function () {
++  var list = document.getElementById("job-list");
++  if (!list) return;
++  function decorate() {
++    var rows = list.querySelectorAll(".job-row");
++    for (var i = 0; i < rows.length; i++) {
++      var row = rows[i];
++      if (row.querySelector(".job-del")) continue;
++      var m = /\/(?:job\/|job=)([a-f0-9]+)/i.exec(row.getAttribute("href") || "");
++      if (!m) continue;
++      var b = document.createElement("button");
++      b.type = "button";
++      b.className = "job-del";
++      b.setAttribute("data-id", m[1]);
++      b.title = "Delete this video and its clips";
++      b.textContent = "Delete";
++      var pill = row.querySelector(".status-pill");
++      if (pill) row.insertBefore(b, pill);
++      else row.appendChild(b);
++    }
++  }
++  new MutationObserver(decorate).observe(list, { childList: true });
++  decorate();
++  list.addEventListener("click", async function (ev) {
++    var b = ev.target.closest ? ev.target.closest(".job-del") : null;
++    if (!b) return;
++    ev.preventDefault();
++    ev.stopPropagation();
++    if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
++    b.disabled = true;
++    b.textContent = "Deleting...";
++    try {
++      var res = await fetch("/api/clip/" + encodeURIComponent(b.getAttribute("data-id")), { method: "DELETE" });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
++      var row = b.closest(".job-row");
++      if (row) row.remove();
++    } catch (e) {
++      alert(e.message);
++      b.disabled = false;
++      b.textContent = "Delete";
++    }
++  });
++})();
 diff --git a/clipery/public/styles.css b/clipery/public/styles.css
-index d9c72ca..068b8b4 100644
+index 068b8b4..166c322 100644
 --- a/clipery/public/styles.css
 +++ b/clipery/public/styles.css
-@@ -2770,3 +2770,7 @@ body.studio-app {
- .ed-card .brain-panel { margin-top: .6rem; }
- @media (max-width: 640px) { .ed-choice { grid-template-columns: 1fr; } }
- .status-pill.review { background: rgba(255, 196, 66, 0.15); color: #ffc442; }
+@@ -1351,7 +1351,7 @@ textarea {
+ 
+ .job-row {
+   display: grid;
+-  grid-template-columns: 1fr auto auto;
++  grid-template-columns: 1fr auto auto auto;
+   gap: 1rem;
+   align-items: center;
+   padding: 1rem 1.15rem;
+@@ -2774,3 +2774,9 @@ body.studio-app {
+ /* Editor tab shown as "coming soon" until it opens to everyone */
+ .mode-btn[disabled] { opacity: .55; cursor: not-allowed; pointer-events: none; }
+ .soon-tag { display: inline-block; margin-left: .4rem; padding: .1rem .45rem; border-radius: 999px; font-size: .65rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; background: rgba(255,196,66,.18); color: #ffc442; vertical-align: middle; }
 +
-+/* Editor tab shown as "coming soon" until it opens to everyone */
-+.mode-btn[disabled] { opacity: .55; cursor: not-allowed; pointer-events: none; }
-+.soon-tag { display: inline-block; margin-left: .4rem; padding: .1rem .45rem; border-radius: 999px; font-size: .65rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; background: rgba(255,196,66,.18); color: #ffc442; vertical-align: middle; }
++/* Delete button on library rows */
++.job-del { background: transparent; border: 1px solid rgba(255, 107, 107, 0.45); color: #ff6b6b; border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.8rem; cursor: pointer; font-family: inherit; }
++.job-del:hover { background: rgba(255, 107, 107, 0.12); }
++.job-del[disabled] { opacity: 0.5; cursor: default; }
++.job-del-page { margin-top: 0.6rem; }
+diff --git a/clipery/server.js b/clipery/server.js
+index 3fef764..292b26b 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -8,6 +8,7 @@ const { URL } = require("url");
+ const crypto = require("crypto");
+ const {
+   processVideo,
++  deleteJob,
+   renderReviewed,
+   planManual,
+   readJob,
+@@ -1138,6 +1139,20 @@ const server = http.createServer(async (req, res) => {
+       return send(res, 202, { ok: true, jobId: id, ...q, jobUrl: `/job/${id}` });
+     }
+ 
++    // Delete one of your own jobs (clips, record and leftover source).
++    if (pathname.startsWith("/api/clip/") && req.method === "DELETE") {
++      const id = pathname.split("/").pop();
++      if (!/^[a-f0-9]+$/i.test(id || "")) return send(res, 400, { ok: false, error: "Bad job id" });
++      const me = auth.currentUser(req);
++      if (!me) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
++      const job = readJob(id);
++      if (!job || (job.userId !== me.id && !auth.isAdmin(me))) return send(res, 404, { ok: false, error: "Job not found" });
++      if (job.status === "processing") return send(res, 409, { ok: false, error: "This video is still rendering. Wait until it finishes, then delete it." });
++      deleteJob(id);
++      console.log(`[jobs] ${me.email || me.id} deleted job ${id}`);
++      return send(res, 200, { ok: true, id });
++    }
++
+     // Job status
+     if (pathname.startsWith("/api/clip/status/") && req.method === "GET") {
+       const id = pathname.split("/").pop();
