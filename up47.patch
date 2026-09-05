@@ -1,0 +1,336 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 60b46b7..973b5c4 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -557,7 +557,10 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+   // the crop expression needs (ffmpeg `t` restarts at 0 for the cut).
+   // The editor can pin the framing per clip: "follow" | "static" | "wide" | "center".
+   const forced = subOpts && subOpts.layout && ["follow", "static", "wide", "center"].includes(subOpts.layout) ? subOpts.layout : null;
+-  const det = forced === "wide" || forced === "center" ? null : await faceTrack(source, start, end);
++  const genre = (subOpts && subOpts.genre) || (srcMeta && srcMeta.genre) || "auto";
++  // Gaming never crops into the picture, so the face detector can be skipped.
++  const skipFaces = forced === "wide" || forced === "center" || (!forced && genre === "gaming");
++  const det = skipFaces ? null : await faceTrack(source, start, end);
+   const rf = reframeFilter({
+     samples: (det && det.track) || [],
+     srcW: (srcMeta && srcMeta.width) || 1920,
+@@ -565,8 +568,9 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+     outW: targetW,
+     outH: targetH,
+     force: forced,
++    genre,
+   });
+-  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : ""}`);
++  console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : genre !== "auto" ? ` [${genre}]` : ""}`);
+ 
+   const extras = [
+     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
+@@ -626,7 +630,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+ 
+   // Punch-in: a gentle 8% zoom while the line the clip is built around is
+   // spoken. Works for every layout because it sits after the crop/scale.
+-  if (EDIT_PUNCH_IN && editPlan && editPlan.anchor && trimmedWords && rf.layout !== "wide") {
++  if (EDIT_PUNCH_IN && editPlan && editPlan.anchor && trimmedWords && rf.layout !== "wide" && genre !== "gaming") {
+     const where = brains.edit.locateLine(trimmedWords, editPlan.anchor, dur - edits.trimmed);
+     if (where && where.to - where.from >= 1 && where.to - where.from <= 12) {
+       editV.push(brains.edit.punchInFilter(where.from, where.to, targetW, targetH));
+@@ -973,6 +977,7 @@ async function processVideo(sourcePath, options = {}) {
+     progress: 4,
+     mode: mode.id,
+     modeLabel: mode.label,
++    genre: options.genre || "auto",
+     createdAt: new Date().toISOString(),
+     sourceName: options.sourceName || path.basename(sourcePath),
+     subtitles: !!options.subtitles,
+@@ -986,6 +991,7 @@ async function processVideo(sourcePath, options = {}) {
+ 
+   try {
+     const meta = await probe(sourcePath);
++    meta.genre = options.genre || "auto";
+     if (!meta.duration || meta.duration < 8) {
+       throw new Error("Video is too short. Use at least ~15 seconds.");
+     }
+@@ -1269,7 +1275,7 @@ async function processVideo(sourcePath, options = {}) {
+       job.progress = 50;
+       job.review = {
+         sourcePath,
+-        meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
++        meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio, genre: meta.genre || "auto" },
+         words: videoWords || null,
+         options: {
+           subtitles: !!options.subtitles,
+@@ -1526,6 +1532,7 @@ async function planManual(sourcePath, options = {}) {
+     subtitles: !!options.subtitles,
+     hook: false,
+     manual: true,
++    genre: options.genre || "auto",
+     clips: [],
+     rankings: [],
+     error: null,
+@@ -1533,6 +1540,7 @@ async function planManual(sourcePath, options = {}) {
+   writeJob(job);
+   try {
+     const meta = await probe(sourcePath);
++    meta.genre = options.genre || "auto";
+     if (!meta.duration || meta.duration < 3) throw new Error("Video is too short.");
+     const maxMinutes = Number(options.maxMinutes) || 20;
+     if (meta.duration > maxMinutes * 60) {
+@@ -1557,7 +1565,7 @@ async function planManual(sourcePath, options = {}) {
+     job.progress = 50;
+     job.review = {
+       sourcePath,
+-      meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio },
++      meta: { width: meta.width, height: meta.height, duration: meta.duration, hasAudio: meta.hasAudio, genre: meta.genre || "auto" },
+       words,
+       options: {
+         subtitles: !!options.subtitles,
+diff --git a/clipery/lib/reframe.js b/clipery/lib/reframe.js
+index 15f265b..3824bd7 100644
+--- a/clipery/lib/reframe.js
++++ b/clipery/lib/reframe.js
+@@ -206,6 +206,45 @@ function chooseLayout(samples, srcW, srcH, cropFrac) {
+   return "static";
+ }
+ 
++/**
++ * What kind of video is this? The user tells us, and it changes how eager
++ * the camera is:
++ *
++ *  podcast - people talking at a desk. Faces are everything: follow the
++ *            speaker, and if two people share the shot keep them both.
++ *  gaming  - the gameplay IS the content. A face cam is small and in a
++ *            corner, so never zoom into it: keep the full picture.
++ *  stream  - a streamer reacting. The person matters, but so does what is
++ *            happening around them: follow the face, allow more movement,
++ *            fall back to full picture when the face is lost.
++ *  talking - one person to camera (vlog, lecture). Lock on the face.
++ *  auto    - the old behaviour, decide from the face track alone.
++ */
++const GENRES = ["auto", "podcast", "gaming", "stream", "talking"];
++function applyGenre(layout, genre, samples, cropFrac) {
++  const g = GENRES.includes(genre) ? genre : "auto";
++  if (g === "auto") return layout;
++  const seen = seenOnly(samples);
++  const coverage = faceCoverage(samples);
++  if (g === "gaming") return "wide";
++  if (g === "podcast") {
++    if (seen.length < 2) return "center";
++    // Both hosts on screen most of the time -> keep both in the window
++    // rather than cutting one off at the edge.
++    if (simultaneousSpread(samples) > cropFrac * 0.8) return "wide";
++    return coverage < 0.2 ? "static" : "follow";
++  }
++  if (g === "stream") {
++    if (seen.length < 2 || coverage < 0.25) return "wide";
++    return "follow";
++  }
++  if (g === "talking") {
++    if (seen.length < 2) return "center";
++    return layout === "wide" ? "static" : layout === "follow" && coverage > 0.6 ? "follow" : "static";
++  }
++  return layout;
++}
++
+ /** ffmpeg-safe number. */
+ const n2 = (v) => (Math.round(v * 100) / 100).toString();
+ 
+@@ -265,6 +304,7 @@ function reframeFilter(o) {
+   // The editor can pin a layout; "follow"/"static" still need faces to work
+   // with, so they fall back to centre when the detector saw nobody.
+   let layout = chooseLayout(o.samples, srcW, srcH, cropFrac);
++  layout = applyGenre(layout, o.genre, o.samples, cropFrac);
+   if (o.force === "wide" || o.force === "center") layout = o.force;
+   else if (o.force === "follow" || o.force === "static") layout = seenOnly(o.samples).length >= 2 ? o.force : "center";
+ 
+@@ -328,6 +368,8 @@ function reframeFilter(o) {
+ }
+ 
+ module.exports = {
++  GENRES,
++  applyGenre,
+   buildCameraPath,
+   cropExpr,
+   chooseLayout,
+diff --git a/clipery/public/editor.js b/clipery/public/editor.js
+index 8a8ebf9..777e36f 100644
+--- a/clipery/public/editor.js
++++ b/clipery/public/editor.js
+@@ -92,12 +92,13 @@
+         var fd = new FormData();
+         fd.append("video", file, file.name);
+         fd.append("manual", how() === "manual" ? "1" : "0");
++        fd.append("genre", window.clipGenre ? window.clipGenre("ed") : "auto");
+         fd.append("subtitles", subsT && subsT.checked ? "1" : "0");
+         fd.append("subColor", st.color); fd.append("subSize", st.size); fd.append("subPos", st.pos); fd.append("subStyle", st.style);
+         res = await fetch("/api/editor/upload", { method: "POST", body: fd });
+       } else {
+         res = await fetch("/api/editor/from-url", { method: "POST", headers: { "Content-Type": "application/json" },
+-          body: JSON.stringify({ url: link, manual: how() === "manual" ? "1" : "0", subtitles: subsT && subsT.checked ? "1" : "0",
++          body: JSON.stringify({ url: link, manual: how() === "manual" ? "1" : "0", genre: window.clipGenre ? window.clipGenre("ed") : "auto", subtitles: subsT && subsT.checked ? "1" : "0",
+             subColor: st.color, subSize: st.size, subPos: st.pos, subStyle: st.style }) });
+       }
+       var data = await res.json().catch(function () { return {}; });
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index acefec9..4fa13d7 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -163,6 +163,8 @@
+             </div>
+             <p class="pro-filename" id="ed-fname" hidden></p>
+ 
++            <div class="genre-pick" id="ed-genre"></div>
++
+             <div class="ed-choice">
+               <label class="ed-radio"><input type="radio" name="ed-how" value="ai" checked /> <span><b>AI suggests clips</b><small>AI finds the moments, you review and adjust</small></span></label>
+               <label class="ed-radio"><input type="radio" name="ed-how" value="manual" /> <span><b>I mark my own clips</b><small>No AI picks - you set start and end for each clip</small></span></label>
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index cfcfcaa..5e0b50a 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -28,6 +28,42 @@
+     t.addEventListener("change", sync);
+     sync();
+   }
++  // "What kind of video is this?" - tells the camera how to behave.
++  // Injected here (not in the HTML) so it sits right under the file row.
++  var GENRES = [
++    ["auto", "Let AI decide", "Looks at the faces and picks"],
++    ["podcast", "Podcast / interview", "Follows whoever is talking, keeps both hosts in"],
++    ["talking", "Talking to camera", "One person: locked on the face"],
++    ["stream", "Stream / reaction", "Follows the streamer, more movement"],
++    ["gaming", "Gaming", "Full picture, never zooms into the face cam"]
++  ];
++  function genreHtml(prefix) {
++    var h = '<div class="genre-title">What kind of video is this?</div><div class="genre-row">';
++    for (var i = 0; i < GENRES.length; i++) {
++      var g = GENRES[i];
++      h += '<label class="genre-opt"><input type="radio" name="' + prefix + '-genre" value="' + g[0] + '"' + (i === 0 ? " checked" : "") + " /><span><b>" + g[1] + "</b><small>" + g[2] + "</small></span></label>";
++    }
++    return h + "</div>";
++  }
++  function mountGenre(prefix, afterId) {
++    var host = $(prefix + "-genre");
++    if (!host) {
++      var after = $(afterId);
++      if (!after || !after.parentNode) return;
++      host = document.createElement("div");
++      host.className = "genre-pick";
++      host.id = prefix + "-genre";
++      after.parentNode.insertBefore(host, after.nextSibling);
++    }
++    host.innerHTML = genreHtml(prefix);
++  }
++  window.clipGenre = function (prefix) {
++    var r = document.querySelector('input[name="' + prefix + '-genre"]:checked');
++    return r ? r.value : "auto";
++  };
++  mountGenre("long", "long-fname");
++  mountGenre("ed", "ed-fname");
++
+   wireSubToggle("long-subs", "long-substyle");
+   wireSubToggle("rank-subs", "rank-substyle");
+ 
+@@ -602,6 +638,7 @@
+           var fd = new FormData();
+           fd.append("video", fileObj, fileObj.name || "video.mp4");
+           fd.append("mode", "viral");
++          fd.append("genre", window.clipGenre("long"));
+           fd.append("subtitles", wantSubs ? "1" : "0");
+           fd.append("subColor", longStyle.color);
+           fd.append("subSize", longStyle.size);
+@@ -619,6 +656,7 @@
+             body: JSON.stringify({
+               url: url,
+               mode: "viral",
++              genre: window.clipGenre("long"),
+               subtitles: wantSubs,
+               subColor: longStyle.color,
+               subSize: longStyle.size,
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index 166c322..092118b 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2780,3 +2780,15 @@ body.studio-app {
+ .job-del:hover { background: rgba(255, 107, 107, 0.12); }
+ .job-del[disabled] { opacity: 0.5; cursor: default; }
+ .job-del-page { margin-top: 0.6rem; }
++
++/* "What kind of video is this?" picker */
++.genre-pick { margin: 0.9rem 0 0.4rem; }
++.genre-title { font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.45rem; }
++.genre-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; }
++.genre-opt { position: relative; display: block; cursor: pointer; }
++.genre-opt input { position: absolute; opacity: 0; pointer-events: none; }
++.genre-opt span { display: block; padding: 0.55rem 0.7rem; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; background: rgba(255,255,255,0.03); transition: border-color .15s, background .15s; }
++.genre-opt b { display: block; font-size: 0.88rem; }
++.genre-opt small { display: block; font-size: 0.72rem; opacity: 0.65; margin-top: 0.15rem; line-height: 1.3; }
++.genre-opt input:checked + span { border-color: var(--accent-2, #7c5cff); background: rgba(124, 92, 255, 0.12); }
++.genre-opt:hover span { border-color: rgba(255,255,255,0.28); }
+diff --git a/clipery/server.js b/clipery/server.js
+index e4f10f1..876256e 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -520,6 +520,12 @@ function wantSubtitles(v) {
+ }
+ 
+ // get is a lookup: (fieldName) => string value (multipart part or JSON field)
++// What kind of video: changes how the camera behaves (see lib/reframe.js).
++function readGenre(v) {
++  const g = String(v || "auto").toLowerCase().trim();
++  return ["auto", "podcast", "gaming", "stream", "talking"].includes(g) ? g : "auto";
++}
++
+ function readSubStyle(get) {
+   return normalizeSubStyle({
+     color: get("subColor"),
+@@ -967,11 +973,12 @@ const server = http.createServer(async (req, res) => {
+       if (!owner) return;
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.writeFileSync(dest, filePart.body);
+-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends });
++      const genre = readGenre(get("genre"));
++      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends, genre });
+       const q = enqueue(dest, {
+         userId: owner && owner.id,
+         ...owner.planLimits,
+-        jobId, sourceName: orig, mode, subtitles, subStyle,
++        jobId, sourceName: orig, mode, subtitles, subStyle, genre,
+         hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+       });
+       return send(res, 202, {
+@@ -1005,8 +1012,10 @@ const server = http.createServer(async (req, res) => {
+       const jobId = crypto.randomBytes(6).toString("hex");
+       const owner = chargeVideo(req, res);
+       if (!owner) return;
++      const genre = readGenre(body.genre);
+       seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits,
+         mode,
++        genre,
+         sourceName: videoUrl.slice(0, 80),
+         subtitles,
+         subStyle,
+@@ -1020,7 +1029,7 @@ const server = http.createServer(async (req, res) => {
+         meta: {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+-          jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle,
++          jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
+           hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
+         },
+       });
+@@ -1066,6 +1075,7 @@ const server = http.createServer(async (req, res) => {
+       const meta = {
+         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
+         subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, trends,
++        genre: readGenre(get("genre")),
+         review: true, manual, editor: true,
+       };
+       seedJob(jobId, meta);
+@@ -1097,6 +1107,7 @@ const server = http.createServer(async (req, res) => {
+       const meta = {
+         userId: owner.id, ...owner.planLimits, jobId, sourceName: videoUrl.slice(0, 120), mode,
+         subtitles, subStyle, hook: false, hookMode: "intro", trends: [],
++        genre: readGenre(body.genre),
+         review: true, manual, editor: true,
+       };
+       seedJob(jobId, meta);
