@@ -2820,3 +2820,7 @@ body.studio-app {
 /* Pricing page: highlight the plan you are on */
 .price-card.current { border-color: rgba(200, 245, 66, 0.5); box-shadow: 0 0 0 1px rgba(200, 245, 66, 0.25) inset; }
 .price-card.current h3::after { content: "Current"; margin-left: 0.5rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(200, 245, 66, 0.15); color: #c8f542; vertical-align: middle; }
+
+/* Studio button in the page header: bigger, sits on the right */
+.nav .nav-studio { padding: 0.6rem 1.2rem; font-size: 0.92rem; margin-left: 0.4rem; color: #fff; }
+.nav .nav-studio.active { color: #fff; }
