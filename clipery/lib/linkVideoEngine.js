@@ -699,6 +699,7 @@ async function processMultiRank(sources, options = {}) {
     job.progress = 100;
     job.completedAt = new Date().toISOString();
     job.clips = clips;
+    try { require("./clipEngine").recordStats(clips); } catch (_) {}
     writeJob(job);
 
     // cleanup work dir (keep outputs)
