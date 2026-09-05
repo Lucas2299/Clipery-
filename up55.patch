@@ -1,0 +1,28 @@
+diff --git a/clipery/public/account.html b/clipery/public/account.html
+index e0fa9af..dd5e968 100644
+--- a/clipery/public/account.html
++++ b/clipery/public/account.html
+@@ -6,7 +6,7 @@
+     <title>Account - Clipery</title>
+     <meta name="theme-color" content="#07070b" />
+     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+-    <link rel="stylesheet" href="/styles.css?v=53" />
++    <link rel="stylesheet" href="/styles.css?v=56" />
+   </head>
+   <body>
+     <div class="bg-grid" aria-hidden="true"></div>
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index 03cbf6d..62fc587 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2809,8 +2809,8 @@ body.studio-app {
+ .acct-form-col { flex-direction: column; align-items: flex-start; }
+ .acct-form input,
+ .acct-form input[type="text"],
+-.acct-form input[type="password"] { flex: 0 1 260px; width: 100%; max-width: 260px; height: 30px !important; min-height: 0 !important; line-height: 30px; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 7px; color: inherit; padding: 0 0.6rem !important; margin: 0; font: inherit; font-size: 0.85rem; }
+-.acct-form-col { gap: 0.45rem; }
++.acct-form input[type="password"] { flex: none; width: 260px; max-width: 100%; height: 34px !important; min-height: 0 !important; line-height: normal; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: inherit; padding: 0 0.7rem !important; margin: 0; font: inherit; font-size: 0.88rem; }
++.acct-form-col { flex-direction: row; align-items: center; gap: 0.6rem; }
+ .acct-form .btn { padding: 0.45rem 0.9rem; font-size: 0.88rem; }
+ .acct-form input:focus { outline: none; border-color: var(--accent-2, #7c5cff); }
+ .nav-acct { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #f4f1ea; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex: none; }
