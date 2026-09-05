@@ -1,0 +1,149 @@
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index f166e47..8aa8c7b 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -20,66 +20,67 @@
+           <a href="/rank" data-nav>Rank video</a>
+           <a href="/library" data-nav class="nav-hide-sm">Library</a>
+           <a href="/pricing" data-nav>Pricing</a>
+-          <a class="btn btn-primary btn-sm" href="/waitlist">Join waitlist</a>
++          <a class="btn btn-primary btn-sm" href="/studio">Open studio</a>
+         </nav>
+       </div>
+     </header>
+ 
+     <main class="page container">
+       <div class="page-hero" style="text-align: center; margin-inline: auto">
+-        <div class="eyebrow">Founding pricing</div>
+-        <h1>Service packages when you’re ready to scale</h1>
+-        <p style="margin-inline: auto">
+-          The studio demo is free to try. These packages are the done-for-you Clipery desk —
+-          human taste pass, weekly volume, and TikTok research. Join the waitlist to lock founding rates.
+-        </p>
++        <div class="eyebrow">Pricing</div>
++        <h1>Start free. Scale when you blow up.</h1>
++        <p style="margin-inline: auto">Plans sized for every creator - from free testing to serious volume.</p>
++        <p class="muted" id="plan-current" hidden style="margin-inline: auto"></p>
+       </div>
+ 
+       <div class="pricing-grid">
+-        <div class="price-card">
+-          <h3>Spark</h3>
+-          <div class="price">$497 <span>/ mo</span></div>
+-          <p class="blurb">Creators testing short-form consistency.</p>
++        <div class="price-card" data-plan="free">
++          <h3>Starter</h3>
++          <div class="price">$0 <span>/ month</span></div>
++          <p class="blurb">Try the studio with no card.</p>
+           <ul>
+-            <li>1 long video / week</li>
+-            <li>Viral or Ranking mode</li>
+-            <li>12–20 ranked clips</li>
+-            <li>Drive delivery</li>
++            <li>3 videos per month</li>
++            <li>5 AI clips per video</li>
++            <li>Viral score &amp; ranking</li>
++            <li>9:16 exports</li>
++            <li>Library access</li>
+           </ul>
+-          <a class="btn btn-ghost btn-block" href="/waitlist">Join waitlist</a>
++          <a class="btn btn-ghost btn-block" href="/studio">Start free</a>
+         </div>
+-        <div class="price-card featured">
++        <div class="price-card featured" data-plan="pro">
+           <span class="tag">Most popular</span>
+-          <h3>Foundry</h3>
+-          <div class="price">$997 <span>/ mo</span></div>
+-          <p class="blurb">Full clip engine for serious publishers.</p>
++          <h3>Pro</h3>
++          <div class="price">$19 <span>/ month</span></div>
++          <p class="blurb">For creators posting every week.</p>
+           <ul>
+-            <li>Up to 4 long videos / mo</li>
+-            <li>40–80 ranked clips</li>
+-            <li>Brand kit + caption styles</li>
+-            <li>TikTok link research (15/mo)</li>
+-            <li>Posting calendar</li>
++            <li>25 videos per month</li>
++            <li>12 AI clips per video</li>
++            <li>Rank video (up to 5 sources)</li>
++            <li>Batch processing</li>
++            <li>Priority AI queue</li>
++            <li>Compilation exports</li>
+           </ul>
+-          <a class="btn btn-primary btn-block" href="/waitlist">Join waitlist</a>
++          <a class="btn btn-primary btn-block" href="/waitlist">Get Pro</a>
+         </div>
+-        <div class="price-card">
+-          <h3>Autopilot</h3>
+-          <div class="price">$1,997 <span>/ mo</span></div>
+-          <p class="blurb">Hands-off growth for brands &amp; teams.</p>
++        <div class="price-card" data-plan="unlimited">
++          <h3>Studio</h3>
++          <div class="price">$49 <span>/ month</span></div>
++          <p class="blurb">For teams and high-volume channels.</p>
+           <ul>
+-            <li>Everything in Foundry</li>
+-            <li>We schedule &amp; post</li>
+-            <li>Weekly performance review</li>
+-            <li>Competitor TikTok tracking</li>
+-            <li>Priority turnaround</li>
++            <li>Unlimited videos / month</li>
++            <li>20 AI clips per video</li>
++            <li>Everything in Pro</li>
++            <li>Deep ranking analytics</li>
++            <li>Team-ready clip library</li>
++            <li>Fastest processing lane</li>
+           </ul>
+-          <a class="btn btn-ghost btn-block" href="/waitlist">Join waitlist</a>
++          <a class="btn btn-ghost btn-block" href="/waitlist">Get Studio</a>
+         </div>
+       </div>
+ 
+       <div class="cta-band" style="margin-top: 2.5rem">
+         <h2>Want to try before you buy?</h2>
+-        <p>Run the live studio now — sample video and uploads both work.</p>
++        <p>Run the live studio now - uploads and YouTube links both work.</p>
+         <div class="inline-actions">
+           <a class="btn btn-primary" href="/studio">Open studio</a>
+           <a class="btn btn-ghost" href="/rank">Rank video</a>
+@@ -100,6 +101,26 @@
+       </div>
+     </footer>
+     <script src="/shared.js?v=2"></script>
+-      <script src="/auth-modal.js"></script>
++    <script src="/auth-modal.js"></script>
++    <script>
++      // Mark the plan the logged-in account is on.
++      fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
++        if (!d || !d.user) return;
++        var plan = d.user.plan || "free";
++        var map = { free: "free", plus: "pro", pro: "pro", unlimited: "unlimited" };
++        var card = document.querySelector('.price-card[data-plan="' + (map[plan] || "free") + '"]');
++        if (card) {
++          card.classList.add("current");
++          var a = card.querySelector("a.btn");
++          if (a) { a.textContent = "Your current plan"; a.setAttribute("href", "/account"); a.classList.remove("btn-primary"); a.classList.add("btn-ghost"); }
++        }
++        var note = document.getElementById("plan-current");
++        if (note) {
++          var left = d.user.videosTotal == null ? "unlimited videos" : (d.user.videosLeft == null ? 0 : d.user.videosLeft) + " of " + d.user.videosTotal + " videos left this month";
++          note.textContent = "You are on the " + (d.user.planLabel || "Free") + " plan - " + left + ".";
++          note.hidden = false;
++        }
++      }).catch(function () {});
++    </script>
+   </body>
+ </html>
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index 62fc587..ba1cafc 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2816,3 +2816,7 @@ body.studio-app {
+ .nav-acct { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #f4f1ea; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex: none; }
+ .nav-acct:hover { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.1); }
+ .nav-acct svg { width: 18px; height: 18px; }
++
++/* Pricing page: highlight the plan you are on */
++.price-card.current { border-color: rgba(200, 245, 66, 0.5); box-shadow: 0 0 0 1px rgba(200, 245, 66, 0.25) inset; }
++.price-card.current h3::after { content: "Current"; margin-left: 0.5rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(200, 245, 66, 0.15); color: #c8f542; vertical-align: middle; }
