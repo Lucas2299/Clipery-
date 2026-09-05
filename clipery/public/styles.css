@@ -2816,3 +2816,7 @@ body.studio-app {
 .nav-acct { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #f4f1ea; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex: none; }
 .nav-acct:hover { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.1); }
 .nav-acct svg { width: 18px; height: 18px; }
+
+/* Pricing page: highlight the plan you are on */
+.price-card.current { border-color: rgba(200, 245, 66, 0.5); box-shadow: 0 0 0 1px rgba(200, 245, 66, 0.25) inset; }
+.price-card.current h3::after { content: "Current"; margin-left: 0.5rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(200, 245, 66, 0.15); color: #c8f542; vertical-align: middle; }
