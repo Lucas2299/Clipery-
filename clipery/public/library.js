@@ -39,9 +39,6 @@
             '">' +
             CF.escapeHtml(st) +
             "</span>" +
-            '<button type="button" class="job-del" data-id="' +
-            j.id +
-            '" title="Delete this video and its clips">Delete</button>' +
             '<span class="score-cell">' +
             (j.topScore != null ? j.topScore : "—") +
             "</span>" +
@@ -52,31 +49,6 @@
     } catch (_) {
       list.innerHTML = '<div class="empty error-text">Network error.</div>';
     }
-  }
-
-  if (list) {
-    list.addEventListener("click", async function (ev) {
-      var b = ev.target.closest ? ev.target.closest(".job-del") : null;
-      if (!b) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      var id = b.getAttribute("data-id");
-      if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
-      b.disabled = true;
-      b.textContent = "Deleting...";
-      try {
-        var res = await fetch("/api/clip/" + encodeURIComponent(id), { method: "DELETE" });
-        var data = await res.json().catch(function () { return {}; });
-        if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
-        var row = b.closest(".job-row");
-        if (row) row.remove();
-        if (!list.querySelector(".job-row")) load();
-      } catch (e) {
-        alert(e.message);
-        b.disabled = false;
-        b.textContent = "Delete";
-      }
-    });
   }
 
   if (btn) btn.addEventListener("click", load);
@@ -92,4 +64,50 @@
       if (busy) load();
     } catch (_) {}
   }, 4000);
+})();
+
+/* Delete button on every row (your own videos only). */
+(function () {
+  var list = document.getElementById("job-list");
+  if (!list) return;
+  function decorate() {
+    var rows = list.querySelectorAll(".job-row");
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      if (row.querySelector(".job-del")) continue;
+      var m = /\/(?:job\/|job=)([a-f0-9]+)/i.exec(row.getAttribute("href") || "");
+      if (!m) continue;
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "job-del";
+      b.setAttribute("data-id", m[1]);
+      b.title = "Delete this video and its clips";
+      b.textContent = "Delete";
+      var pill = row.querySelector(".status-pill");
+      if (pill) row.insertBefore(b, pill);
+      else row.appendChild(b);
+    }
+  }
+  new MutationObserver(decorate).observe(list, { childList: true });
+  decorate();
+  list.addEventListener("click", async function (ev) {
+    var b = ev.target.closest ? ev.target.closest(".job-del") : null;
+    if (!b) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
+    b.disabled = true;
+    b.textContent = "Deleting...";
+    try {
+      var res = await fetch("/api/clip/" + encodeURIComponent(b.getAttribute("data-id")), { method: "DELETE" });
+      var data = await res.json().catch(function () { return {}; });
+      if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
+      var row = b.closest(".job-row");
+      if (row) row.remove();
+    } catch (e) {
+      alert(e.message);
+      b.disabled = false;
+      b.textContent = "Delete";
+    }
+  });
 })();

@@ -47,89 +47,95 @@ index 229c8fc..bc31c7e 100644
    planManual,
    readJob,
 diff --git a/clipery/public/job.js b/clipery/public/job.js
-index 0a921e0..38e3c88 100644
+index 0a921e0..912cb50 100644
 --- a/clipery/public/job.js
 +++ b/clipery/public/job.js
-@@ -28,7 +28,33 @@
-     return;
-   }
- 
-+  var delBtn = null;
-+  function ensureDelete(job) {
-+    if (delBtn || !meta || !meta.parentNode) return;
-+    delBtn = document.createElement("button");
-+    delBtn.type = "button";
-+    delBtn.className = "job-del job-del-page";
-+    delBtn.textContent = "Delete this video";
-+    delBtn.addEventListener("click", async function () {
-+      if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
-+      delBtn.disabled = true;
-+      delBtn.textContent = "Deleting...";
-+      try {
-+        var res = await fetch("/api/clip/" + encodeURIComponent(job.id), { method: "DELETE" });
-+        var data = await res.json().catch(function () { return {}; });
-+        if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
-+        location.href = "/library";
-+      } catch (e) {
-+        alert(e.message);
-+        delBtn.disabled = false;
-+        delBtn.textContent = "Delete this video";
-+      }
-+    });
-+    meta.parentNode.appendChild(delBtn);
-+  }
+@@ -134,3 +134,31 @@
+     },
+   });
+ })();
 +
-   function render(job) {
-+    ensureDelete(job);
-     document.title = (job.sourceName || "Job") + " · Clipery";
-     if (title) title.textContent = job.sourceName || "Clip job";
-     if (meta) {
++/* "Delete this video" under the title (your own videos only). */
++(function () {
++  var meta = document.getElementById("job-meta");
++  var m = /\/job\/([a-f0-9]+)/i.exec(location.pathname) || /[?&]id=([a-f0-9]+)/i.exec(location.search);
++  if (!meta || !m) return;
++  var id = m[1];
++  var b = document.createElement("button");
++  b.type = "button";
++  b.className = "job-del job-del-page";
++  b.textContent = "Delete this video";
++  b.addEventListener("click", async function () {
++    if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
++    b.disabled = true;
++    b.textContent = "Deleting...";
++    try {
++      var res = await fetch("/api/clip/" + encodeURIComponent(id), { method: "DELETE" });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
++      location.href = "/library";
++    } catch (e) {
++      alert(e.message);
++      b.disabled = false;
++      b.textContent = "Delete this video";
++    }
++  });
++  meta.parentNode.appendChild(b);
++})();
 diff --git a/clipery/public/library.js b/clipery/public/library.js
-index 8e5cb8e..67c9abc 100644
+index 8e5cb8e..a965e15 100644
 --- a/clipery/public/library.js
 +++ b/clipery/public/library.js
-@@ -39,6 +39,9 @@
-             '">' +
-             CF.escapeHtml(st) +
-             "</span>" +
-+            '<button type="button" class="job-del" data-id="' +
-+            j.id +
-+            '" title="Delete this video and its clips">Delete</button>' +
-             '<span class="score-cell">' +
-             (j.topScore != null ? j.topScore : "—") +
-             "</span>" +
-@@ -51,6 +54,31 @@
-     }
-   }
- 
-+  if (list) {
-+    list.addEventListener("click", async function (ev) {
-+      var b = ev.target.closest ? ev.target.closest(".job-del") : null;
-+      if (!b) return;
-+      ev.preventDefault();
-+      ev.stopPropagation();
-+      var id = b.getAttribute("data-id");
-+      if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
-+      b.disabled = true;
-+      b.textContent = "Deleting...";
-+      try {
-+        var res = await fetch("/api/clip/" + encodeURIComponent(id), { method: "DELETE" });
-+        var data = await res.json().catch(function () { return {}; });
-+        if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
-+        var row = b.closest(".job-row");
-+        if (row) row.remove();
-+        if (!list.querySelector(".job-row")) load();
-+      } catch (e) {
-+        alert(e.message);
-+        b.disabled = false;
-+        b.textContent = "Delete";
-+      }
-+    });
-+  }
+@@ -65,3 +65,49 @@
+     } catch (_) {}
+   }, 4000);
+ })();
 +
-   if (btn) btn.addEventListener("click", load);
-   load();
-   // auto-refresh if any processing
++/* Delete button on every row (your own videos only). */
++(function () {
++  var list = document.getElementById("job-list");
++  if (!list) return;
++  function decorate() {
++    var rows = list.querySelectorAll(".job-row");
++    for (var i = 0; i < rows.length; i++) {
++      var row = rows[i];
++      if (row.querySelector(".job-del")) continue;
++      var m = /\/(?:job\/|job=)([a-f0-9]+)/i.exec(row.getAttribute("href") || "");
++      if (!m) continue;
++      var b = document.createElement("button");
++      b.type = "button";
++      b.className = "job-del";
++      b.setAttribute("data-id", m[1]);
++      b.title = "Delete this video and its clips";
++      b.textContent = "Delete";
++      var pill = row.querySelector(".status-pill");
++      if (pill) row.insertBefore(b, pill);
++      else row.appendChild(b);
++    }
++  }
++  new MutationObserver(decorate).observe(list, { childList: true });
++  decorate();
++  list.addEventListener("click", async function (ev) {
++    var b = ev.target.closest ? ev.target.closest(".job-del") : null;
++    if (!b) return;
++    ev.preventDefault();
++    ev.stopPropagation();
++    if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
++    b.disabled = true;
++    b.textContent = "Deleting...";
++    try {
++      var res = await fetch("/api/clip/" + encodeURIComponent(b.getAttribute("data-id")), { method: "DELETE" });
++      var data = await res.json().catch(function () { return {}; });
++      if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
++      var row = b.closest(".job-row");
++      if (row) row.remove();
++    } catch (e) {
++      alert(e.message);
++      b.disabled = false;
++      b.textContent = "Delete";
++    }
++  });
++})();
 diff --git a/clipery/public/styles.css b/clipery/public/styles.css
 index 068b8b4..166c322 100644
 --- a/clipery/public/styles.css
