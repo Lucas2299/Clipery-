@@ -92,12 +92,13 @@
         var fd = new FormData();
         fd.append("video", file, file.name);
         fd.append("manual", how() === "manual" ? "1" : "0");
+        fd.append("genre", window.clipGenre ? window.clipGenre("ed") : "auto");
         fd.append("subtitles", subsT && subsT.checked ? "1" : "0");
         fd.append("subColor", st.color); fd.append("subSize", st.size); fd.append("subPos", st.pos); fd.append("subStyle", st.style);
         res = await fetch("/api/editor/upload", { method: "POST", body: fd });
       } else {
         res = await fetch("/api/editor/from-url", { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: link, manual: how() === "manual" ? "1" : "0", subtitles: subsT && subsT.checked ? "1" : "0",
+          body: JSON.stringify({ url: link, manual: how() === "manual" ? "1" : "0", genre: window.clipGenre ? window.clipGenre("ed") : "auto", subtitles: subsT && subsT.checked ? "1" : "0",
             subColor: st.color, subSize: st.size, subPos: st.pos, subStyle: st.style }) });
       }
       var data = await res.json().catch(function () { return {}; });

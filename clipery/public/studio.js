@@ -28,6 +28,42 @@
     t.addEventListener("change", sync);
     sync();
   }
+  // "What kind of video is this?" - tells the camera how to behave.
+  // Injected here (not in the HTML) so it sits right under the file row.
+  var GENRES = [
+    ["auto", "Let AI decide", "Looks at the faces and picks"],
+    ["podcast", "Podcast / interview", "Follows whoever is talking, keeps both hosts in"],
+    ["talking", "Talking to camera", "One person: locked on the face"],
+    ["stream", "Stream / reaction", "Follows the streamer, more movement"],
+    ["gaming", "Gaming", "Full picture, never zooms into the face cam"]
+  ];
+  function genreHtml(prefix) {
+    var h = '<div class="genre-title">What kind of video is this?</div><div class="genre-row">';
+    for (var i = 0; i < GENRES.length; i++) {
+      var g = GENRES[i];
+      h += '<label class="genre-opt"><input type="radio" name="' + prefix + '-genre" value="' + g[0] + '"' + (i === 0 ? " checked" : "") + " /><span><b>" + g[1] + "</b><small>" + g[2] + "</small></span></label>";
+    }
+    return h + "</div>";
+  }
+  function mountGenre(prefix, afterId) {
+    var host = $(prefix + "-genre");
+    if (!host) {
+      var after = $(afterId);
+      if (!after || !after.parentNode) return;
+      host = document.createElement("div");
+      host.className = "genre-pick";
+      host.id = prefix + "-genre";
+      after.parentNode.insertBefore(host, after.nextSibling);
+    }
+    host.innerHTML = genreHtml(prefix);
+  }
+  window.clipGenre = function (prefix) {
+    var r = document.querySelector('input[name="' + prefix + '-genre"]:checked');
+    return r ? r.value : "auto";
+  };
+  mountGenre("long", "long-fname");
+  mountGenre("ed", "ed-fname");
+
   wireSubToggle("long-subs", "long-substyle");
   wireSubToggle("rank-subs", "rank-substyle");
 
@@ -602,6 +638,7 @@
           var fd = new FormData();
           fd.append("video", fileObj, fileObj.name || "video.mp4");
           fd.append("mode", "viral");
+          fd.append("genre", window.clipGenre("long"));
           fd.append("subtitles", wantSubs ? "1" : "0");
           fd.append("subColor", longStyle.color);
           fd.append("subSize", longStyle.size);
@@ -619,6 +656,7 @@
             body: JSON.stringify({
               url: url,
               mode: "viral",
+              genre: window.clipGenre("long"),
               subtitles: wantSubs,
               subColor: longStyle.color,
               subSize: longStyle.size,

@@ -2780,3 +2780,15 @@ body.studio-app {
 .job-del:hover { background: rgba(255, 107, 107, 0.12); }
 .job-del[disabled] { opacity: 0.5; cursor: default; }
 .job-del-page { margin-top: 0.6rem; }
+
+/* "What kind of video is this?" picker */
+.genre-pick { margin: 0.9rem 0 0.4rem; }
+.genre-title { font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.45rem; }
+.genre-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.5rem; }
+.genre-opt { position: relative; display: block; cursor: pointer; }
+.genre-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.genre-opt span { display: block; padding: 0.55rem 0.7rem; border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; background: rgba(255,255,255,0.03); transition: border-color .15s, background .15s; }
+.genre-opt b { display: block; font-size: 0.88rem; }
+.genre-opt small { display: block; font-size: 0.72rem; opacity: 0.65; margin-top: 0.15rem; line-height: 1.3; }
+.genre-opt input:checked + span { border-color: var(--accent-2, #7c5cff); background: rgba(124, 92, 255, 0.12); }
+.genre-opt:hover span { border-color: rgba(255,255,255,0.28); }
