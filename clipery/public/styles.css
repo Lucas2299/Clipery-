@@ -1351,7 +1351,7 @@ textarea {
 
 .job-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto auto auto;
   gap: 1rem;
   align-items: center;
   padding: 1rem 1.15rem;
@@ -2774,3 +2774,9 @@ body.studio-app {
 /* Editor tab shown as "coming soon" until it opens to everyone */
 .mode-btn[disabled] { opacity: .55; cursor: not-allowed; pointer-events: none; }
 .soon-tag { display: inline-block; margin-left: .4rem; padding: .1rem .45rem; border-radius: 999px; font-size: .65rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; background: rgba(255,196,66,.18); color: #ffc442; vertical-align: middle; }
+
+/* Delete button on library rows */
+.job-del { background: transparent; border: 1px solid rgba(255, 107, 107, 0.45); color: #ff6b6b; border-radius: 8px; padding: 0.3rem 0.7rem; font-size: 0.8rem; cursor: pointer; font-family: inherit; }
+.job-del:hover { background: rgba(255, 107, 107, 0.12); }
+.job-del[disabled] { opacity: 0.5; cursor: default; }
+.job-del-page { margin-top: 0.6rem; }

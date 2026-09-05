@@ -39,6 +39,9 @@
             '">' +
             CF.escapeHtml(st) +
             "</span>" +
+            '<button type="button" class="job-del" data-id="' +
+            j.id +
+            '" title="Delete this video and its clips">Delete</button>' +
             '<span class="score-cell">' +
             (j.topScore != null ? j.topScore : "—") +
             "</span>" +
@@ -49,6 +52,31 @@
     } catch (_) {
       list.innerHTML = '<div class="empty error-text">Network error.</div>';
     }
+  }
+
+  if (list) {
+    list.addEventListener("click", async function (ev) {
+      var b = ev.target.closest ? ev.target.closest(".job-del") : null;
+      if (!b) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var id = b.getAttribute("data-id");
+      if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
+      b.disabled = true;
+      b.textContent = "Deleting...";
+      try {
+        var res = await fetch("/api/clip/" + encodeURIComponent(id), { method: "DELETE" });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
+        var row = b.closest(".job-row");
+        if (row) row.remove();
+        if (!list.querySelector(".job-row")) load();
+      } catch (e) {
+        alert(e.message);
+        b.disabled = false;
+        b.textContent = "Delete";
+      }
+    });
   }
 
   if (btn) btn.addEventListener("click", load);

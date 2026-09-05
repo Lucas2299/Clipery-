@@ -28,7 +28,33 @@
     return;
   }
 
+  var delBtn = null;
+  function ensureDelete(job) {
+    if (delBtn || !meta || !meta.parentNode) return;
+    delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "job-del job-del-page";
+    delBtn.textContent = "Delete this video";
+    delBtn.addEventListener("click", async function () {
+      if (!confirm("Delete this video and all its clips? This cannot be undone.")) return;
+      delBtn.disabled = true;
+      delBtn.textContent = "Deleting...";
+      try {
+        var res = await fetch("/api/clip/" + encodeURIComponent(job.id), { method: "DELETE" });
+        var data = await res.json().catch(function () { return {}; });
+        if (!res.ok || !data.ok) throw new Error(data.error || "Could not delete.");
+        location.href = "/library";
+      } catch (e) {
+        alert(e.message);
+        delBtn.disabled = false;
+        delBtn.textContent = "Delete this video";
+      }
+    });
+    meta.parentNode.appendChild(delBtn);
+  }
+
   function render(job) {
+    ensureDelete(job);
     document.title = (job.sourceName || "Job") + " · Clipery";
     if (title) title.textContent = job.sourceName || "Clip job";
     if (meta) {
