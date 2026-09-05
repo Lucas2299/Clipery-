@@ -278,12 +278,13 @@
       wrap.appendChild(dash);
     }
     if (user) {
-      var who = document.createElement("span");
+      var who = document.createElement("a");
+      who.href = "/account";
       who.textContent = user.name || user.email;
-      who.title = user.email;
+      who.title = "Account settings (" + user.email + ")";
       who.style.cssText =
         "font-size:0.82rem;font-weight:700;color:#c9c5d8;max-width:150px;overflow:hidden;" +
-        "text-overflow:ellipsis;white-space:nowrap";
+        "text-overflow:ellipsis;white-space:nowrap;text-decoration:none";
       var out = document.createElement("button");
       out.type = "button";
       out.textContent = "Log out";

@@ -336,6 +336,33 @@ function listUsers() {
   });
 }
 
+/** The user renames themselves. */
+function updateProfile(userId, fields) {
+  const users = readUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return { ok: false, status: 404, error: "Account not found." };
+  const name = String((fields && fields.name) || "").trim().slice(0, 60);
+  if (!name) return { ok: false, status: 400, error: "Name cannot be empty." };
+  user.name = name;
+  writeUsers(users);
+  return { ok: true, user: publicUser(user) };
+}
+
+/** The user changes their own password (needs the current one). */
+function changePassword(userId, current, next) {
+  const users = readUsers();
+  const user = users.find((u) => u.id === userId);
+  if (!user) return { ok: false, status: 404, error: "Account not found." };
+  if (!user.hash) return { ok: false, status: 400, error: "This account signs in with Google or Apple and has no password." };
+  if (!verifyPassword(current, user.salt, user.hash)) return { ok: false, status: 401, error: "Current password is wrong." };
+  if (String(next || "").length < 8) return { ok: false, status: 400, error: "New password must be at least 8 characters." };
+  const h = hashPassword(next);
+  user.salt = h.salt;
+  user.hash = h.hash;
+  writeUsers(users);
+  return { ok: true };
+}
+
 /** Owner action: move somebody to another plan. */
 function setPlan(userId, plan) {
   if (!PLANS[plan]) return { ok: false, status: 400, error: "Unknown plan." };
@@ -396,6 +423,9 @@ module.exports = {
   destroySession,
   currentUser,
   publicUser,
+  updateProfile,
+  changePassword,
+  usageOf,
   parseCookies,
   clearCookie,
   isSecureRequest,
