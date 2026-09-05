@@ -338,9 +338,9 @@
 
       <section class="w">
         <div class="stats reveal">
-          <div class="stat"><strong data-count="2.4" data-suffix="M+">0</strong><span>clips forged</span></div>
-          <div class="stat"><strong data-count="91">0</strong><span>avg. top-clip score</span></div>
-          <div class="stat"><strong data-count="38" data-suffix="s">0</strong><span>avg. clip length</span></div>
+          <div class="stat"><strong data-count="300" data-stat="clips">0</strong><span>clips forged</span></div>
+          <div class="stat"><strong data-count="91" data-stat="avgTopScore">0</strong><span>avg. top-clip score</span></div>
+          <div class="stat"><strong data-count="38" data-suffix="s" data-stat="avgClipLength">0</strong><span>avg. clip length</span></div>
         </div>
       </section>
 
@@ -522,9 +522,20 @@
         var nums = document.querySelectorAll("[data-count]");
         if (!nums.length) return;
         var done = false;
+        // Live numbers from the server; the HTML values are only a fallback.
+        var live = fetch("/api/stats").then(function (r) { return r.json(); }).then(function (d) {
+          if (!d || !d.ok) return;
+          nums.forEach(function (el) {
+            var k = el.getAttribute("data-stat");
+            if (k && d[k] != null) el.setAttribute("data-count", String(d[k]));
+          });
+        }).catch(function () {});
         function run() {
           if (done) return;
           done = true;
+          live.then(start);
+        }
+        function start() {
           nums.forEach(function (el) {
             var target = parseFloat(el.getAttribute("data-count"));
             var suffix = el.getAttribute("data-suffix") || "";

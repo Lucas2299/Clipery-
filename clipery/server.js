@@ -8,6 +8,7 @@ const { URL } = require("url");
 const crypto = require("crypto");
 const {
   processVideo,
+  publicStats,
   deleteJob,
   renderReviewed,
   planManual,
@@ -765,6 +766,11 @@ const server = http.createServer(async (req, res) => {
         queue: queue.length,
         jobs: listJobs(5).length,
       });
+    }
+
+    // Public counters for the landing page (no login needed).
+    if (pathname === "/api/stats" && req.method === "GET") {
+      return send(res, 200, { ok: true, ...publicStats() });
     }
 
     // Modes

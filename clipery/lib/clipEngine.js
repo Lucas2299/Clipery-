@@ -821,6 +821,51 @@ function deleteJob(id) {
   return removed;
 }
 
+// ---- Lifetime stats for the landing page -----------------------------
+// Kept in its own file so deleting a job never lowers the public numbers.
+const STATS_FILE = path.join(ROOT, "data", "stats.json");
+function readStats() {
+  try {
+    return JSON.parse(fs.readFileSync(STATS_FILE, "utf8"));
+  } catch (_) {
+    return { clips: 0, scoreSum: 0, scoreN: 0, lenSum: 0, lenN: 0 };
+  }
+}
+/** Call once when a job finishes. Adds its clips to the running totals. */
+function recordStats(clips) {
+  if (!Array.isArray(clips) || !clips.length) return;
+  const st = readStats();
+  st.clips += clips.length;
+  const top = clips[0];
+  const topScore = Number(top.viralScore || top.score);
+  if (topScore > 0) {
+    st.scoreSum += topScore;
+    st.scoreN += 1;
+  }
+  for (const c of clips) {
+    const d = Number(c.duration) || Number(c.end) - Number(c.start);
+    if (d > 0) {
+      st.lenSum += d;
+      st.lenN += 1;
+    }
+  }
+  try {
+    fs.mkdirSync(path.dirname(STATS_FILE), { recursive: true });
+    fs.writeFileSync(STATS_FILE, JSON.stringify(st));
+  } catch (_) {}
+}
+/** Public numbers: real clips made so far on top of the launch baseline. */
+function publicStats() {
+  const st = readStats();
+  const base = Number(process.env.CLIPERY_STATS_BASE_CLIPS) || 300;
+  return {
+    clips: base + st.clips,
+    realClips: st.clips,
+    avgTopScore: st.scoreN ? Math.round(st.scoreSum / st.scoreN) : 91,
+    avgClipLength: st.lenN ? Math.round(st.lenSum / st.lenN) : 38,
+  };
+}
+
 function writeJob(job) {
   fs.writeFileSync(jobPath(job.id), JSON.stringify(job, null, 2));
 }
@@ -1377,6 +1422,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
     job.progress = 100;
     job.completedAt = new Date().toISOString();
     job.clips = clips;
+    recordStats(clips);
     delete job.review; // the source path and transcript are not needed any more
     writeJob(job);
     return job;
@@ -1680,6 +1726,8 @@ function getLinkBoard(id) {
 
 module.exports = {
   MODES,
+  publicStats,
+  recordStats,
   processVideo,
   renderClip,
   deleteJob,
