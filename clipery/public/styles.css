@@ -2822,5 +2822,20 @@ body.studio-app {
 .price-card.current h3::after { content: "Current"; margin-left: 0.5rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(200, 245, 66, 0.15); color: #c8f542; vertical-align: middle; }
 
 /* Studio button in the page header: bigger, sits on the right */
-.nav .nav-studio { padding: 0.6rem 1.2rem; font-size: 0.92rem; margin-left: 0.4rem; color: #fff; }
-.nav .nav-studio.active { color: #fff; }
+.nav .nav-studio {
+  position: relative; overflow: hidden;
+  padding: 0.7rem 1.15rem; font-size: 0.92rem; font-weight: 600; margin-left: 0.4rem;
+  border-radius: 12px; color: #fff;
+  background: linear-gradient(135deg, #ff4d6d, #ff8a4c);
+  box-shadow: 0 10px 30px rgba(255, 77, 109, 0.32);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.nav .nav-studio::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.28) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.nav .nav-studio:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(255, 77, 109, 0.48); color: #fff; }
+.nav .nav-studio:hover::after { animation: navShine 0.85s ease; }
+.nav .nav-studio.active { color: #fff; font-weight: 600; }
+@keyframes navShine { to { transform: translateX(120%); } }
