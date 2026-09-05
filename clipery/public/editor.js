@@ -11,6 +11,15 @@
   var $ = function (id) { return document.getElementById(id); };
   if (!$("view-editor")) return;
 
+  // Owner-only preview for now: the tab stays hidden until the account says
+  // it is the owner. Everyone else gets bounced back to Long form.
+  fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
+    var owner = !!(d && d.user && d.user.isOwner);
+    var b = $("btn-editor");
+    if (b) b.hidden = !owner;
+    if (!owner && new URLSearchParams(location.search).get("tool") === "editor") window.setStudioMode("long");
+  }).catch(function () {});
+
   var fileIn = $("ed-file"), fname = $("ed-fname"), go = $("ed-go"), msg = $("ed-msg");
   var status = $("ed-status"), stage = $("ed-stage"), pct = $("ed-pct"), fill = $("ed-fill"), detail = $("ed-detail");
   var setup = $("ed-setup"), work = $("ed-work"), results = $("ed-results"), grid = $("ed-grid");

@@ -1,0 +1,21 @@
+{
+  "id": "b319f73b365a",
+  "userId": "a5fdcea12490c893",
+  "status": "processing",
+  "stage": "listening",
+  "progress": 39,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "createdAt": "2026-09-03T11:46:13.900Z",
+  "sourceName": "b319f73b365a-src.mp4.part",
+  "subtitles": true,
+  "hook": false,
+  "hookMode": "intro",
+  "clips": [],
+  "rankings": [],
+  "error": null,
+  "duration": 2444.2,
+  "candidateCount": 24,
+  "sceneCount": 37,
+  "stageNote": "Listening to the audio - 104604s"
+}

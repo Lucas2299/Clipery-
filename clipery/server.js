@@ -741,6 +741,10 @@ const server = http.createServer(async (req, res) => {
     if (isProtectedApi(pathname, req.method) && !auth.currentUser(req)) {
       return send(res, 401, { ok: false, error: "Please log in to use the Studio.", login: "/login" });
     }
+    // The Editor is an owner-only preview for now.
+    if (pathname.startsWith("/api/editor/") && !auth.isAdmin(auth.currentUser(req))) {
+      return send(res, 404, { ok: false, error: "Not found" });
+    }
 
     // Health
     if (pathname === "/api/health" && req.method === "GET") {
