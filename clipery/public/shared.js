@@ -248,6 +248,7 @@
       var res = await fetch("/api/auth/me", { headers: { Accept: "application/json" } });
       var data = await res.json();
       currentUser = (data && data.user) || null;
+      window.__me = currentUser;
     } catch {
       currentUser = null;
     }
@@ -329,7 +330,8 @@
         "<b style='color:#f4f1ea'>" + escapeHtml(user.planLabel) + " plan:</b> " +
         (left === null ? "unlimited videos" : user.lifetime ? left + " free test video left" : left + " video" + (left === 1 ? "" : "s") + " left this month") +
         " &middot; up to " + user.maxMinutes + " min per video" +
-        " &middot; " + user.maxClipsPerVideo + " clips per video";
+        " &middot; " + user.maxClipsPerVideo + " clips per video" +
+        (user.maxHeight ? " &middot; " + user.maxHeight + "p" : "");
     }
     host.parentNode.insertBefore(note, host.nextSibling);
   }
