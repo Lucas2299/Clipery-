@@ -2839,3 +2839,8 @@ body.studio-app {
 .nav .nav-studio:hover::after { animation: navShine 0.85s ease; }
 .nav .nav-studio.active { color: #fff; font-weight: 600; }
 @keyframes navShine { to { transform: translateX(120%); } }
+
+/* Launch deal on pricing cards */
+.price-card .price .was { font-size: 1rem; font-weight: 600; opacity: 0.5; margin-right: 0.3rem; }
+.price-card .tag-deal { background: linear-gradient(135deg, #c8f542, #9be04a); color: #111; }
+.deal-note { font-size: 0.9rem; color: #ffc2b0; margin-top: 0.6rem; }
