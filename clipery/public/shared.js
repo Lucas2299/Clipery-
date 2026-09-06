@@ -321,12 +321,13 @@
       note.style.borderColor = "rgba(255,77,109,.45)";
       note.style.color = "#ffb3c1";
       note.innerHTML =
-        "<b style='color:#fff'>" + escapeHtml(user.planLabel) + " plan:</b> no videos left this month. " +
+        "<b style='color:#fff'>" + escapeHtml(user.planLabel) + " plan:</b> " +
+        (user.lifetime ? "your free test video has been used. " : "no videos left this month. ") +
         "<a href='/pricing' style='color:#ff8a4c;font-weight:700;text-decoration:none'>See plans</a>";
     } else {
       note.innerHTML =
         "<b style='color:#f4f1ea'>" + escapeHtml(user.planLabel) + " plan:</b> " +
-        (left === null ? "unlimited videos" : left + " video" + (left === 1 ? "" : "s") + " left this month") +
+        (left === null ? "unlimited videos" : user.lifetime ? left + " free test video left" : left + " video" + (left === 1 ? "" : "s") + " left this month") +
         " &middot; up to " + user.maxMinutes + " min per video" +
         " &middot; " + user.maxClipsPerVideo + " clips per video";
     }
