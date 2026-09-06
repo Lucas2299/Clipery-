@@ -28,33 +28,35 @@
         <div class="eyebrow">Pricing</div>
         <h1>Start free. Scale when you blow up.</h1>
         <p style="margin-inline: auto">Plans sized for every creator - from free testing to serious volume.</p>
+        <p class="deal-note" style="margin-inline: auto">Launch offer: your first month is 50% off on every plan. New accounts also get one free test video (20 min, 4 clips).</p>
         <p class="muted" id="plan-current" hidden style="margin-inline: auto"></p>
       </div>
 
       <div class="pricing-grid">
-        <div class="price-card" data-plan="free">
+        <div class="price-card" data-plan="starter">
+          <span class="tag tag-deal">First month -50%</span>
           <h3>Starter</h3>
-          <div class="price">$0 <span>/ month</span></div>
-          <p class="blurb">One free test run, no card.</p>
+          <div class="price"><s class="was">EUR 8</s> EUR 4 <span>first month, then EUR 8 / month</span></div>
+          <p class="blurb">For creators getting started with shorts.</p>
           <ul>
-            <li>1 long video to test (up to 20 min)</li>
-            <li>4 AI clips from it</li>
+            <li>10 long videos per month</li>
+            <li>Videos up to 20 minutes</li>
+            <li>Up to 4 AI clips per video</li>
             <li>Viral score &amp; ranking</li>
-            <li>9:16 exports</li>
-            <li>Library access</li>
+            <li>Captions, 9:16 exports, library</li>
           </ul>
-          <a class="btn btn-ghost btn-block" href="/studio">Start free</a>
+          <a class="btn btn-ghost btn-block" href="/waitlist">Get Starter</a>
         </div>
         <div class="price-card featured" data-plan="pro">
           <span class="tag">Most popular</span>
           <h3>Pro</h3>
-          <div class="price">$19 <span>/ month</span></div>
+          <div class="price"><s class="was">EUR 20</s> EUR 10 <span>first month, then EUR 20 / month</span></div>
           <p class="blurb">For creators posting every week.</p>
           <ul>
-            <li>25 videos per month</li>
-            <li>12 AI clips per video</li>
+            <li>50 long videos per month</li>
+            <li>Videos up to 60 minutes</li>
+            <li>8 AI clips per video</li>
             <li>Rank video (up to 5 sources)</li>
-            <li>Batch processing</li>
             <li>Priority AI queue</li>
             <li>Compilation exports</li>
           </ul>
@@ -62,14 +64,14 @@
         </div>
         <div class="price-card" data-plan="unlimited">
           <h3>Studio</h3>
-          <div class="price">$49 <span>/ month</span></div>
+          <div class="price"><s class="was">EUR 50</s> EUR 25 <span>first month, then EUR 50 / month</span></div>
           <p class="blurb">For teams and high-volume channels.</p>
           <ul>
-            <li>Unlimited videos / month</li>
-            <li>20 AI clips per video</li>
+            <li>Unlimited videos per month</li>
+            <li>Videos up to 4 hours</li>
+            <li>10 AI clips per video</li>
             <li>Everything in Pro</li>
             <li>Deep ranking analytics</li>
-            <li>Team-ready clip library</li>
             <li>Fastest processing lane</li>
           </ul>
           <a class="btn btn-ghost btn-block" href="/waitlist">Get Studio</a>
@@ -105,8 +107,8 @@
       fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !d.user) return;
         var plan = d.user.plan || "free";
-        var map = { free: "free", plus: "pro", pro: "pro", unlimited: "unlimited" };
-        var card = document.querySelector('.price-card[data-plan="' + (map[plan] || "free") + '"]');
+        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", unlimited: "unlimited" };
+        var card = map[plan] ? document.querySelector('.price-card[data-plan="' + map[plan] + '"]') : null;
         if (card) {
           card.classList.add("current");
           var a = card.querySelector("a.btn");

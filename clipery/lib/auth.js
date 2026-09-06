@@ -256,6 +256,7 @@ const PLANS = {
   // maxClips   - how many clips we cut out of ONE source video
   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
   free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
+  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4 },
   plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
   pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
   unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
