@@ -1,0 +1,95 @@
+diff --git a/clipery/public/promo.html b/clipery/public/promo.html
+index 5c7c6e0..5f27bd7 100644
+--- a/clipery/public/promo.html
++++ b/clipery/public/promo.html
+@@ -34,11 +34,16 @@
+ 
+       <section class="acct-card promo-post" id="promo-post">
+         <div class="acct-card-head">
+-          <h2>Post your channels</h2>
+-          <span class="pill" id="promo-plan-pill" hidden></span>
++          <div>
++            <h2 style="margin-bottom:.25rem">Post your channels</h2>
++            <p class="muted" id="promo-gate" style="margin:0"></p>
++          </div>
++          <div style="display:flex;align-items:center;gap:.6rem">
++            <span class="pill" id="promo-plan-pill" hidden></span>
++            <button type="button" class="btn btn-primary" id="promo-open" hidden>Post your channels</button>
++          </div>
+         </div>
+-        <p class="muted" id="promo-gate"></p>
+-        <form id="promo-form" class="promo-form" hidden>
++        <form id="promo-form" class="promo-form" hidden style="margin-top:1rem">
+           <div class="promo-row">
+             <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
+             <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
+@@ -50,6 +55,7 @@
+           </div>
+           <div>
+             <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
++            <button class="btn btn-ghost" type="button" id="pr-cancel">Cancel</button>
+             <span class="pro-msg" id="pr-msg"></span>
+           </div>
+           <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
+@@ -75,6 +81,6 @@
+     </footer>
+ 
+     <script src="/shared.js?v=2"></script>
+-    <script src="/promo.js?v=1"></script>
++    <script src="/promo.js?v=2"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/promo.js b/clipery/public/promo.js
+index fa592b0..177fd44 100644
+--- a/clipery/public/promo.js
++++ b/clipery/public/promo.js
+@@ -62,9 +62,11 @@
+     var gate = $("promo-gate");
+     var form = $("promo-form");
+     var pill = $("promo-plan-pill");
++    var open = $("promo-open");
++    form.hidden = true;
++    open.hidden = true;
+     if (!me) {
+       gate.innerHTML = 'Log in with a paid plan to post your channels. <a href="/login?next=/promo">Log in</a>';
+-      form.hidden = true;
+       return;
+     }
+     pill.hidden = false;
+@@ -72,10 +74,8 @@
+     pill.textContent = me.planLabel + " plan";
+     if (!me.canPost) {
+       gate.innerHTML = "The promo board is for paid plans. <a href=\"/pricing\">Upgrade</a> to Starter, Pro or Studio to post your channels.";
+-      form.hidden = true;
+       return;
+     }
+-    form.hidden = false;
+     if (!$("pr-name").value) $("pr-name").value = me.name || "";
+     var mine = rows.filter(function (p) { return p.mine; })[0];
+     if (mine) {
+@@ -90,6 +90,7 @@
+       gate.textContent = "Your card is live. You can post again in " + days + " day" + (days === 1 ? "" : "s") + ".";
+       $("pr-submit").disabled = true;
+     } else {
++      open.hidden = false;
+       gate.textContent = me.plan === "studio"
+         ? "Studio accounts are shown at the very top of the board."
+         : me.plan === "pro" ? "Pro accounts are shown right under Studio." : "Starter accounts are listed after Studio and Pro.";
+@@ -103,6 +104,17 @@
+     render(d);
+   }
+ 
++  $("promo-open").addEventListener("click", function () {
++    $("promo-form").hidden = false;
++    $("promo-open").hidden = true;
++    $("pr-name").focus();
++  });
++  $("pr-cancel").addEventListener("click", function () {
++    $("promo-form").hidden = true;
++    $("promo-open").hidden = false;
++    msg("");
++  });
++
+   $("promo-form").addEventListener("submit", async function (ev) {
+     ev.preventDefault();
+     msg("");
