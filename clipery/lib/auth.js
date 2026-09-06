@@ -254,7 +254,8 @@ const PLANS = {
   // videos     - long-form sources you may run per month
   // maxMinutes - how long each source video may be
   // maxClips   - how many clips we cut out of ONE source video
-  free: { id: "free", label: "Free", videos: 3, maxMinutes: 20, maxClips: 3 },
+  // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
+  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
   plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
   pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
   unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
@@ -269,7 +270,9 @@ function planOf(user) {
 /** Usage for this month, reset automatically when the month rolls over. */
 function usageOf(user) {
   const month = currentMonth();
-  if (!user.usage || user.usage.month !== month) {
+  if (!user.usage) user.usage = { month, videos: 0 };
+  // Lifetime plans (Free trial) never reset; paid plans roll over monthly.
+  if (!planOf(user).lifetime && user.usage.month !== month) {
     user.usage = { month, videos: 0 };
   }
   return user.usage;
@@ -292,7 +295,9 @@ function consumeVideo(userId) {
     return {
       ok: false,
       status: 402,
-      error: `You have used all ${planOf(user).videos + (Number(user.bonusVideos) || 0)} videos on the ${planOf(user).label} plan this month.`,
+      error: planOf(user).lifetime
+        ? `Your free test video has been used. Upgrade your plan to keep clipping.`
+        : `You have used all ${planOf(user).videos + (Number(user.bonusVideos) || 0)} videos on the ${planOf(user).label} plan this month.`,
     };
   }
   usageOf(user).videos += 1;

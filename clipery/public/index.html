@@ -408,10 +408,10 @@
           <article class="price reveal">
             <h3>Starter</h3>
             <div class="amt">$0 <span>/ month</span></div>
-            <p class="blurb">Try the studio with no card.</p>
+            <p class="blurb">One free test run, no card.</p>
             <ul>
-              <li>3 videos per month</li>
-              <li>5 AI clips per video</li>
+              <li>1 long video to test (up to 20 min)</li>
+              <li>4 AI clips from it</li>
               <li>Viral score &amp; ranking</li>
               <li>9:16 exports</li>
               <li>Library access</li>
@@ -497,7 +497,7 @@
           </details>
           <details>
             <summary>Is there a free plan?</summary>
-            <p>Yes. Starter includes 3 videos a month with ranked AI clips. No credit card needed to open the studio.</p>
+            <p>Yes. Starter gives you one free long video (up to 20 minutes) turned into 4 ranked AI clips. No credit card needed to open the studio.</p>
           </details>
         </div>
       </section>
@@ -752,6 +752,12 @@
       })();
     </script>
     <script>
+      // Free plan wording (kept in one place).
+      document.querySelectorAll("p").forEach(function (p) {
+        if (p.textContent.indexOf("Free plan includes 3 videos a month") === 0) {
+          p.textContent = "Free plan includes one test video with 4 AI clips. No credit card needed - just open the studio.";
+        }
+      });
       // Logged in? Swap the landing CTAs for a straight shot into the Studio.
       fetch("/api/auth/me")
         .then(function (r) { return r.json(); })
