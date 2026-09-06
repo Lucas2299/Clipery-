@@ -1,153 +1,567 @@
-diff --git a/clipery/public/promo.html b/clipery/public/promo.html
-index 5f27bd7..de8c346 100644
---- a/clipery/public/promo.html
-+++ b/clipery/public/promo.html
-@@ -7,7 +7,7 @@
-     <meta name="description" content="Creators on Clipery share their YouTube, TikTok and Instagram. Follow, collab, grow together." />
-     <meta name="theme-color" content="#07070b" />
-     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
--    <link rel="stylesheet" href="/styles.css?v=71" />
-+    <link rel="stylesheet" href="/styles.css?v=73" />
-   </head>
-   <body data-auth-modal>
-     <div class="bg-grid" aria-hidden="true"></div>
-@@ -43,23 +43,22 @@
-             <button type="button" class="btn btn-primary" id="promo-open" hidden>Post your channels</button>
-           </div>
-         </div>
--        <form id="promo-form" class="promo-form" hidden style="margin-top:1rem">
--          <div class="promo-row">
--            <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
--            <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
-+        <div class="pmodal-back" id="promo-modal" aria-hidden="true">
-+          <div class="pmodal-card" role="dialog" aria-modal="true" aria-labelledby="pmodal-title">
-+            <button type="button" class="pmodal-x" id="pr-cancel" aria-label="Close">&times;</button>
-+            <h2 id="pmodal-title">Post your channels</h2>
-+            <p class="pmodal-sub">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
-+            <form id="promo-form">
-+              <div class="pmodal-f"><label for="pr-name">Name shown</label><input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></div>
-+              <div class="pmodal-f"><label for="pr-tagline">One line about you</label><input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></div>
-+              <div class="pmodal-f"><label for="pr-youtube" class="yt">YouTube</label><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></div>
-+              <div class="pmodal-f"><label for="pr-tiktok" class="tt">TikTok</label><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></div>
-+              <div class="pmodal-f"><label for="pr-instagram" class="ig">Instagram</label><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></div>
-+              <div class="pmodal-msg" id="pr-msg"></div>
-+              <button class="pmodal-go" type="submit" id="pr-submit">Post to the board</button>
-+            </form>
-           </div>
--          <div class="promo-row">
--            <label><span class="promo-lbl yt">YouTube</span><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></label>
--            <label><span class="promo-lbl tt">TikTok</span><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></label>
--            <label><span class="promo-lbl ig">Instagram</span><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></label>
--          </div>
--          <div>
--            <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
--            <button class="btn btn-ghost" type="button" id="pr-cancel">Cancel</button>
--            <span class="pro-msg" id="pr-msg"></span>
--          </div>
--          <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
--        </form>
-+        </div>
-       </section>
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index 237e136..cd4de44 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -255,10 +255,10 @@ const PLANS = {
+   // maxMinutes - how long each source video may be
+   // maxClips   - how many clips we cut out of ONE source video
+   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
+-  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
+-  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4 },
+-  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8 },
+-  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10 },
++  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true, maxHeight: 720, maxUploadMB: 1024 },
++  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4, maxHeight: 720, maxUploadMB: 1024 },
++  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8, maxHeight: 1080, maxUploadMB: 3072 },
++  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10, maxHeight: 1080, maxUploadMB: 8192 },
+ };
+ // Old plan ids from earlier versions keep working for existing accounts.
+ const PLAN_ALIASES = { plus: "pro", unlimited: "studio" };
+diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
+index 3942727..53cb64f 100644
+--- a/clipery/lib/linkVideoEngine.js
++++ b/clipery/lib/linkVideoEngine.js
+@@ -160,8 +160,14 @@ function scoreVideo(meta, energy, index, label) {
+ }
  
-       <section class="promo-board" id="promo-board" aria-live="polite">
-@@ -81,6 +80,6 @@
-     </footer>
+ /** Download a single URL with yt-dlp. Returns file path or throws. */
+-async function downloadUrl(url, outBase) {
++/**
++ * opts.maxHeight  - 720 (Starter/Free) or 1080 (Pro/Studio)
++ * opts.maxSizeMB  - refuse bigger downloads (short clips for Rank default to 40MB)
++ */
++async function downloadUrl(url, outBase, opts = {}) {
+   const platform = detectPlatform(url);
++  const maxHeight = Number(opts.maxHeight) === 1080 ? 1080 : 720;
++  const maxSizeMB = Number(opts.maxSizeMB) > 0 ? Number(opts.maxSizeMB) : 40;
  
-     <script src="/shared.js?v=2"></script>
--    <script src="/promo.js?v=2"></script>
-+    <script src="/promo.js?v=3"></script>
+   // Built-in sample pack shortcuts
+   if (url.startsWith("sample:") || url.startsWith("/samples/rank-pack/")) {
+@@ -177,9 +183,9 @@ async function downloadUrl(url, outBase) {
+   // scripts. tryYtdlp already escalates through browser impersonation,
+   // cookies and a proxy; here we just turn the last error into advice.
+   try {
+-    await tryYtdlp(url, outBase);
++    await tryYtdlp(url, outBase, { maxHeight, maxSizeMB });
+   } catch (e) {
+-    throw new Error(explainDownloadError(platform, e.message || String(e)));
++    throw new Error(explainDownloadError(platform, e.message || String(e), maxSizeMB));
+   }
+   const file = findDownloaded(outBase);
+   if (!file) throw new Error("Download finished but no file found for " + url);
+@@ -190,12 +196,12 @@ async function downloadUrl(url, outBase) {
+ const COOKIES_FILE = (process.env.CLIPERY_COOKIES || "").trim();
+ const PROXY = (process.env.CLIPERY_PROXY || "").trim();
+ 
+-function commonArgs(outBase) {
++function commonArgs(outBase, maxSizeMB) {
+   const a = [
+     "--no-playlist",
+     "--no-warnings",
+     "-4",
+-    "--max-filesize", "40M",
++    "--max-filesize", `${Math.round(maxSizeMB || 40)}M`,
+     "--merge-output-format", "mp4",
+     "-o", outBase + ".%(ext)s",
+     "--extractor-args", "youtube:player_client=android",
+@@ -210,16 +216,18 @@ function commonArgs(outBase) {
+  *   1. normal            2. pretend to be Chrome (needs the curl_cffi add-on)
+  *   3. + cookies file    4. plain "best" format as a last resort
+  */
+-async function tryYtdlp(url, outBase) {
+-  const fmt = ["-f", "bv*[height<=720]+ba/b[height<=720]/b"];
++async function tryYtdlp(url, outBase, o = {}) {
++  const h = Number(o.maxHeight) === 1080 ? 1080 : 720;
++  const base = commonArgs(outBase, o.maxSizeMB);
++  const fmt = ["-f", `bv*[height<=${h}]+ba/b[height<=${h}]/b`];
+   const attempts = [
+-    [...commonArgs(outBase), ...fmt, url],
+-    [...commonArgs(outBase), ...fmt, "--impersonate", "chrome", url],
++    [...base, ...fmt, url],
++    [...base, ...fmt, "--impersonate", "chrome", url],
+   ];
+   if (COOKIES_FILE && fs.existsSync(COOKIES_FILE)) {
+-    attempts.push([...commonArgs(outBase), ...fmt, "--impersonate", "chrome", "--cookies", COOKIES_FILE, url]);
++    attempts.push([...base, ...fmt, "--impersonate", "chrome", "--cookies", COOKIES_FILE, url]);
+   }
+-  attempts.push([...commonArgs(outBase), "-f", "b", url]);
++  attempts.push([...base, "-f", `b[height<=${h}]/b`, url]);
+ 
+   let last = null;
+   for (let i = 0; i < attempts.length; i++) {
+@@ -243,7 +251,7 @@ async function tryYtdlp(url, outBase) {
+ }
+ 
+ /** Turn yt-dlp's stderr into something a non-technical owner can act on. */
+-function explainDownloadError(platform, msg) {
++function explainDownloadError(platform, msg, maxSizeMB) {
+   const m = String(msg || "");
+   const site = platform === "tiktok" ? "TikTok" : platform === "instagram" ? "Instagram" : "This site";
+   if (/ENOENT|not found|spawn/i.test(m) && /yt-dlp/i.test(m)) {
+@@ -257,7 +265,7 @@ function explainDownloadError(platform, msg) {
+   }
+   if (/Unsupported URL/i.test(m)) return `That link is not a direct video page. Open the video, copy the URL from the address bar and try again.`;
+   if (/private|login required|log in/i.test(m)) return `${site} says this video is private or needs a login. Set CLIPERY_COOKIES to a cookies.txt from a logged-in browser.`;
+-  if (/File is larger than max-filesize|max-filesize/i.test(m)) return `That video is over the 40MB link limit. Download it and use Upload instead.`;
++  if (/File is larger than max-filesize|max-filesize/i.test(m)) return `That video is over the ${maxSizeMB || 40}MB link limit for your plan. Download it and use Upload instead, or upgrade.`;
+   if (/Unable to extract|Cannot parse|Failed to parse JSON/i.test(m)) {
+     return `${site} changed something and this yt-dlp version cannot read it. Update it: pip install -U "yt-dlp[default,curl-cffi]" and restart the server.`;
+   }
+@@ -793,7 +801,7 @@ async function processLinksToRankingVideo(links, options = {}) {
+ 
+     const outBase = path.join(dlDir, `src-${i}`);
+     try {
+-      const got = await downloadUrl(url, outBase);
++      const got = await downloadUrl(url, outBase, { maxHeight: options.maxHeight, maxSizeMB: 60 });
+       sources.push({
+         path: got.file,
+         label: item.hook || item.label || got.title || `Video ${i + 1}`,
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 862ae7f..6a92bb2 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -417,6 +417,7 @@
+             <ul>
+               <li>10 long videos per month</li>
+               <li>Videos up to 20 minutes</li>
++              <li>720p link downloads, 1 GB uploads</li>
+               <li>Up to 4 AI clips per video</li>
+               <li>Viral score &amp; ranking</li>
+               <li>Captions, 9:16 exports, library</li>
+@@ -431,6 +432,7 @@
+             <ul>
+               <li>50 long videos per month</li>
+               <li>Videos up to 60 minutes</li>
++              <li>1080p link downloads, 3 GB uploads</li>
+               <li>8 AI clips per video</li>
+               <li>Rank video (up to 5 sources)</li>
+               <li>Priority AI queue</li>
+@@ -445,6 +447,7 @@
+             <ul>
+               <li>Unlimited videos per month</li>
+               <li>Videos up to 4 hours</li>
++              <li>1080p link downloads, 8 GB uploads</li>
+               <li>10 AI clips per video</li>
+               <li>Everything in Pro</li>
+               <li>Deep ranking analytics</li>
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index 4f952e5..15d052a 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -42,6 +42,7 @@
+           <ul>
+             <li>10 long videos per month</li>
+             <li>Videos up to 20 minutes</li>
++            <li>720p link downloads, 1 GB uploads</li>
+             <li>Up to 4 AI clips per video</li>
+             <li>Viral score &amp; ranking</li>
+             <li>Captions, 9:16 exports, library</li>
+@@ -56,6 +57,7 @@
+           <ul>
+             <li>50 long videos per month</li>
+             <li>Videos up to 60 minutes</li>
++            <li>1080p link downloads, 3 GB uploads</li>
+             <li>8 AI clips per video</li>
+             <li>Rank video (up to 5 sources)</li>
+             <li>Priority AI queue</li>
+@@ -70,6 +72,7 @@
+           <ul>
+             <li>Unlimited videos per month</li>
+             <li>Videos up to 4 hours</li>
++            <li>1080p link downloads, 8 GB uploads</li>
+             <li>10 AI clips per video</li>
+             <li>Everything in Pro</li>
+             <li>Deep ranking analytics</li>
+diff --git a/clipery/public/shared.js b/clipery/public/shared.js
+index 2503583..79cc8fc 100644
+--- a/clipery/public/shared.js
++++ b/clipery/public/shared.js
+@@ -248,6 +248,7 @@
+       var res = await fetch("/api/auth/me", { headers: { Accept: "application/json" } });
+       var data = await res.json();
+       currentUser = (data && data.user) || null;
++      window.__me = currentUser;
+     } catch {
+       currentUser = null;
+     }
+@@ -329,7 +330,8 @@
+         "<b style='color:#f4f1ea'>" + escapeHtml(user.planLabel) + " plan:</b> " +
+         (left === null ? "unlimited videos" : user.lifetime ? left + " free test video left" : left + " video" + (left === 1 ? "" : "s") + " left this month") +
+         " &middot; up to " + user.maxMinutes + " min per video" +
+-        " &middot; " + user.maxClipsPerVideo + " clips per video";
++        " &middot; " + user.maxClipsPerVideo + " clips per video" +
++        (user.maxHeight ? " &middot; " + user.maxHeight + "p" : "");
+     }
+     host.parentNode.insertBefore(note, host.nextSibling);
+   }
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 56cac4e..2147d5b 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -579,8 +579,8 @@
+       }
+       document.getElementById("year").textContent = new Date().getFullYear();
+     </script>
+-    <script src="/shared.js?v=2"></script>
+-    <script src="/studio.js?v=4"></script>
++    <script src="/shared.js?v=3"></script>
++    <script src="/studio.js?v=75"></script>
+     <script src="/editor.js?v=1"></script>
    </body>
  </html>
-diff --git a/clipery/public/promo.js b/clipery/public/promo.js
-index 177fd44..6318a47 100644
---- a/clipery/public/promo.js
-+++ b/clipery/public/promo.js
-@@ -13,7 +13,19 @@
-   function msg(text, err) {
-     var el = $("pr-msg");
-     el.textContent = text || "";
--    el.style.color = err ? "#ff6b6b" : "#7ee2a8";
-+    el.className = "pmodal-msg" + (text ? (err ? " err" : " ok") : "");
-+  }
-+  function openModal() {
-+    $("promo-modal").classList.add("on");
-+    $("promo-modal").setAttribute("aria-hidden", "false");
-+    document.body.style.overflow = "hidden";
-+    setTimeout(function () { $("pr-name").focus(); }, 50);
-+  }
-+  function closeModal() {
-+    $("promo-modal").classList.remove("on");
-+    $("promo-modal").setAttribute("aria-hidden", "true");
-+    document.body.style.overflow = "";
-+    msg("");
-   }
-   function handleOf(url) {
-     try {
-@@ -60,10 +72,8 @@
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index 5e0b50a..f06f72b 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -580,8 +580,9 @@
+     longFile.addEventListener("change", function () {
+       var f = longFile.files && longFile.files[0];
+       if (!f) return;
+-      if (f.size > 100 * 1024 * 1024) {
+-        setMsg(longMsg, "File too large (max 100MB).", true);
++      var capMB = (window.__me && window.__me.maxUploadMB) || 8192;
++      if (f.size > capMB * 1024 * 1024) {
++        setMsg(longMsg, "File too large for your plan (max " + (capMB >= 1024 ? Math.round(capMB / 1024) + " GB" : capMB + " MB") + ").", true);
+         return;
+       }
+       fileObj = f;
+diff --git a/clipery/server.js b/clipery/server.js
+index 6cd47e1..5e65807 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -388,10 +388,134 @@ function chargeVideo(req, res) {
+     planLabel: auth.planOf(me).label,
+     maxMinutes: auth.planOf(me).maxMinutes,
+     maxClips: auth.planOf(me).maxClips,
++    maxHeight: auth.planOf(me).maxHeight || 720,
++    maxUploadMB: auth.planOf(me).maxUploadMB || 1024,
+   };
+   return me;
+ }
  
-     var me = d.me;
-     var gate = $("promo-gate");
--    var form = $("promo-form");
-     var pill = $("promo-plan-pill");
-     var open = $("promo-open");
--    form.hidden = true;
-     open.hidden = true;
-     if (!me) {
-       gate.innerHTML = 'Log in with a paid plan to post your channels. <a href="/login?next=/promo">Log in</a>';
-@@ -104,16 +114,10 @@
-     render(d);
-   }
- 
--  $("promo-open").addEventListener("click", function () {
--    $("promo-form").hidden = false;
--    $("promo-open").hidden = true;
--    $("pr-name").focus();
--  });
--  $("pr-cancel").addEventListener("click", function () {
--    $("promo-form").hidden = true;
--    $("promo-open").hidden = false;
--    msg("");
--  });
-+  $("promo-open").addEventListener("click", openModal);
-+  $("pr-cancel").addEventListener("click", closeModal);
-+  $("promo-modal").addEventListener("click", function (e) { if (e.target === $("promo-modal")) closeModal(); });
-+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
- 
-   $("promo-form").addEventListener("submit", async function (ev) {
-     ev.preventDefault();
-@@ -138,6 +142,7 @@
-       return;
++/** Plan upload limit for the logged-in user, before we accept a big body. */
++function uploadLimitBytes(req) {
++  const me = auth.currentUser(req);
++  const mb = me ? (auth.planOf(me).maxUploadMB || 1024) : 100;
++  return mb * 1024 * 1024;
++}
++
++/**
++ * Stream a multipart upload to disk instead of holding it in RAM, so a 2 GB
++ * video does not need 2 GB of memory. Text fields are kept in memory; every
++ * file part is written to `dir` and returned as {name, filename, path, size}.
++ * Rejects with .status=413 when the body passes `maxBytes`.
++ */
++function parseMultipartToDisk(req, contentType, dir, maxBytes) {
++  return new Promise((resolve, reject) => {
++    const m = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType || "");
++    if (!m) return reject(new Error("Missing multipart boundary"));
++    const sep = Buffer.from(`\r\n--${m[1] || m[2]}`);
++    const first = Buffer.from(`--${m[1] || m[2]}`);
++    const parts = [];
++    const pending = []; // file streams still flushing to disk
++    let buf = Buffer.alloc(0);
++    let total = 0;
++    let cur = null; // {name, filename, path, stream, size, chunks}
++    let started = false;
++    let done = false;
++
++    const cleanup = () => {
++      if (cur && cur.stream) {
++        const p = cur.path;
++        cur.stream.on("close", () => fs.rm(p, { force: true }, () => {}));
++        cur.stream.destroy();
++      } else if (cur && cur.path) fs.rm(cur.path, { force: true }, () => {});
++      parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
++    };
++    const fail = (err) => {
++      if (done) return;
++      done = true;
++      cleanup();
++      // Stop reading but keep the socket alive long enough to answer.
++      req.pause();
++      req.removeAllListeners("data");
++      req.resume();
++      reject(err);
++    };
++    const settle = () => Promise.all(pending).then(() => resolve(parts), reject);
++    const finishPart = () => {
++      if (!cur) return;
++      if (cur.stream) {
++        const st = cur.stream;
++        pending.push(new Promise((ok, bad) => { st.on("finish", ok); st.on("error", bad); }));
++        st.end();
++        parts.push({ name: cur.name, filename: cur.filename, path: cur.path, size: cur.size });
++      } else parts.push({ name: cur.name, filename: null, body: Buffer.concat(cur.chunks) });
++      cur = null;
++    };
++    const openPart = (header) => {
++      const nameMatch = /name="([^"]+)"/i.exec(header);
++      const fileMatch = /filename="([^"]*)"/i.exec(header);
++      cur = { name: nameMatch ? nameMatch[1] : "", filename: fileMatch ? fileMatch[1] : null, size: 0, chunks: [] };
++      if (fileMatch) {
++        cur.path = path.join(dir, `${crypto.randomBytes(8).toString("hex")}.part`);
++        cur.stream = fs.createWriteStream(cur.path);
++        cur.stream.on("error", fail);
++      }
++    };
++    const write = (chunk) => {
++      if (!cur || !chunk.length) return;
++      cur.size += chunk.length;
++      if (cur.stream) cur.stream.write(chunk); else cur.chunks.push(chunk);
++    };
++
++    req.on("data", (chunk) => {
++      if (done) return;
++      total += chunk.length;
++      if (total > maxBytes) { const e = new Error("too large"); e.status = 413; return fail(e); }
++      buf = buf.length ? Buffer.concat([buf, chunk]) : chunk;
++      // eslint-disable-next-line no-constant-condition
++      while (true) {
++        if (!started) {
++          const i = buf.indexOf(first);
++          if (i < 0) { buf = buf.subarray(Math.max(0, buf.length - first.length)); return; }
++          buf = buf.subarray(i + first.length);
++          started = true;
++          // after the first boundary we are positioned like after a "\r\n--boundary"
++        }
++        if (!cur) {
++          // expect: (--)? CRLF headers CRLF CRLF
++          if (buf.length < 2) return;
++          if (buf[0] === 45 && buf[1] === 45) { done = true; finishPart(); return settle(); }
++          const he = buf.indexOf("\r\n\r\n");
++          if (he < 0) return;
++          openPart(buf.subarray(0, he).toString("utf8"));
++          buf = buf.subarray(he + 4);
++        }
++        const j = buf.indexOf(sep);
++        if (j < 0) {
++          const keep = sep.length;
++          if (buf.length > keep) { write(buf.subarray(0, buf.length - keep)); buf = buf.subarray(buf.length - keep); }
++          return;
++        }
++        write(buf.subarray(0, j));
++        finishPart();
++        buf = buf.subarray(j + sep.length);
++      }
++    });
++    req.on("end", () => { if (!done) { done = true; finishPart(); settle(); } });
++    req.on("error", fail);
++  });
++}
++
++function partText(parts, name) {
++  const p = parts.find((x) => x.name === name && !x.filename);
++  return p && p.body ? p.body.toString("utf8") : "";
++}
++function uploadTooBig(res, req) {
++  const me = auth.currentUser(req);
++  const mb = me ? (auth.planOf(me).maxUploadMB || 1024) : 100;
++  const human = mb >= 1024 ? `${Math.round(mb / 1024)} GB` : `${mb} MB`;
++  return send(res, 413, { ok: false, error: `That file is over your plan's ${human} upload limit. Compress it or upgrade your plan.`, upgrade: true });
++}
++
+ function seedJob(jobId, extra = {}) {
+   const jobSeed = {
+     id: jobId,
+@@ -431,7 +555,10 @@ async function runQueueItem(item) {
+         writeJob(job);
+       }
+       const outBase = path.join(UPLOADS, `${item.meta.jobId}-src`);
+-      const got = await downloadUrl(item.url, outBase);
++      const got = await downloadUrl(item.url, outBase, {
++        maxHeight: item.meta.maxHeight || 720,
++        maxSizeMB: item.meta.maxUploadMB || 1024,
++      });
+       if (job) {
+         job = readJob(item.meta.jobId) || job;
+         job.sourceName = got.title || item.url;
+@@ -734,6 +861,8 @@ const server = http.createServer(async (req, res) => {
+           videosTotal: auth.planOf(user).videos === Infinity ? null : auth.planOf(user).videos + (Number(user.bonusVideos) || 0),
+           maxMinutes: auth.planOf(user).maxMinutes,
+           maxClipsPerVideo: auth.planOf(user).maxClips,
++          maxHeight: auth.planOf(user).maxHeight || 720,
++          maxUploadMB: auth.planOf(user).maxUploadMB || 1024,
+         },
+       });
      }
-     msg("Posted. You are on the board.");
-+    setTimeout(closeModal, 900);
-     load();
-   });
+@@ -913,26 +1042,25 @@ const server = http.createServer(async (req, res) => {
+           error: "Send multipart form with field 'video'.",
+         });
+       }
+-      const buf = await parseBody(req);
+-      const parts = parseMultipart(buf, ct);
++      if (!auth.currentUser(req)) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
++      let parts;
++      try {
++        parts = await parseMultipartToDisk(req, ct, UPLOADS, uploadLimitBytes(req));
++      } catch (e) {
++        if (e.status === 413) return uploadTooBig(res, req);
++        return send(res, 400, { ok: false, error: "Upload failed: " + e.message });
++      }
++      const dropFiles = () => parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
+       const filePart = parts.find(
+-        (p) =>
+-          (p.name === "video" || p.name === "videos" || p.name === "file") &&
+-          p.body &&
+-          p.body.length > 1000
+-      );
+-      const modePart = parts.find((p) => p.name === "mode");
+-      const mode = normalizeMode(
+-        modePart ? modePart.body.toString("utf8") : "viral"
++        (p) => (p.name === "video" || p.name === "videos" || p.name === "file") && p.path && p.size > 1000
+       );
++      const mode = normalizeMode(partText(parts, "mode") || "viral");
  
-diff --git a/clipery/public/styles.css b/clipery/public/styles.css
-index 4d52589..318a0b4 100644
---- a/clipery/public/styles.css
-+++ b/clipery/public/styles.css
-@@ -2878,3 +2878,23 @@ body.studio-app {
- .promo-link span { font-weight: 500; color: var(--muted, #9894a6); }
- .promo-link:hover { border-color: rgba(255,255,255,0.3); }
- .promo-link.yt:hover { border-color: #ff5c5c; } .promo-link.tt:hover { border-color: #6ff0ea; } .promo-link.ig:hover { border-color: #ff7ac6; }
-+/* promo post popup - same look as the login popup */
-+.pmodal-back { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; background: rgba(4,4,8,0.78); backdrop-filter: blur(6px); padding: 1.1rem; animation: cauthFade 0.18s ease; }
-+.pmodal-back.on { display: flex; }
-+@keyframes pmodalPop { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
-+.pmodal-card { width: 100%; max-width: 420px; max-height: 92vh; overflow: auto; position: relative; background: #0e0e14; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 1.9rem 1.7rem 1.6rem; box-shadow: 0 30px 80px rgba(0,0,0,0.6); animation: pmodalPop 0.2s ease; color: #f4f1ea; text-align: left; }
-+.pmodal-card h2 { font-size: 1.45rem; margin: 0 0 0.3rem; font-weight: 800; letter-spacing: -0.01em; }
-+.pmodal-sub { color: #9894a6; font-size: 0.88rem; margin: 0 0 1.2rem; line-height: 1.5; }
-+.pmodal-x { position: absolute; top: 0.85rem; right: 0.9rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #9894a6; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
-+.pmodal-x:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
-+.pmodal-f { margin: 0 0 0.85rem; }
-+.pmodal-f label { display: block; font-size: 0.8rem; font-weight: 700; color: #c9c5d8; margin: 0 0 0.32rem; }
-+.pmodal-f label.yt { color: #ff5c5c; } .pmodal-f label.tt { color: #6ff0ea; } .pmodal-f label.ig { color: #ff7ac6; }
-+.pmodal-f input { width: 100%; padding: 0.72rem 0.9rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.4); color: #f4f1ea; font: inherit; font-size: 0.94rem; box-sizing: border-box; }
-+.pmodal-f input:focus { outline: none; border-color: #ff4d6d; }
-+.pmodal-go { width: 100%; margin-top: 0.35rem; padding: 0.8rem 1rem; border: none; border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.96rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #ff4d6d, #ff8a4c); box-shadow: 0 10px 26px rgba(255,77,109,0.32); }
-+.pmodal-go:disabled { opacity: 0.6; cursor: default; }
-+.pmodal-msg { display: none; margin: 0 0 1rem; padding: 0.7rem 0.85rem; border-radius: 12px; font-size: 0.86rem; line-height: 1.45; }
-+.pmodal-msg.err { display: block; background: rgba(255,77,109,0.12); border: 1px solid rgba(255,77,109,0.4); color: #ffb3c1; }
-+.pmodal-msg.ok { display: block; background: rgba(200,245,66,0.1); border: 1px solid rgba(200,245,66,0.35); color: #dcf98d; }
-+@keyframes cauthFade { from { opacity: 0; } to { opacity: 1; } }
+-      if (!filePart || !filePart.body?.length) {
+-        console.error("Single upload parts:", parts.map((p) => ({ name: p.name, filename: p.filename, len: p.body?.length })));
++      if (!filePart) {
++        dropFiles();
++        console.error("Single upload parts:", parts.map((p) => ({ name: p.name, filename: p.filename, len: p.size || (p.body && p.body.length) })));
+         return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
+       }
+-      if (filePart.body.length > 100 * 1024 * 1024) {
+-        return send(res, 400, { ok: false, error: "Max upload size is 100MB." });
+-      }
+ 
+       const orig = filePart.filename || "upload.mp4";
+       let ext = path.extname(orig).toLowerCase() || ".mp4";
+@@ -943,26 +1071,17 @@ const server = http.createServer(async (req, res) => {
+       }
+       if (!ext) ext = ".mp4";
+ 
+-      const subsPart = parts.find((p) => p.name === "subtitles");
+-      const subtitles = wantSubtitles(subsPart ? subsPart.body.toString("utf8") : "");
+-      const subStyle = readSubStyle((n) => {
+-        const p = parts.find((x) => x.name === n);
+-        return p ? p.body.toString("utf8") : "";
+-      });
+-      const hookOpts = readHook((n) => {
+-        const p = parts.find((x) => x.name === n);
+-        return p ? p.body.toString("utf8") : "";
+-      });
+-      const trends = readTrends((n) => {
+-        const p = parts.find((x) => x.name === n);
+-        return p ? p.body.toString("utf8") : "";
+-      });
++      const get = (n) => partText(parts, n);
++      const subtitles = wantSubtitles(get("subtitles"));
++      const subStyle = readSubStyle(get);
++      const hookOpts = readHook(get);
++      const trends = readTrends(get);
+ 
+       const jobId = crypto.randomBytes(6).toString("hex");
+       const owner = chargeVideo(req, res);
+-      if (!owner) return;
++      if (!owner) { dropFiles(); return; }
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+-      fs.writeFileSync(dest, filePart.body);
++      fs.renameSync(filePart.path, dest);
+       const genre = readGenre(get("genre"));
+       seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends, genre });
+       const q = enqueue(dest, {
+@@ -1039,15 +1158,18 @@ const server = http.createServer(async (req, res) => {
+     if (pathname === "/api/editor/upload" && req.method === "POST") {
+       const ct = req.headers["content-type"] || "";
+       if (!ct.includes("multipart/form-data")) return send(res, 400, { ok: false, error: "Send multipart form with field 'video'." });
+-      const buf = await parseBody(req);
+-      const parts = parseMultipart(buf, ct);
+-      const get = (n) => {
+-        const p = parts.find((x) => x.name === n);
+-        return p ? p.body.toString("utf8") : "";
+-      };
+-      const filePart = parts.find((p) => (p.name === "video" || p.name === "file") && p.body && p.body.length > 1000);
+-      if (!filePart) return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
+-      if (filePart.body.length > 100 * 1024 * 1024) return send(res, 400, { ok: false, error: "Max upload size is 100MB." });
++      if (!auth.currentUser(req)) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
++      let parts;
++      try {
++        parts = await parseMultipartToDisk(req, ct, UPLOADS, uploadLimitBytes(req));
++      } catch (e) {
++        if (e.status === 413) return uploadTooBig(res, req);
++        return send(res, 400, { ok: false, error: "Upload failed: " + e.message });
++      }
++      const dropFiles = () => parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
++      const get = (n) => partText(parts, n);
++      const filePart = parts.find((p) => (p.name === "video" || p.name === "file") && p.path && p.size > 1000);
++      if (!filePart) { dropFiles(); return send(res, 400, { ok: false, error: "No video file received. Choose a file first." }); }
+       const orig = filePart.filename || "upload.mp4";
+       let ext = path.extname(orig).toLowerCase() || ".mp4";
+       if (![".mp4", ".mov", ".webm", ".mkv", ".m4v"].includes(ext)) ext = ".mp4";
+@@ -1059,9 +1181,9 @@ const server = http.createServer(async (req, res) => {
+       const trends = readTrends(get);
+       const jobId = crypto.randomBytes(6).toString("hex");
+       const owner = chargeVideo(req, res);
+-      if (!owner) return;
++      if (!owner) { dropFiles(); return; }
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+-      fs.writeFileSync(dest, filePart.body);
++      fs.renameSync(filePart.path, dest);
+       const meta = {
+         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
+         subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, trends,
+@@ -1350,8 +1472,15 @@ const server = http.createServer(async (req, res) => {
+       if (!ct.includes("multipart/form-data")) {
+         return send(res, 400, { ok: false, error: "Send multipart with videos[] files." });
+       }
+-      const buf = await parseBody(req, 200 * 1024 * 1024);
+-      const parts = parseMultipart(buf, ct);
++      if (!auth.currentUser(req)) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
++      let parts;
++      try {
++        parts = await parseMultipartToDisk(req, ct, UPLOADS, uploadLimitBytes(req));
++      } catch (e) {
++        if (e.status === 413) return uploadTooBig(res, req);
++        return send(res, 400, { ok: false, error: "Upload failed: " + e.message });
++      }
++      const dropFiles = () => parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
+       const files = parts.filter((p) => {
+         const n = String(p.name || "");
+         const isVideoField =
+@@ -1359,35 +1488,36 @@ const server = http.createServer(async (req, res) => {
+           n === "videos[]" ||
+           n === "video" ||
+           n.startsWith("videos");
+-        return isVideoField && p.body && p.body.length > 1000;
++        return isVideoField && p.path && p.size > 1000;
+       });
+       if (files.length < 2) {
++        dropFiles();
+         return send(res, 400, {
+           ok: false,
+           error: files.length ? "Add at least 2 videos (max 5)." : "No video file received.",
+         });
+       }
+       if (files.length > 5) {
++        dropFiles();
+         return send(res, 400, { ok: false, error: "Maximum 5 videos." });
+       }
++      const tooBig = files.find((f) => f.size > 200 * 1024 * 1024);
++      if (tooBig) {
++        dropFiles();
++        return send(res, 400, { ok: false, error: `File too large: ${tooBig.filename} (max 200MB each for ranking)` });
++      }
+       const jobId = crypto.randomBytes(6).toString("hex");
+       const owner = chargeVideo(req, res);
+-      if (!owner) return;
++      if (!owner) { dropFiles(); return; }
+       const sources = [];
+       for (let i = 0; i < files.length; i++) {
+         const f = files[i];
+-        if (f.body.length > 40 * 1024 * 1024) {
+-          return send(res, 400, { ok: false, error: `File too large: ${f.filename} (max 40MB each)` });
+-        }
+         const rawName = f.filename || `video-${i + 1}.mp4`;
+         let ext = path.extname(rawName).toLowerCase() || ".mp4";
+         if (![".mp4", ".mov", ".webm", ".mkv", ".m4v"].includes(ext)) ext = ".mp4";
+         const dest = path.join(UPLOADS, `${jobId}-${i}${ext}`);
+-        fs.writeFileSync(dest, f.body);
+-        const labelPart = parts.find((p) => p.name === `label_${i}`);
+-        const customLabel = labelPart
+-          ? String(labelPart.body.toString("utf8") || "").trim().slice(0, 40)
+-          : "";
++        fs.renameSync(f.path, dest);
++        const customLabel = String(partText(parts, `label_${i}`) || "").trim().slice(0, 40);
+         sources.push({
+           path: dest,
+           label:
