@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Promo board - Clipery</title>
+    <meta name="description" content="Creators on Clipery share their YouTube, TikTok and Instagram. Follow, collab, grow together." />
+    <meta name="theme-color" content="#07070b" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css?v=71" />
+  </head>
+  <body data-auth-modal>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
+
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+        <nav class="nav" aria-label="Primary">
+          <a href="/library" data-nav>Library</a>
+          <a href="/promo" data-nav>Promo</a>
+          <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
+          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="page container promo-page">
+      <div class="page-hero" style="text-align: center; margin-inline: auto">
+        <div class="eyebrow">Promo board</div>
+        <h1>Get discovered by other creators.</h1>
+        <p style="margin-inline: auto">Paid members can post their YouTube, TikTok and Instagram once a week. Studio accounts sit at the top, then Pro, then Starter.</p>
+      </div>
+
+      <section class="acct-card promo-post" id="promo-post">
+        <div class="acct-card-head">
+          <h2>Post your channels</h2>
+          <span class="pill" id="promo-plan-pill" hidden></span>
+        </div>
+        <p class="muted" id="promo-gate"></p>
+        <form id="promo-form" class="promo-form" hidden>
+          <div class="promo-row">
+            <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
+            <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
+          </div>
+          <div class="promo-row">
+            <label><span class="promo-lbl yt">YouTube</span><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></label>
+            <label><span class="promo-lbl tt">TikTok</span><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></label>
+            <label><span class="promo-lbl ig">Instagram</span><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></label>
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
+            <span class="pro-msg" id="pr-msg"></span>
+          </div>
+          <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
+        </form>
+      </section>
+
+      <section class="promo-board" id="promo-board" aria-live="polite">
+        <p class="muted" id="promo-empty" hidden>No one has posted yet. Be the first.</p>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="container footer-inner">
+        <a class="footer-brand" href="/">Clipery</a>
+        <div class="footer-links">
+          <a href="/studio">Studio</a>
+          <a href="/library">Library</a>
+          <a href="/promo">Promo</a>
+          <a href="/pricing">Pricing</a>
+        </div>
+        <div>(c) <span id="year"></span></div>
+      </div>
+    </footer>
+
+    <script src="/shared.js?v=2"></script>
+    <script src="/promo.js?v=1"></script>
+  </body>
+</html>
