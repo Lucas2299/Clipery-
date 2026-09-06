@@ -257,15 +257,17 @@ const PLANS = {
   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
   free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
   starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4 },
-  plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
-  pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
-  unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
+  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8 },
+  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10 },
 };
+// Old plan ids from earlier versions keep working for existing accounts.
+const PLAN_ALIASES = { plus: "pro", unlimited: "studio" };
 
 const currentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM
 
 function planOf(user) {
-  return PLANS[(user && user.plan) || "free"] || PLANS.free;
+  const id = (user && user.plan) || "free";
+  return PLANS[id] || PLANS[PLAN_ALIASES[id]] || PLANS.free;
 }
 
 /** Usage for this month, reset automatically when the month rolls over. */
@@ -330,6 +332,7 @@ function listUsers() {
     const limit = planOf(u).videos + (Number(u.bonusVideos) || 0);
     return {
       ...publicUser(u),
+      plan: planOf(u).id,
       role: isAdmin(u) ? "owner" : "member",
       bonusVideos: Number(u.bonusVideos) || 0,
       planLabel: planOf(u).label,
@@ -371,7 +374,8 @@ function changePassword(userId, current, next) {
 
 /** Owner action: move somebody to another plan. */
 function setPlan(userId, plan) {
-  if (!PLANS[plan]) return { ok: false, status: 400, error: "Unknown plan." };
+  plan = PLANS[plan] ? plan : PLAN_ALIASES[plan];
+  if (!plan) return { ok: false, status: 400, error: "Unknown plan." };
   const users = readUsers();
   const user = users.find((u) => u.id === userId);
   if (!user) return { ok: false, status: 404, error: "Account not found." };

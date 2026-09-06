@@ -1,0 +1,27 @@
+{
+  "id": "da645b2ed70e",
+  "userId": "a5fdcea12490c893",
+  "status": "error",
+  "stage": "downloading",
+  "progress": 0,
+  "mode": "link-rank-video",
+  "modeLabel": "Link ranking video",
+  "createdAt": "2026-09-06T08:58:31.134Z",
+  "sourceName": "Top Videos",
+  "clips": [],
+  "rankings": [],
+  "compilation": null,
+  "errors": [
+    {
+      "url": "https://www.tiktok.com/@c0625960so9/video/7678354914598341918?is_from_webapp=1&sender_device=pc&web_id=7682343257448728067",
+      "error": "TikTok blocked downloads from this server IP. Use Upload videos instead (save TikToks to your phone/PC and upload), or paste YouTube Shorts URLs. (WARNING: [TikTok] The extractor is attempting impersonation, but no impersonate target is available. If you encounter errors, then see  https://github.com/yt-dlp/yt-dlp#impersonation  for information on installing the required dependencies\n)"
+    },
+    {
+      "url": "https://www.tiktok.com/@funnydogsofficial/video/7680992055408987414?is_from_webapp=1&sender_device=pc&web_id=7682343257448728067",
+      "error": "TikTok blocked downloads from this server IP. Use Upload videos instead (save TikToks to your phone/PC and upload), or paste YouTube Shorts URLs. (WARNING: [TikTok] The extractor is attempting impersonation, but no impersonate target is available. If you encounter errors, then see  https://github.com/yt-dlp/yt-dlp#impersonation  for information on installing the required dependencies\n)"
+    }
+  ],
+  "error": "Could not download TikTok links from this server (TikTok blocks the IP). Use the 'Upload videos' option on the Rank page: save each TikTok and upload them - we'll still make one ranked clip per video + a countdown ranking video.",
+  "downloadStatus": "Fetching 2/2...",
+  "refunded": true
+}

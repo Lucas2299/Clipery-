@@ -1,0 +1,33 @@
+{
+  "id": "ff90cc14e954",
+  "userId": "a5fdcea12490c893",
+  "status": "error",
+  "stage": "downloading",
+  "progress": 0,
+  "mode": "viral",
+  "createdAt": "2026-09-06T08:57:59.957Z",
+  "sourceName": "https://www.tiktok.com/@funnydogsofficial/video/7680992055408987414?is_from_webapp=1&sender_device=pc&web_id=76823432574",
+  "clips": [],
+  "rankings": [],
+  "error": "TikTok blocked downloads from this server IP. Use Upload videos instead (save TikToks to your phone/PC and upload), or paste YouTube Shorts URLs. (WARNING: [TikTok] The extractor is attempting impersonation, but no impersonate target is available. If you encounter errors, then see  https://github.com/yt-dlp/yt-dlp#impersonation  for information on installing the required dependencies\n)",
+  "planLabel": "Starter",
+  "maxMinutes": 20,
+  "maxClips": 4,
+  "jobId": "ff90cc14e954",
+  "subtitles": false,
+  "subStyle": {
+    "color": "white",
+    "size": "medium",
+    "pos": "bottom",
+    "style": "outline",
+    "words": 0
+  },
+  "hook": false,
+  "hookMode": "intro",
+  "trends": [],
+  "genre": "auto",
+  "review": true,
+  "manual": false,
+  "editor": true,
+  "refunded": true
+}

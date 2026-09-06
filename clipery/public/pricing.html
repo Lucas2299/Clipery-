@@ -107,7 +107,7 @@
       fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
         if (!d || !d.user) return;
         var plan = d.user.plan || "free";
-        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", unlimited: "unlimited" };
+        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", studio: "unlimited", unlimited: "unlimited" };
         var card = map[plan] ? document.querySelector('.price-card[data-plan="' + map[plan] + '"]') : null;
         if (card) {
           card.classList.add("current");
