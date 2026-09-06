@@ -1,0 +1,33 @@
+{
+  "id": "17194439c34a",
+  "userId": "a5fdcea12490c893",
+  "status": "error",
+  "stage": "downloading",
+  "progress": 0,
+  "mode": "viral",
+  "createdAt": "2026-09-06T10:00:33.811Z",
+  "sourceName": "https://www.tiktok.com/@funnydogsofficial/video/7680992055408987414?q=funnydog&t=1788684947744",
+  "clips": [],
+  "rankings": [],
+  "error": "TikTok download failed: ERROR: [TikTok] 7680992055408987414: Unexpected response from webpage request; please report this issue on  https://github.com/yt-dlp/yt-dlp/issues?q= , filling out the appropriate issue template. Con",
+  "planLabel": "Studio",
+  "maxMinutes": 240,
+  "maxClips": 10,
+  "jobId": "17194439c34a",
+  "subtitles": true,
+  "subStyle": {
+    "color": "white",
+    "size": "medium",
+    "pos": "bottom",
+    "style": "outline",
+    "words": 0
+  },
+  "hook": false,
+  "hookMode": "intro",
+  "trends": [],
+  "genre": "auto",
+  "review": true,
+  "manual": false,
+  "editor": true,
+  "refunded": true
+}

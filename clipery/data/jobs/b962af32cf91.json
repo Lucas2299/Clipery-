@@ -1,0 +1,150 @@
+{
+  "id": "b962af32cf91",
+  "userId": "a5fdcea12490c893",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "link-rank-video",
+  "modeLabel": "Link ranking video",
+  "createdAt": "2026-09-06T10:21:34.162Z",
+  "sourceName": "Top Videos",
+  "clips": [
+    {
+      "rank": 1,
+      "score": 68,
+      "title": "adwa",
+      "caption": "adwa",
+      "sourceUrl": null,
+      "duration": 5,
+      "dimensions": {
+        "total": 68,
+        "hook": 70,
+        "length": 45,
+        "pacing": 73,
+        "retention": 60,
+        "vertical": 92,
+        "energy": 60,
+        "punch": 89
+      },
+      "url": "/clips/b962af32cf91/rank-1.mp4",
+      "downloadName": "rank-1-b962af32cf91.mp4"
+    },
+    {
+      "rank": 2,
+      "score": 63,
+      "title": "dogo",
+      "caption": "dogo",
+      "sourceUrl": null,
+      "duration": 4.9,
+      "dimensions": {
+        "total": 63,
+        "hook": 75,
+        "length": 45,
+        "pacing": 61,
+        "retention": 54,
+        "vertical": 92,
+        "energy": 46,
+        "punch": 80
+      },
+      "url": "/clips/b962af32cf91/rank-2.mp4",
+      "downloadName": "rank-2-b962af32cf91.mp4"
+    },
+    {
+      "rank": 3,
+      "score": 62,
+      "title": "fuckme",
+      "caption": "fuckme",
+      "sourceUrl": null,
+      "duration": 4.9,
+      "dimensions": {
+        "total": 62,
+        "hook": 70,
+        "length": 45,
+        "pacing": 54,
+        "retention": 50,
+        "vertical": 92,
+        "energy": 34,
+        "punch": 78
+      },
+      "url": "/clips/b962af32cf91/rank-3.mp4",
+      "downloadName": "rank-3-b962af32cf91.mp4"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 68,
+      "title": "adwa",
+      "url": null,
+      "duration": 5,
+      "dimensions": {
+        "total": 68,
+        "hook": 70,
+        "length": 45,
+        "pacing": 73,
+        "retention": 60,
+        "vertical": 92,
+        "energy": 60,
+        "punch": 89
+      }
+    },
+    {
+      "rank": 2,
+      "score": 63,
+      "title": "dogo",
+      "url": null,
+      "duration": 4.9,
+      "dimensions": {
+        "total": 63,
+        "hook": 75,
+        "length": 45,
+        "pacing": 61,
+        "retention": 54,
+        "vertical": 92,
+        "energy": 46,
+        "punch": 80
+      }
+    },
+    {
+      "rank": 3,
+      "score": 62,
+      "title": "fuckme",
+      "url": null,
+      "duration": 4.9,
+      "dimensions": {
+        "total": 62,
+        "hook": 70,
+        "length": 45,
+        "pacing": 54,
+        "retention": 50,
+        "vertical": 92,
+        "energy": 34,
+        "punch": 78
+      }
+    }
+  ],
+  "compilation": {
+    "url": "/clips/b962af32cf91/ranking-compilation.mp4",
+    "downloadName": "ranking-video-b962af32cf91.mp4",
+    "title": "Top Videos - ranking countdown",
+    "style": "tiktok-list-countdown"
+  },
+  "errors": [],
+  "error": null,
+  "sources": [
+    {
+      "label": "dogo",
+      "url": null
+    },
+    {
+      "label": "fuckme",
+      "url": null
+    },
+    {
+      "label": "adwa",
+      "url": null
+    }
+  ],
+  "boardTitle": "Top Videos",
+  "completedAt": "2026-09-06T10:21:54.541Z"
+}

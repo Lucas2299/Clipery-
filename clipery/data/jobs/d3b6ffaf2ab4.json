@@ -1,0 +1,1433 @@
+{
+  "id": "d3b6ffaf2ab4",
+  "userId": "a5fdcea12490c893",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "genre": "auto",
+  "createdAt": "2026-09-06T10:11:59.476Z",
+  "sourceName": "d3b6ffaf2ab4-src.mp4",
+  "subtitles": false,
+  "hook": false,
+  "hookMode": "intro",
+  "clips": [
+    {
+      "rank": 1,
+      "reframe": "center",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "title": "High-energy cut",
+      "start": 0,
+      "end": 5,
+      "duration": 5,
+      "dimensions": {
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "viralScore": 48,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [],
+        "quote": null,
+        "summary": null
+      },
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 0,
+        "end": 5,
+        "duration": 5,
+        "anchor": null,
+        "reasons": [],
+        "captions": true,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "url": "/clips/d3b6ffaf2ab4/clip-1.mp4",
+      "downloadName": "viral-48-rank1-d3b6ffaf2ab4.mp4",
+      "postTip": "Post this first - highest viral chance"
+    },
+    {
+      "rank": 2,
+      "reframe": "static",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 5.1,
+      "end": 10,
+      "duration": 4.9,
+      "dimensions": {
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "viralScore": 48,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [],
+        "quote": null,
+        "summary": null
+      },
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 5.1,
+        "end": 10,
+        "duration": 4.9,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "url": "/clips/d3b6ffaf2ab4/clip-2.mp4",
+      "downloadName": "viral-48-rank2-d3b6ffaf2ab4.mp4",
+      "postTip": "Strong follow-up post"
+    },
+    {
+      "rank": 3,
+      "reframe": "follow",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "title": "My clip 4",
+      "start": 10.1,
+      "end": 15,
+      "duration": 4.9,
+      "dimensions": {
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "viralScore": 48,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [],
+        "quote": null,
+        "summary": null
+      },
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 10.1,
+        "end": 15,
+        "duration": 4.9,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "url": "/clips/d3b6ffaf2ab4/clip-3.mp4",
+      "downloadName": "viral-48-rank3-d3b6ffaf2ab4.mp4",
+      "postTip": "Strong follow-up post"
+    },
+    {
+      "rank": 4,
+      "reframe": "static",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "title": "My clip 6",
+      "start": 10.51,
+      "end": 15,
+      "duration": 4.49,
+      "dimensions": {
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "viralScore": 48,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [],
+        "quote": null,
+        "summary": null
+      },
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 10.51,
+        "end": 15,
+        "duration": 4.49,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "url": "/clips/d3b6ffaf2ab4/clip-4.mp4",
+      "downloadName": "viral-48-rank4-d3b6ffaf2ab4.mp4",
+      "postTip": "Schedule later / A-B test"
+    },
+    {
+      "rank": 5,
+      "reframe": "static",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "title": "My clip 5",
+      "start": 15.1,
+      "end": 20,
+      "duration": 4.9,
+      "dimensions": {
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "viralScore": 48,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [],
+        "quote": null,
+        "summary": null
+      },
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 15.1,
+        "end": 20,
+        "duration": 4.9,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "url": "/clips/d3b6ffaf2ab4/clip-5.mp4",
+      "downloadName": "viral-48-rank5-d3b6ffaf2ab4.mp4",
+      "postTip": "Schedule later / A-B test"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "No payoff",
+        "Visually active",
+        "Hook: opens with a question"
+      ],
+      "quote": "Oh my god, what are we going to do?",
+      "title": "Viral angle",
+      "start": 33.95,
+      "end": 68.07,
+      "duration": 34.12,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "No payoff",
+          "Visually active",
+          "Hook: opens with a question"
+        ],
+        "hook": 62,
+        "length": 98,
+        "pacing": 66,
+        "retention": 86,
+        "cta": 45,
+        "replay": 73,
+        "energy": 51,
+        "punch": 82,
+        "scores": {
+          "hook": 60,
+          "curiosity": 62,
+          "emotion": 69,
+          "value": 58,
+          "completion": 61,
+          "surprise": 64,
+          "payoff": 38,
+          "retention": 38
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "cheeky",
+            "hungry",
+            "piper"
+          ],
+          "words": 46,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 100,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a big reaction about chicken, cheeky, without a clear payoff"
+        },
+        "summary": "a big reaction about chicken, cheeky, without a clear payoff",
+        "topic": [
+          "chicken",
+          "cheeky",
+          "hungry",
+          "piper"
+        ],
+        "quote": "Oh my god, what are we going to do?",
+        "wpm": 83,
+        "motion": 76,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Why are we going to get her in the car?"
+      }
+    },
+    {
+      "rank": 2,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "No payoff",
+        "Visually active",
+        "Hook: opens with a question"
+      ],
+      "quote": "Oh my god, what are we going to do?",
+      "title": "High-energy cut",
+      "start": 33.95,
+      "end": 68.07,
+      "duration": 34.12,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "No payoff",
+          "Visually active",
+          "Hook: opens with a question"
+        ],
+        "hook": 64,
+        "length": 98,
+        "pacing": 76,
+        "retention": 89,
+        "cta": 45,
+        "replay": 78,
+        "energy": 63,
+        "punch": 82,
+        "scores": {
+          "hook": 60,
+          "curiosity": 62,
+          "emotion": 69,
+          "value": 58,
+          "completion": 61,
+          "surprise": 64,
+          "payoff": 38,
+          "retention": 38
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "cheeky",
+            "hungry",
+            "piper"
+          ],
+          "words": 46,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 100,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a big reaction about chicken, cheeky, without a clear payoff"
+        },
+        "summary": "a big reaction about chicken, cheeky, without a clear payoff",
+        "topic": [
+          "chicken",
+          "cheeky",
+          "hungry",
+          "piper"
+        ],
+        "quote": "Oh my god, what are we going to do?",
+        "wpm": 83,
+        "motion": 76,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Why are we going to get her in the car?"
+      }
+    },
+    {
+      "rank": 3,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Emotional moment",
+        "No payoff",
+        "Visually active",
+        "Dramatic pause"
+      ],
+      "quote": "Who's a good girl?",
+      "title": "High-energy cut",
+      "start": 0,
+      "end": 40,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Emotional moment",
+          "No payoff",
+          "Visually active",
+          "Dramatic pause"
+        ],
+        "hook": 59,
+        "length": 98,
+        "pacing": 77,
+        "retention": 90,
+        "cta": 45,
+        "replay": 80,
+        "energy": 58,
+        "punch": 89,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 77,
+          "value": 58,
+          "completion": 45,
+          "surprise": 64,
+          "payoff": 38,
+          "retention": 48
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "who's",
+            "piper",
+            "good"
+          ],
+          "words": 36,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 100,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 51,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a big reaction about chicken, who's, without a clear payoff"
+        },
+        "summary": "a big reaction about chicken, who's, without a clear payoff",
+        "topic": [
+          "chicken",
+          "who's",
+          "piper",
+          "good"
+        ],
+        "quote": "Who's a good girl?",
+        "wpm": 117,
+        "motion": 73,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 45
+      }
+    },
+    {
+      "rank": 4,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: opens with a question",
+        "No payoff",
+        "Visually active",
+        "Good pacing"
+      ],
+      "quote": "What?",
+      "title": "Viral angle",
+      "start": 47.98,
+      "end": 88,
+      "duration": 40.02,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: opens with a question",
+          "No payoff",
+          "Visually active",
+          "Good pacing"
+        ],
+        "hook": 69,
+        "length": 98,
+        "pacing": 70,
+        "retention": 87,
+        "cta": 70,
+        "replay": 76,
+        "energy": 54,
+        "punch": 84,
+        "scores": {
+          "hook": 68,
+          "curiosity": 62,
+          "emotion": 54,
+          "value": 58,
+          "completion": 49,
+          "surprise": 55,
+          "payoff": 38,
+          "retention": 37
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "hungry",
+            "speak",
+            "it's"
+          ],
+          "words": 12,
+          "story": 30,
+          "setup": 45,
+          "conflict": 25,
+          "claim": 30,
+          "reaction": 40,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 49,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about chicken, hungry, without a clear payoff"
+        },
+        "summary": "a talking moment about chicken, hungry, without a clear payoff",
+        "topic": [
+          "chicken",
+          "hungry",
+          "speak",
+          "it's"
+        ],
+        "quote": "What?",
+        "wpm": 32,
+        "motion": 58,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 49
+      }
+    },
+    {
+      "rank": 5,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "No payoff",
+        "Visually active",
+        "Dramatic pause"
+      ],
+      "quote": "Oh my god, what are we going to do?",
+      "title": "Viral angle",
+      "start": 33.95,
+      "end": 68.07,
+      "duration": 34.12,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "No payoff",
+          "Visually active",
+          "Dramatic pause"
+        ],
+        "hook": 59,
+        "length": 98,
+        "pacing": 69,
+        "retention": 87,
+        "cta": 45,
+        "replay": 75,
+        "energy": 54,
+        "punch": 83,
+        "scores": {
+          "hook": 60,
+          "curiosity": 62,
+          "emotion": 69,
+          "value": 58,
+          "completion": 61,
+          "surprise": 64,
+          "payoff": 38,
+          "retention": 38
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "cheeky",
+            "hungry",
+            "piper"
+          ],
+          "words": 46,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 100,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a big reaction about chicken, cheeky, without a clear payoff"
+        },
+        "summary": "a big reaction about chicken, cheeky, without a clear payoff",
+        "topic": [
+          "chicken",
+          "cheeky",
+          "hungry",
+          "piper"
+        ],
+        "quote": "Oh my god, what are we going to do?",
+        "wpm": 83,
+        "motion": 76,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Why are we going to get her in the car?"
+      }
+    },
+    {
+      "rank": 6,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Kept the build-up",
+        "No payoff",
+        "Visually active",
+        "Dramatic pause"
+      ],
+      "quote": "Oh my god, what are we going to do?",
+      "title": "Viral angle",
+      "start": 33.95,
+      "end": 68.07,
+      "duration": 34.12,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Kept the build-up",
+          "No payoff",
+          "Visually active",
+          "Dramatic pause"
+        ],
+        "hook": 55,
+        "length": 98,
+        "pacing": 26,
+        "retention": 70,
+        "cta": 45,
+        "replay": 48,
+        "energy": 31,
+        "punch": 42,
+        "scores": {
+          "hook": 60,
+          "curiosity": 62,
+          "emotion": 69,
+          "value": 58,
+          "completion": 61,
+          "surprise": 64,
+          "payoff": 38,
+          "retention": 38
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "cheeky",
+            "hungry",
+            "piper"
+          ],
+          "words": 46,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 100,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a big reaction about chicken, cheeky, without a clear payoff"
+        },
+        "summary": "a big reaction about chicken, cheeky, without a clear payoff",
+        "topic": [
+          "chicken",
+          "cheeky",
+          "hungry",
+          "piper"
+        ],
+        "quote": "Oh my god, what are we going to do?",
+        "wpm": 83,
+        "motion": 76,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Why are we going to get her in the car?"
+      }
+    },
+    {
+      "rank": 7,
+      "score": 55,
+      "viralScore": 55,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "No payoff",
+        "Visually active",
+        "Good pacing",
+        "Ideal short-form length"
+      ],
+      "quote": "Speak.",
+      "title": "High-energy cut",
+      "start": 66.57,
+      "end": 97.666667,
+      "duration": 31.1,
+      "dimensions": {
+        "total": 55,
+        "viralScore": 55,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "No payoff",
+          "Visually active",
+          "Good pacing",
+          "Ideal short-form length"
+        ],
+        "hook": 60,
+        "length": 92,
+        "pacing": 77,
+        "retention": 85,
+        "cta": 90,
+        "replay": 80,
+        "energy": 62,
+        "punch": 85,
+        "scores": {
+          "hook": 52,
+          "curiosity": 40,
+          "emotion": 50,
+          "value": 52,
+          "completion": 33,
+          "surprise": 44,
+          "payoff": 38,
+          "retention": 33
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "speak",
+            "ryan"
+          ],
+          "words": 6,
+          "story": 30,
+          "setup": 45,
+          "conflict": 25,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 25,
+          "roles": [],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 39,
+          "notes": [
+            "asks a question"
+          ],
+          "summary": "a talking moment about chicken, speak, without a clear payoff"
+        },
+        "summary": "a talking moment about chicken, speak, without a clear payoff",
+        "topic": [
+          "chicken",
+          "speak",
+          "ryan"
+        ],
+        "quote": "Speak.",
+        "wpm": 16,
+        "motion": 39,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 33
+      }
+    },
+    {
+      "rank": 8,
+      "score": 54,
+      "viralScore": 54,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "No payoff",
+        "Visually active",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "quote": "got hit by a big ass truck.",
+      "title": "Viral angle",
+      "start": 44.96,
+      "end": 71.2,
+      "duration": 26.24,
+      "dimensions": {
+        "total": 54,
+        "viralScore": 54,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "No payoff",
+          "Visually active",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 61,
+        "length": 98,
+        "pacing": 63,
+        "retention": 84,
+        "cta": 45,
+        "replay": 72,
+        "energy": 50,
+        "punch": 79,
+        "scores": {
+          "hook": 60,
+          "curiosity": 62,
+          "emotion": 54,
+          "value": 58,
+          "completion": 49,
+          "surprise": 55,
+          "payoff": 38,
+          "retention": 37
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "hungry",
+            "truck",
+            "speak"
+          ],
+          "words": 19,
+          "story": 30,
+          "setup": 45,
+          "conflict": 25,
+          "claim": 30,
+          "reaction": 40,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 49,
+          "notes": [
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about chicken, hungry, without a clear payoff"
+        },
+        "summary": "a talking moment about chicken, hungry, without a clear payoff",
+        "topic": [
+          "chicken",
+          "hungry",
+          "truck",
+          "speak"
+        ],
+        "quote": "got hit by a big ass truck.",
+        "wpm": 45,
+        "motion": 65,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 49,
+        "anchor": "got hit by a big ass truck."
+      }
+    },
+    {
+      "rank": 9,
+      "score": 53,
+      "viralScore": 53,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "No payoff",
+        "Visually active",
+        "Ideal short-form length",
+        "High retention signal"
+      ],
+      "quote": "Oh, it's a chicken.",
+      "title": "Viral angle",
+      "start": 55.74,
+      "end": 89.58,
+      "duration": 33.84,
+      "dimensions": {
+        "total": 53,
+        "viralScore": 53,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "No payoff",
+          "Visually active",
+          "Ideal short-form length",
+          "High retention signal"
+        ],
+        "hook": 61,
+        "length": 98,
+        "pacing": 59,
+        "retention": 82,
+        "cta": 70,
+        "replay": 70,
+        "energy": 45,
+        "punch": 80,
+        "scores": {
+          "hook": 60,
+          "curiosity": 40,
+          "emotion": 50,
+          "value": 52,
+          "completion": 41,
+          "surprise": 44,
+          "payoff": 38,
+          "retention": 33
+        },
+        "brain": {
+          "topic": [
+            "chicken",
+            "speak",
+            "it's",
+            "ryan"
+          ],
+          "words": 10,
+          "story": 30,
+          "setup": 45,
+          "conflict": 25,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 25,
+          "roles": [],
+          "missing": [
+            "no payoff",
+            "ends on an unanswered question"
+          ],
+          "selfContained": 41,
+          "notes": [
+            "asks a question"
+          ],
+          "summary": "a talking moment about chicken, speak, without a clear payoff"
+        },
+        "summary": "a talking moment about chicken, speak, without a clear payoff",
+        "topic": [
+          "chicken",
+          "speak",
+          "it's",
+          "ryan"
+        ],
+        "quote": "Oh, it's a chicken.",
+        "wpm": 18,
+        "motion": 55,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "arc": 41,
+        "anchor": "Oh, it's a chicken."
+      }
+    }
+  ],
+  "error": null,
+  "duration": 97.67,
+  "candidateCount": 9,
+  "sceneCount": 20,
+  "stageNote": null,
+  "transcribed": true,
+  "viralAnalysis": {
+    "analyzed": 9,
+    "topViralScore": 61,
+    "likelyViral": 0,
+    "postOrder": [
+      {
+        "rank": 1,
+        "title": "Viral angle",
+        "viralScore": 61,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 2,
+        "title": "High-energy cut",
+        "viralScore": 61,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 3,
+        "title": "High-energy cut",
+        "viralScore": 55,
+        "verdict": "Low priority"
+      }
+    ],
+    "summary": "AI analyzed 9 moments. Best clip scored 61 - still worth testing."
+  },
+  "plan": [
+    {
+      "id": "8db9ef",
+      "order": 1,
+      "start": 0,
+      "end": 5,
+      "duration": 5,
+      "title": "High-energy cut",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 0,
+        "end": 5,
+        "duration": 5,
+        "anchor": null,
+        "reasons": [],
+        "captions": true,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "layout": "center",
+      "captions": true,
+      "subStyle": {
+        "color": "white",
+        "size": "medium",
+        "pos": "bottom",
+        "style": "box",
+        "words": 0
+      },
+      "source": "ai"
+    },
+    {
+      "id": "812b98",
+      "order": 2,
+      "start": 5.1,
+      "end": 10,
+      "duration": 4.9,
+      "title": "Viral angle",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 5.1,
+        "end": 10,
+        "duration": 4.9,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "layout": "auto",
+      "captions": false,
+      "subStyle": null,
+      "source": "ai"
+    },
+    {
+      "id": "u4fc241",
+      "order": 3,
+      "start": 10.1,
+      "end": 15,
+      "duration": 4.9,
+      "title": "My clip 4",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 10.1,
+        "end": 15,
+        "duration": 4.9,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "layout": "auto",
+      "captions": false,
+      "subStyle": null,
+      "source": "user"
+    },
+    {
+      "id": "u4f4a04",
+      "order": 4,
+      "start": 10.51,
+      "end": 15,
+      "duration": 4.49,
+      "title": "My clip 6",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 10.51,
+        "end": 15,
+        "duration": 4.49,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "layout": "auto",
+      "captions": false,
+      "subStyle": null,
+      "source": "user"
+    },
+    {
+      "id": "u58a1b0",
+      "order": 5,
+      "start": 15.1,
+      "end": 20,
+      "duration": 4.9,
+      "title": "My clip 5",
+      "score": 48,
+      "viralScore": 48,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [],
+      "quote": null,
+      "scores": {
+        "hook": 50,
+        "curiosity": 40,
+        "emotion": 35,
+        "value": 35,
+        "completion": 40,
+        "surprise": 30,
+        "payoff": 40,
+        "retention": 47
+      },
+      "summary": null,
+      "edit": {
+        "start": 15.1,
+        "end": 20,
+        "duration": 4.9,
+        "anchor": null,
+        "reasons": [],
+        "captions": false,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "layout": "auto",
+      "captions": false,
+      "subStyle": null,
+      "source": "user"
+    }
+  ],
+  "subtitlesNote": "captions skipped (no speech detected)",
+  "completedAt": "2026-09-06T10:18:27.196Z"
+}
