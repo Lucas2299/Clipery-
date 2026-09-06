@@ -81,3 +81,28 @@ spinning forever.
   hundreds of thousands.
 - There is no payment integration. Plans are set by hand from the owner
   dashboard.
+
+
+## TikTok / Instagram links say "blocked" or "refusing this server's IP"
+
+Those sites fingerprint the downloader and block data-centre IPs. Three fixes,
+try them in order:
+
+1. Install the browser-impersonation add-on for yt-dlp (once):
+
+       pip install -U "yt-dlp[default,curl-cffi]"
+
+   then restart the server. Clipery now retries every link "as Chrome".
+
+2. Give it your browser cookies. Install a "Get cookies.txt LOCALLY" extension,
+   open tiktok.com while logged in, export, save the file next to server.js as
+   `cookies.txt`, and add to `.env`:
+
+       CLIPERY_COOKIES=./cookies.txt
+
+3. Route downloads through a residential proxy (paid, e.g. from a proxy provider):
+
+       CLIPERY_PROXY=http://user:pass@host:port
+
+If none of that is possible, users can always save the TikTok to their device
+and use **Upload** - that path never touches TikTok.

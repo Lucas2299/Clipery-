@@ -173,57 +173,95 @@ async function downloadUrl(url, outBase) {
     return { file: dest, title: name, platform: "sample" };
   }
 
-  if (platform === "tiktok") {
-    // Try anyway - may work on some hosts
-    const errHint =
-      "TikTok blocked downloads from this server IP. Use Upload videos instead (save TikToks to your phone/PC and upload), or paste YouTube Shorts URLs.";
-    try {
-      await tryYtdlp(url, outBase);
-      const file = findDownloaded(outBase);
-      if (file) return { file, title: path.basename(file), platform };
-    } catch (e) {
-      throw new Error(errHint + " (" + (e.message || "blocked") + ")");
-    }
-    throw new Error(errHint);
+  // TikTok / Instagram / X check the TLS fingerprint and often block plain
+  // scripts. tryYtdlp already escalates through browser impersonation,
+  // cookies and a proxy; here we just turn the last error into advice.
+  try {
+    await tryYtdlp(url, outBase);
+  } catch (e) {
+    throw new Error(explainDownloadError(platform, e.message || String(e)));
   }
-
-  await tryYtdlp(url, outBase);
   const file = findDownloaded(outBase);
   if (!file) throw new Error("Download finished but no file found for " + url);
   return { file, title: path.basename(file), platform };
 }
 
-async function tryYtdlp(url, outBase) {
-  const args = [
+/** Optional helpers the owner can set in .env (see DEPLOY.md). */
+const COOKIES_FILE = (process.env.CLIPERY_COOKIES || "").trim();
+const PROXY = (process.env.CLIPERY_PROXY || "").trim();
+
+function commonArgs(outBase) {
+  const a = [
     "--no-playlist",
-    "-f", "bv*[height<=720]+ba/b[height<=720]/b",
+    "--no-warnings",
+    "-4",
     "--max-filesize", "40M",
     "--merge-output-format", "mp4",
     "-o", outBase + ".%(ext)s",
-    "--no-warnings",
     "--extractor-args", "youtube:player_client=android",
-    url,
   ];
-  try {
-    await run(YTDLP, args, { timeout: 180000 });
-  } catch (e) {
-    // retry simpler format
+  if (PROXY) a.push("--proxy", PROXY);
+  return a;
+}
+
+/**
+ * Download with yt-dlp, escalating through the tricks that usually get past
+ * TikTok/Instagram blocks:
+ *   1. normal            2. pretend to be Chrome (needs the curl_cffi add-on)
+ *   3. + cookies file    4. plain "best" format as a last resort
+ */
+async function tryYtdlp(url, outBase) {
+  const fmt = ["-f", "bv*[height<=720]+ba/b[height<=720]/b"];
+  const attempts = [
+    [...commonArgs(outBase), ...fmt, url],
+    [...commonArgs(outBase), ...fmt, "--impersonate", "chrome", url],
+  ];
+  if (COOKIES_FILE && fs.existsSync(COOKIES_FILE)) {
+    attempts.push([...commonArgs(outBase), ...fmt, "--impersonate", "chrome", "--cookies", COOKIES_FILE, url]);
+  }
+  attempts.push([...commonArgs(outBase), "-f", "b", url]);
+
+  let last = null;
+  for (let i = 0; i < attempts.length; i++) {
     try {
-      await run(
-        YTDLP,
-        [
-          "--no-playlist", "-f", "b", "--max-filesize", "40M",
-          "-o", outBase + ".%(ext)s",
-          "--extractor-args", "youtube:player_client=android",
-          url,
-        ],
-        { timeout: 180000 }
-      );
-    } catch (e2) {
-      const msg = String(e2.stderr || e2.message || e.message || "download failed");
-      throw new Error(msg.slice(0, 240));
+      await run(YTDLP, attempts[i], { timeout: 180000 });
+      if (findDownloaded(outBase)) return;
+    } catch (e) {
+      last = e;
+      const msg = String(e.stderr || e.message || "");
+      // "--impersonate" not understood -> very old yt-dlp; no point retrying that path.
+      if (/no such option|unrecognized arguments|impersonate target/i.test(msg)) {
+        console.log("[download] yt-dlp is old or lacks curl_cffi - browser impersonation unavailable");
+      }
+      console.log(`[download] attempt ${i + 1}/${attempts.length} failed: ${msg.split("\n").filter(Boolean).pop() || "unknown"}`.slice(0, 200));
     }
   }
+  const msg = String((last && (last.stderr || last.message)) || "download failed");
+  const err = new Error(msg.slice(0, 400));
+  err.stderr = msg;
+  throw err;
+}
+
+/** Turn yt-dlp's stderr into something a non-technical owner can act on. */
+function explainDownloadError(platform, msg) {
+  const m = String(msg || "");
+  const site = platform === "tiktok" ? "TikTok" : platform === "instagram" ? "Instagram" : "This site";
+  if (/ENOENT|not found|spawn/i.test(m) && /yt-dlp/i.test(m)) {
+    return "yt-dlp is not installed on the server. Run ./setup.sh (or: pip install -U \"yt-dlp[default,curl-cffi]\").";
+  }
+  if (/impersonat/i.test(m) || /TLS fingerprint/i.test(m)) {
+    return `${site} blocks plain downloads. Install the browser-impersonation add-on: pip install -U "yt-dlp[default,curl-cffi]" and restart the server.`;
+  }
+  if (/HTTP Error 403|HTTP Error 429|blocked|IP address/i.test(m)) {
+    return `${site} is refusing this server's IP address. Fix: set CLIPERY_COOKIES to a cookies.txt exported from your browser, or CLIPERY_PROXY to a residential proxy - or download the video and use Upload instead.`;
+  }
+  if (/Unsupported URL/i.test(m)) return `That link is not a direct video page. Open the video, copy the URL from the address bar and try again.`;
+  if (/private|login required|log in/i.test(m)) return `${site} says this video is private or needs a login. Set CLIPERY_COOKIES to a cookies.txt from a logged-in browser.`;
+  if (/File is larger than max-filesize|max-filesize/i.test(m)) return `That video is over the 40MB link limit. Download it and use Upload instead.`;
+  if (/Unable to extract|Cannot parse|Failed to parse JSON/i.test(m)) {
+    return `${site} changed something and this yt-dlp version cannot read it. Update it: pip install -U "yt-dlp[default,curl-cffi]" and restart the server.`;
+  }
+  return `${site} download failed: ` + m.split("\n").filter(Boolean).pop().slice(0, 200);
 }
 
 function findDownloaded(outBase) {
