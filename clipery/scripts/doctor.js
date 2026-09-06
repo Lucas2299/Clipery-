@@ -67,6 +67,13 @@ check("OpenCV (face tracking)", () => {
   if (parseInt(v, 10) >= 5) return null;
   return v;
 }, pipHint("'opencv-python-headless<5'"), "smart reframing - the crop follows the speaker");
+check("Face detector", () => {
+  const r = tryRun(process.platform === "win32" ? "python" : "python3", [require("path").join(__dirname, "..", "lib", "facedetect.py"), "--which"]);
+  if (!r) return null;
+  const m = /detector:\s*(\S+)/.exec(r);
+  if (!m) return null;
+  return m[1] === "yunet" ? "yunet (neural, recommended)" : m[1] === "haar" ? "haar (classic - run setup.sh again to fetch YuNet)" : null;
+}, "curl -L -o lib/models/face_detection_yunet.onnx https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx", "which face model follows the speaker");
 check("faster-whisper (transcript)", pyModule("faster_whisper"), pipHint("faster-whisper"), "the brain: hooks, story, payoff, captions");
 
 const pad = Math.max(...results.map((r) => r.name.length));

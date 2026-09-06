@@ -118,15 +118,35 @@ class YuNetDetector:
 
 
 def build_detector(cv2):
-    """Whichever detector this OpenCV build actually supports."""
-    if hasattr(cv2, "CascadeClassifier") and hasattr(cv2, "data"):
-        return HaarDetector(cv2), None
-    if hasattr(cv2, "FaceDetectorYN_create"):
+    """Best detector this OpenCV build supports: YuNet (neural, 2023) first,
+    classic Haar cascades as the fallback. CLIPERY_DETECTOR=haar forces Haar."""
+    import os
+    want = os.environ.get("CLIPERY_DETECTOR", "").lower()
+    has_haar = hasattr(cv2, "CascadeClassifier") and hasattr(cv2, "data")
+    if want != "haar" and hasattr(cv2, "FaceDetectorYN_create"):
         model = YuNetDetector.find_model()
         if model:
-            return YuNetDetector(cv2, model), None
-        return None, "yunet-model-missing"
+            try:
+                return YuNetDetector(cv2, model), None
+            except Exception:
+                pass
+        if not has_haar:
+            return None, "yunet-model-missing"
+    if has_haar:
+        return HaarDetector(cv2), None
     return None, "no-face-detector"
+
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "--which":
+    # python3 lib/facedetect.py --which  -> prints which face detector is active
+    try:
+        import cv2 as _cv2
+    except Exception as e:
+        print("no-opencv:", e)
+        sys.exit(1)
+    _d, _why = build_detector(_cv2)
+    print("opencv", _cv2.__version__, "detector:", _d.name if _d else _why)
+    sys.exit(0)
 
 
 def cluster(xs, gap=0.18):
