@@ -20,7 +20,7 @@ echo "== 3/4 Brains (yt-dlp, whisper transcript, OpenCV face tracking) =="
 # yt-dlp               -> paste-a-link downloads
 # pocketsphinx         -> tiny fallback if whisper is unavailable
 # opencv pinned below 5: OpenCV 5 removed the face cascade we track with
-PKGS="yt-dlp faster-whisper opencv-python-headless<5 pocketsphinx"
+PKGS="yt-dlp[default,curl-cffi] faster-whisper opencv-python-headless<5 pocketsphinx"
 pip3 install --break-system-packages $PKGS 2>/dev/null \
   || pip3 install $PKGS
 
