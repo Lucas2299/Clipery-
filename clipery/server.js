@@ -27,6 +27,7 @@ const {
 } = require("./lib/linkVideoEngine");
 const { normalizeSubStyle } = require("./lib/subtitles");
 const auth = require("./lib/auth");
+const promo = require("./lib/promo");
 const oauth = require("./lib/oauth");
 
 const PORT = process.env.PORT || 3000;
@@ -82,6 +83,8 @@ const ROUTES = {
   "/account.html": "account.html",
   "/waitlist": "waitlist.html",
   "/waitlist.html": "waitlist.html",
+  "/promo": "promo.html",
+  "/promo.html": "promo.html",
   "/job": "job.html",
   "/job.html": "job.html",
   "/admin": "admin.html",
@@ -703,6 +706,36 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/auth/logout" && req.method === "POST") {
       auth.destroySession(auth.parseCookies(req)[auth.COOKIE]);
       return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie(req) });
+    }
+
+    /* ------------------------------ promo board ------------------------------ */
+    if (pathname === "/api/promo" && req.method === "GET") {
+      const viewer = auth.currentUser(req);
+      const people = new Map(auth.listUsers().map((u) => [u.id, u.plan]));
+      const rows = promo.board((id) => people.get(id) || "free", viewer ? viewer.id : null);
+      const me = viewer
+        ? {
+            plan: auth.planOf(viewer).id,
+            planLabel: auth.planOf(viewer).label,
+            canPost: promo.tierOf(auth.planOf(viewer).id) > 0,
+            nextAllowedAt: promo.nextAllowedAt(viewer.id),
+            name: viewer.name || "",
+          }
+        : null;
+      return send(res, 200, { ok: true, promos: rows, me });
+    }
+    if (pathname === "/api/promo" && req.method === "POST") {
+      const user = auth.currentUser(req);
+      if (!user) return send(res, 401, { ok: false, error: "Please log in." });
+      let body = {};
+      try { body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}"); } catch (_) {}
+      const r = promo.post(user, auth.planOf(user).id, body);
+      return send(res, r.ok ? 200 : r.status || 400, r);
+    }
+    if (pathname.startsWith("/api/promo/") && req.method === "DELETE") {
+      const user = auth.currentUser(req);
+      const r = promo.remove(pathname.slice("/api/promo/".length), user, auth.isAdmin(user));
+      return send(res, r.ok ? 200 : r.status || 400, r);
     }
 
     if (pathname === "/api/auth/me" && req.method === "GET") {
