@@ -1,0 +1,73 @@
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index df02019..237e136 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -257,15 +257,17 @@ const PLANS = {
+   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
+   free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
+   starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4 },
+-  plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
+-  pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
+-  unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
++  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8 },
++  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10 },
+ };
++// Old plan ids from earlier versions keep working for existing accounts.
++const PLAN_ALIASES = { plus: "pro", unlimited: "studio" };
+ 
+ const currentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM
+ 
+ function planOf(user) {
+-  return PLANS[(user && user.plan) || "free"] || PLANS.free;
++  const id = (user && user.plan) || "free";
++  return PLANS[id] || PLANS[PLAN_ALIASES[id]] || PLANS.free;
+ }
+ 
+ /** Usage for this month, reset automatically when the month rolls over. */
+@@ -330,6 +332,7 @@ function listUsers() {
+     const limit = planOf(u).videos + (Number(u.bonusVideos) || 0);
+     return {
+       ...publicUser(u),
++      plan: planOf(u).id,
+       role: isAdmin(u) ? "owner" : "member",
+       bonusVideos: Number(u.bonusVideos) || 0,
+       planLabel: planOf(u).label,
+@@ -371,7 +374,8 @@ function changePassword(userId, current, next) {
+ 
+ /** Owner action: move somebody to another plan. */
+ function setPlan(userId, plan) {
+-  if (!PLANS[plan]) return { ok: false, status: 400, error: "Unknown plan." };
++  plan = PLANS[plan] ? plan : PLAN_ALIASES[plan];
++  if (!plan) return { ok: false, status: 400, error: "Unknown plan." };
+   const users = readUsers();
+   const user = users.find((u) => u.id === userId);
+   if (!user) return { ok: false, status: 404, error: "Account not found." };
+diff --git a/clipery/public/admin.html b/clipery/public/admin.html
+index 0fb7b6d..a5b78ba 100644
+--- a/clipery/public/admin.html
++++ b/clipery/public/admin.html
+@@ -31,9 +31,9 @@
+       table.adm-t tr:hover td { background: rgba(255,255,255,.03); }
+       .pill { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 800; }
+       .pill.free { background: rgba(255,255,255,.1); color: #c9c5d8; }
+-      .pill.plus { background: rgba(139,124,255,.2); color: #b9aeff; }
++      .pill.starter, .pill.plus { background: rgba(139,124,255,.2); color: #b9aeff; }
+       .pill.pro { background: rgba(255,138,76,.2); color: #ffc09a; }
+-      .pill.unlimited { background: rgba(200,245,66,.16); color: #dcf98d; }
++      .pill.studio, .pill.unlimited { background: rgba(200,245,66,.16); color: #dcf98d; }
+       .pill.owner { background: rgba(255,77,109,.2); color: #ffb3c1; }
+       select, .adm input[type="number"] {
+         background: rgba(0,0,0,.45); color: #f4f1ea; border: 1px solid rgba(255,255,255,.16);
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index 8ee82a0..c1822b1 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -107,7 +107,7 @@
+       fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
+         if (!d || !d.user) return;
+         var plan = d.user.plan || "free";
+-        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", unlimited: "unlimited" };
++        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", studio: "unlimited", unlimited: "unlimited" };
+         var card = map[plan] ? document.querySelector('.price-card[data-plan="' + map[plan] + '"]') : null;
+         if (card) {
+           card.classList.add("current");
