@@ -1,0 +1,39 @@
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index aeac52a..9fde67b 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -256,7 +256,7 @@ const PLANS = {
+   // maxClips   - how many clips we cut out of ONE source video
+   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
+   free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
+-  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 40, maxClips: 6 },
++  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 40, maxClips: 4 },
+   plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
+   pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
+   unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 9cbb84a..7dec099 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -416,7 +416,7 @@
+             <ul>
+               <li>10 long videos per month</li>
+               <li>Videos up to 40 minutes</li>
+-              <li>6 AI clips per video</li>
++              <li>Up to 4 AI clips per video</li>
+               <li>Viral score &amp; ranking</li>
+               <li>Captions, 9:16 exports, library</li>
+             </ul>
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index e3d4b1e..780b5a9 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -41,7 +41,7 @@
+           <ul>
+             <li>10 long videos per month</li>
+             <li>Videos up to 40 minutes</li>
+-            <li>6 AI clips per video</li>
++            <li>Up to 4 AI clips per video</li>
+             <li>Viral score &amp; ranking</li>
+             <li>Captions, 9:16 exports, library</li>
+           </ul>
