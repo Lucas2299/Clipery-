@@ -62,9 +62,11 @@
     var gate = $("promo-gate");
     var form = $("promo-form");
     var pill = $("promo-plan-pill");
+    var open = $("promo-open");
+    form.hidden = true;
+    open.hidden = true;
     if (!me) {
       gate.innerHTML = 'Log in with a paid plan to post your channels. <a href="/login?next=/promo">Log in</a>';
-      form.hidden = true;
       return;
     }
     pill.hidden = false;
@@ -72,10 +74,8 @@
     pill.textContent = me.planLabel + " plan";
     if (!me.canPost) {
       gate.innerHTML = "The promo board is for paid plans. <a href=\"/pricing\">Upgrade</a> to Starter, Pro or Studio to post your channels.";
-      form.hidden = true;
       return;
     }
-    form.hidden = false;
     if (!$("pr-name").value) $("pr-name").value = me.name || "";
     var mine = rows.filter(function (p) { return p.mine; })[0];
     if (mine) {
@@ -90,6 +90,7 @@
       gate.textContent = "Your card is live. You can post again in " + days + " day" + (days === 1 ? "" : "s") + ".";
       $("pr-submit").disabled = true;
     } else {
+      open.hidden = false;
       gate.textContent = me.plan === "studio"
         ? "Studio accounts are shown at the very top of the board."
         : me.plan === "pro" ? "Pro accounts are shown right under Studio." : "Starter accounts are listed after Studio and Pro.";
@@ -102,6 +103,17 @@
     var d = await res.json().catch(function () { return {}; });
     render(d);
   }
+
+  $("promo-open").addEventListener("click", function () {
+    $("promo-form").hidden = false;
+    $("promo-open").hidden = true;
+    $("pr-name").focus();
+  });
+  $("pr-cancel").addEventListener("click", function () {
+    $("promo-form").hidden = true;
+    $("promo-open").hidden = false;
+    msg("");
+  });
 
   $("promo-form").addEventListener("submit", async function (ev) {
     ev.preventDefault();
