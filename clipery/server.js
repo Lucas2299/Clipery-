@@ -716,6 +716,7 @@ const server = http.createServer(async (req, res) => {
           isOwner: auth.isAdmin(user),
           planLabel: auth.planOf(user).label,
           videosLeft: left === Infinity ? null : left,
+          lifetime: !!auth.planOf(user).lifetime,
           videosUsed: auth.usageOf ? auth.usageOf(user).videos : undefined,
           videosTotal: auth.planOf(user).videos === Infinity ? null : auth.planOf(user).videos + (Number(user.bonusVideos) || 0),
           maxMinutes: auth.planOf(user).maxMinutes,

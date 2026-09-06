@@ -1,27 +1,143 @@
-diff --git a/clipery/public/styles.css b/clipery/public/styles.css
-index f0224fd..ae7179a 100644
---- a/clipery/public/styles.css
-+++ b/clipery/public/styles.css
-@@ -2822,5 +2822,20 @@ body.studio-app {
- .price-card.current h3::after { content: "Current"; margin-left: 0.5rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.5rem; border-radius: 999px; background: rgba(200, 245, 66, 0.15); color: #c8f542; vertical-align: middle; }
- 
- /* Studio button in the page header: bigger, sits on the right */
--.nav .nav-studio { padding: 0.6rem 1.2rem; font-size: 0.92rem; margin-left: 0.4rem; color: #fff; }
--.nav .nav-studio.active { color: #fff; }
-+.nav .nav-studio {
-+  position: relative; overflow: hidden;
-+  padding: 0.7rem 1.15rem; font-size: 0.92rem; font-weight: 600; margin-left: 0.4rem;
-+  border-radius: 12px; color: #fff;
-+  background: linear-gradient(135deg, #ff4d6d, #ff8a4c);
-+  box-shadow: 0 10px 30px rgba(255, 77, 109, 0.32);
-+  transition: transform 0.18s, box-shadow 0.18s;
-+}
-+.nav .nav-studio::after {
-+  content: ""; position: absolute; inset: 0;
-+  background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.28) 50%, transparent 65%);
-+  transform: translateX(-120%);
-+}
-+.nav .nav-studio:hover { transform: translateY(-2px); box-shadow: 0 16px 40px rgba(255, 77, 109, 0.48); color: #fff; }
-+.nav .nav-studio:hover::after { animation: navShine 0.85s ease; }
-+.nav .nav-studio.active { color: #fff; font-weight: 600; }
-+@keyframes navShine { to { transform: translateX(120%); } }
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index 1486d6d..982ccbd 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -254,7 +254,8 @@ const PLANS = {
+   // videos     - long-form sources you may run per month
+   // maxMinutes - how long each source video may be
+   // maxClips   - how many clips we cut out of ONE source video
+-  free: { id: "free", label: "Free", videos: 3, maxMinutes: 20, maxClips: 3 },
++  // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
++  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
+   plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
+   pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
+   unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
+@@ -269,7 +270,9 @@ function planOf(user) {
+ /** Usage for this month, reset automatically when the month rolls over. */
+ function usageOf(user) {
+   const month = currentMonth();
+-  if (!user.usage || user.usage.month !== month) {
++  if (!user.usage) user.usage = { month, videos: 0 };
++  // Lifetime plans (Free trial) never reset; paid plans roll over monthly.
++  if (!planOf(user).lifetime && user.usage.month !== month) {
+     user.usage = { month, videos: 0 };
+   }
+   return user.usage;
+@@ -292,7 +295,9 @@ function consumeVideo(userId) {
+     return {
+       ok: false,
+       status: 402,
+-      error: `You have used all ${planOf(user).videos + (Number(user.bonusVideos) || 0)} videos on the ${planOf(user).label} plan this month.`,
++      error: planOf(user).lifetime
++        ? `Your free test video has been used. Upgrade your plan to keep clipping.`
++        : `You have used all ${planOf(user).videos + (Number(user.bonusVideos) || 0)} videos on the ${planOf(user).label} plan this month.`,
+     };
+   }
+   usageOf(user).videos += 1;
+diff --git a/clipery/public/account.html b/clipery/public/account.html
+index 72f8b08..ac52556 100644
+--- a/clipery/public/account.html
++++ b/clipery/public/account.html
+@@ -40,7 +40,7 @@
+           <div class="acct-plan-detail" id="acct-plan-detail"></div>
+         </div>
+         <div class="acct-usage">
+-          <div class="acct-usage-row"><span>Videos left this month</span><strong id="acct-left">-</strong></div>
++          <div class="acct-usage-row"><span>Videos left</span><strong id="acct-left">-</strong></div>
+           <div class="pro-bar"><div class="pro-fill" id="acct-fill" style="width:0%"></div></div>
+           <p class="muted" id="acct-usage-note"></p>
+         </div>
+diff --git a/clipery/public/account.js b/clipery/public/account.js
+index c9a305a..62bec16 100644
+--- a/clipery/public/account.js
++++ b/clipery/public/account.js
+@@ -21,7 +21,7 @@
+     $("acct-name").value = u.name || "";
+     $("acct-plan").textContent = u.planLabel || "Free";
+     $("acct-plan-detail").textContent =
+-      (u.videosTotal == null ? "Unlimited videos" : u.videosTotal + " videos a month") +
++      (u.videosTotal == null ? "Unlimited videos" : u.lifetime ? u.videosTotal + " free test video" : u.videosTotal + " videos a month") +
+       " - up to " + u.maxMinutes + " min each - " + u.maxClipsPerVideo + " clips per video";
+     if (u.videosTotal == null) {
+       $("acct-left").textContent = "Unlimited";
+@@ -31,7 +31,9 @@
+       var left = u.videosLeft == null ? 0 : u.videosLeft;
+       $("acct-left").textContent = left + " of " + u.videosTotal;
+       $("acct-fill").style.width = Math.round((left / Math.max(1, u.videosTotal)) * 100) + "%";
+-      $("acct-usage-note").textContent = left === 0
++      $("acct-usage-note").textContent = u.lifetime
++        ? (left === 0 ? "Your free test video has been used. Change plan to keep clipping." : "Your free test video: one long video, up to 20 minutes, 4 clips. Failed jobs never count.")
++        : left === 0
+         ? "You have used all your videos this month. Change plan to get more, or wait for next month."
+         : "Videos reset at the start of every month. Failed jobs never count.";
+     }
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 6c0335a..9f18e81 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -408,10 +408,10 @@
+           <article class="price reveal">
+             <h3>Starter</h3>
+             <div class="amt">$0 <span>/ month</span></div>
+-            <p class="blurb">Try the studio with no card.</p>
++            <p class="blurb">One free test run, no card.</p>
+             <ul>
+-              <li>3 videos per month</li>
+-              <li>5 AI clips per video</li>
++              <li>1 long video to test (up to 20 min)</li>
++              <li>4 AI clips from it</li>
+               <li>Viral score &amp; ranking</li>
+               <li>9:16 exports</li>
+               <li>Library access</li>
+@@ -497,7 +497,7 @@
+           </details>
+           <details>
+             <summary>Is there a free plan?</summary>
+-            <p>Yes. Starter includes 3 videos a month with ranked AI clips. No credit card needed to open the studio.</p>
++            <p>Yes. Starter gives you one free long video (up to 20 minutes) turned into 4 ranked AI clips. No credit card needed to open the studio.</p>
+           </details>
+         </div>
+       </section>
+@@ -752,6 +752,12 @@
+       })();
+     </script>
+     <script>
++      // Free plan wording (kept in one place).
++      document.querySelectorAll("p").forEach(function (p) {
++        if (p.textContent.indexOf("Free plan includes 3 videos a month") === 0) {
++          p.textContent = "Free plan includes one test video with 4 AI clips. No credit card needed - just open the studio.";
++        }
++      });
+       // Logged in? Swap the landing CTAs for a straight shot into the Studio.
+       fetch("/api/auth/me")
+         .then(function (r) { return r.json(); })
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index 79558e3..45634a3 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -35,10 +35,10 @@
+         <div class="price-card" data-plan="free">
+           <h3>Starter</h3>
+           <div class="price">$0 <span>/ month</span></div>
+-          <p class="blurb">Try the studio with no card.</p>
++          <p class="blurb">One free test run, no card.</p>
+           <ul>
+-            <li>3 videos per month</li>
+-            <li>5 AI clips per video</li>
++            <li>1 long video to test (up to 20 min)</li>
++            <li>4 AI clips from it</li>
+             <li>Viral score &amp; ranking</li>
+             <li>9:16 exports</li>
+             <li>Library access</li>
+diff --git a/clipery/server.js b/clipery/server.js
+index 0807f20..7097296 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -716,6 +716,7 @@ const server = http.createServer(async (req, res) => {
+           isOwner: auth.isAdmin(user),
+           planLabel: auth.planOf(user).label,
+           videosLeft: left === Infinity ? null : left,
++          lifetime: !!auth.planOf(user).lifetime,
+           videosUsed: auth.usageOf ? auth.usageOf(user).videos : undefined,
+           videosTotal: auth.planOf(user).videos === Infinity ? null : auth.planOf(user).videos + (Number(user.bonusVideos) || 0),
+           maxMinutes: auth.planOf(user).maxMinutes,

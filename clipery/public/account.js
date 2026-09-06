@@ -21,7 +21,7 @@
     $("acct-name").value = u.name || "";
     $("acct-plan").textContent = u.planLabel || "Free";
     $("acct-plan-detail").textContent =
-      (u.videosTotal == null ? "Unlimited videos" : u.videosTotal + " videos a month") +
+      (u.videosTotal == null ? "Unlimited videos" : u.lifetime ? u.videosTotal + " free test video" : u.videosTotal + " videos a month") +
       " - up to " + u.maxMinutes + " min each - " + u.maxClipsPerVideo + " clips per video";
     if (u.videosTotal == null) {
       $("acct-left").textContent = "Unlimited";
@@ -31,7 +31,9 @@
       var left = u.videosLeft == null ? 0 : u.videosLeft;
       $("acct-left").textContent = left + " of " + u.videosTotal;
       $("acct-fill").style.width = Math.round((left / Math.max(1, u.videosTotal)) * 100) + "%";
-      $("acct-usage-note").textContent = left === 0
+      $("acct-usage-note").textContent = u.lifetime
+        ? (left === 0 ? "Your free test video has been used. Change plan to keep clipping." : "Your free test video: one long video, up to 20 minutes, 4 clips. Failed jobs never count.")
+        : left === 0
         ? "You have used all your videos this month. Change plan to get more, or wait for next month."
         : "Videos reset at the start of every month. Failed jobs never count.";
     }
