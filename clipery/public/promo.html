@@ -34,11 +34,16 @@
 
       <section class="acct-card promo-post" id="promo-post">
         <div class="acct-card-head">
-          <h2>Post your channels</h2>
-          <span class="pill" id="promo-plan-pill" hidden></span>
+          <div>
+            <h2 style="margin-bottom:.25rem">Post your channels</h2>
+            <p class="muted" id="promo-gate" style="margin:0"></p>
+          </div>
+          <div style="display:flex;align-items:center;gap:.6rem">
+            <span class="pill" id="promo-plan-pill" hidden></span>
+            <button type="button" class="btn btn-primary" id="promo-open" hidden>Post your channels</button>
+          </div>
         </div>
-        <p class="muted" id="promo-gate"></p>
-        <form id="promo-form" class="promo-form" hidden>
+        <form id="promo-form" class="promo-form" hidden style="margin-top:1rem">
           <div class="promo-row">
             <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
             <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
@@ -50,6 +55,7 @@
           </div>
           <div>
             <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
+            <button class="btn btn-ghost" type="button" id="pr-cancel">Cancel</button>
             <span class="pro-msg" id="pr-msg"></span>
           </div>
           <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
@@ -75,6 +81,6 @@
     </footer>
 
     <script src="/shared.js?v=2"></script>
-    <script src="/promo.js?v=1"></script>
+    <script src="/promo.js?v=2"></script>
   </body>
 </html>

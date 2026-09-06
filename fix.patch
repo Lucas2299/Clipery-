@@ -1,589 +1,95 @@
-diff --git a/clipery/lib/promo.js b/clipery/lib/promo.js
-new file mode 100644
-index 0000000..c886306
---- /dev/null
-+++ b/clipery/lib/promo.js
-@@ -0,0 +1,154 @@
-+/**
-+ * Promo board - paid members post their YouTube / TikTok / Instagram once a
-+ * week. Studio accounts are listed first, then Pro, then Starter. Free plan
-+ * can look but not post. Lives in data/promos.json.
-+ */
-+
-+"use strict";
-+
-+const fs = require("fs");
-+const path = require("path");
-+const crypto = require("crypto");
-+
-+const ROOT = path.join(__dirname, "..");
-+const DATA_DIR = path.join(ROOT, "data");
-+const FILE = path.join(DATA_DIR, "promos.json");
-+const WEEK = 7 * 24 * 60 * 60 * 1000;
-+
-+// Higher = shown first
-+const TIER = { studio: 3, pro: 2, starter: 1, free: 0 };
-+
-+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-+
-+function readAll() {
-+  try {
-+    const d = JSON.parse(fs.readFileSync(FILE, "utf8"));
-+    return Array.isArray(d.promos) ? d.promos : [];
-+  } catch (_) {
-+    return [];
-+  }
-+}
-+function writeAll(promos) {
-+  fs.writeFileSync(FILE, JSON.stringify({ promos }, null, 2));
-+}
-+
-+function clean(s, max) {
-+  return String(s || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, max);
-+}
-+
-+/** "@name", "name" or a full URL -> a full https URL on the right site, or "" */
-+function normalizeLink(kind, value) {
-+  let v = clean(value, 200);
-+  if (!v) return "";
-+  const hosts = {
-+    youtube: ["youtube.com", "youtu.be"],
-+    tiktok: ["tiktok.com"],
-+    instagram: ["instagram.com"],
-+  }[kind];
-+  if (!/^https?:\/\//i.test(v)) {
-+    // Bare "domain.com/x" style input is not a handle - ask for a real URL.
-+    if (/[\/\s]/.test(v) || /\.(com|net|org|io|tv|me|co)(\b|$)/i.test(v)) return null;
-+    const handle = v.replace(/^@/, "").replace(/[^\w.\-]/g, "");
-+    if (!handle) return null;
-+    if (kind === "youtube") return "https://www.youtube.com/@" + handle;
-+    if (kind === "tiktok") return "https://www.tiktok.com/@" + handle;
-+    return "https://www.instagram.com/" + handle;
-+  }
-+  try {
-+    const u = new URL(v);
-+    const host = u.hostname.replace(/^www\.|^m\./, "");
-+    if (!hosts.some((h) => host === h || host.endsWith("." + h))) return null;
-+    u.protocol = "https:";
-+    return u.toString();
-+  } catch (_) {
-+    return null;
-+  }
-+}
-+
-+function tierOf(planId) {
-+  return TIER[planId] || 0;
-+}
-+
-+/** When may this user post next? (null = now) */
-+function nextAllowedAt(userId) {
-+  const mine = readAll().filter((p) => p.userId === userId).sort((a, b) => b.createdAt - a.createdAt)[0];
-+  if (!mine) return null;
-+  const next = mine.createdAt + WEEK;
-+  return next > Date.now() ? next : null;
-+}
-+
-+/**
-+ * Create (or replace) this user's promo. `plan` is the resolved plan id.
-+ * Returns {ok, status, error} or {ok:true, promo}.
-+ */
-+function post(user, plan, body) {
-+  if (!user) return { ok: false, status: 401, error: "Please log in." };
-+  if (tierOf(plan) === 0) {
-+    return { ok: false, status: 402, error: "The promo board is for paid plans. Upgrade to Starter, Pro or Studio to post." };
-+  }
-+  const wait = nextAllowedAt(user.id);
-+  if (wait) {
-+    const days = Math.ceil((wait - Date.now()) / (24 * 60 * 60 * 1000));
-+    return { ok: false, status: 429, error: `You can post once a week. Next post in ${days} day${days === 1 ? "" : "s"}.`, nextAllowedAt: wait };
-+  }
-+  const name = clean(body.name || user.name || "", 40) || (user.email || "").split("@")[0];
-+  const tagline = clean(body.tagline, 120);
-+  const links = {};
-+  for (const k of ["youtube", "tiktok", "instagram"]) {
-+    const v = normalizeLink(k, body[k]);
-+    if (v === null) return { ok: false, status: 400, error: `That ${k === "youtube" ? "YouTube" : k === "tiktok" ? "TikTok" : "Instagram"} link does not look right. Paste the channel/profile URL or your @handle.` };
-+    if (v) links[k] = v;
-+  }
-+  if (!Object.keys(links).length) return { ok: false, status: 400, error: "Add at least one channel link." };
-+
-+  const promos = readAll().filter((p) => p.userId !== user.id);
-+  const promo = {
-+    id: crypto.randomBytes(6).toString("hex"),
-+    userId: user.id,
-+    name,
-+    tagline,
-+    ...links,
-+    createdAt: Date.now(),
-+  };
-+  promos.push(promo);
-+  writeAll(promos);
-+  return { ok: true, promo };
-+}
-+
-+/**
-+ * Board for display. `planOfUserId(id)` returns the CURRENT plan id so people
-+ * who downgraded to Free drop off and upgrades move up straight away.
-+ */
-+function board(planOfUserId, viewerId) {
-+  const rows = [];
-+  for (const p of readAll()) {
-+    const plan = planOfUserId(p.userId);
-+    const tier = tierOf(plan);
-+    if (tier === 0) continue;
-+    rows.push({
-+      id: p.id,
-+      name: p.name,
-+      tagline: p.tagline || "",
-+      youtube: p.youtube || null,
-+      tiktok: p.tiktok || null,
-+      instagram: p.instagram || null,
-+      plan,
-+      tier,
-+      createdAt: p.createdAt,
-+      mine: !!viewerId && p.userId === viewerId,
-+    });
-+  }
-+  rows.sort((a, b) => b.tier - a.tier || b.createdAt - a.createdAt);
-+  return rows;
-+}
-+
-+function remove(id, user, isOwner) {
-+  const promos = readAll();
-+  const p = promos.find((x) => x.id === id);
-+  if (!p) return { ok: false, status: 404, error: "Not found." };
-+  if (!isOwner && (!user || p.userId !== user.id)) return { ok: false, status: 403, error: "Not yours." };
-+  writeAll(promos.filter((x) => x.id !== id));
-+  return { ok: true };
-+}
-+
-+module.exports = { post, board, remove, nextAllowedAt, normalizeLink, tierOf, WEEK };
-diff --git a/clipery/public/account.html b/clipery/public/account.html
-index ac52556..b86e18f 100644
---- a/clipery/public/account.html
-+++ b/clipery/public/account.html
-@@ -17,6 +17,7 @@
-         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/library" data-nav>Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
-           <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
-         </nav>
-diff --git a/clipery/public/admin.html b/clipery/public/admin.html
-index a5b78ba..b47a217 100644
---- a/clipery/public/admin.html
-+++ b/clipery/public/admin.html
-@@ -69,6 +69,7 @@
-         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/library" data-nav>Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
-           <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
-         </nav>
-diff --git a/clipery/public/index.html b/clipery/public/index.html
-index 2583cd9..e73060b 100644
---- a/clipery/public/index.html
-+++ b/clipery/public/index.html
-@@ -303,6 +303,7 @@
-           <a href="#how">How it works</a>
-           <a href="#features">Features</a>
-           <a href="#pricing">Pricing</a>
-+          <a href="/promo">Promo</a>
-         </nav>
-         <div class="nav-right">
-           <div class="nav-cta" id="nav-cta">
-diff --git a/clipery/public/job.html b/clipery/public/job.html
-index f2535a5..ca1794b 100644
---- a/clipery/public/job.html
-+++ b/clipery/public/job.html
-@@ -17,6 +17,7 @@
-         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/library" data-nav>Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
-           <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
-         </nav>
-diff --git a/clipery/public/library.html b/clipery/public/library.html
-index 298136e..1c47e0f 100644
---- a/clipery/public/library.html
-+++ b/clipery/public/library.html
-@@ -18,6 +18,7 @@
-         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/library" data-nav>Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
-           <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
-         </nav>
-diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
-index c1822b1..55dde58 100644
---- a/clipery/public/pricing.html
-+++ b/clipery/public/pricing.html
-@@ -17,6 +17,7 @@
-         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/library" data-nav>Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
-           <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
-         </nav>
 diff --git a/clipery/public/promo.html b/clipery/public/promo.html
-new file mode 100644
-index 0000000..5c7c6e0
---- /dev/null
+index 5c7c6e0..5f27bd7 100644
+--- a/clipery/public/promo.html
 +++ b/clipery/public/promo.html
-@@ -0,0 +1,80 @@
-+<!DOCTYPE html>
-+<html lang="en">
-+  <head>
-+    <meta charset="utf-8" />
-+    <meta name="viewport" content="width=device-width, initial-scale=1" />
-+    <title>Promo board - Clipery</title>
-+    <meta name="description" content="Creators on Clipery share their YouTube, TikTok and Instagram. Follow, collab, grow together." />
-+    <meta name="theme-color" content="#07070b" />
-+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-+    <link rel="stylesheet" href="/styles.css?v=71" />
-+  </head>
-+  <body data-auth-modal>
-+    <div class="bg-grid" aria-hidden="true"></div>
-+    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
-+
-+    <header class="header">
-+      <div class="header-inner">
-+        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-+        <nav class="nav" aria-label="Primary">
-+          <a href="/library" data-nav>Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-+          <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
-+          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
-+        </nav>
-+      </div>
-+    </header>
-+
-+    <main class="page container promo-page">
-+      <div class="page-hero" style="text-align: center; margin-inline: auto">
-+        <div class="eyebrow">Promo board</div>
-+        <h1>Get discovered by other creators.</h1>
-+        <p style="margin-inline: auto">Paid members can post their YouTube, TikTok and Instagram once a week. Studio accounts sit at the top, then Pro, then Starter.</p>
-+      </div>
-+
-+      <section class="acct-card promo-post" id="promo-post">
-+        <div class="acct-card-head">
-+          <h2>Post your channels</h2>
-+          <span class="pill" id="promo-plan-pill" hidden></span>
-+        </div>
-+        <p class="muted" id="promo-gate"></p>
-+        <form id="promo-form" class="promo-form" hidden>
-+          <div class="promo-row">
-+            <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
-+            <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
-+          </div>
-+          <div class="promo-row">
-+            <label><span class="promo-lbl yt">YouTube</span><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></label>
-+            <label><span class="promo-lbl tt">TikTok</span><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></label>
-+            <label><span class="promo-lbl ig">Instagram</span><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></label>
-+          </div>
+@@ -34,11 +34,16 @@
+ 
+       <section class="acct-card promo-post" id="promo-post">
+         <div class="acct-card-head">
+-          <h2>Post your channels</h2>
+-          <span class="pill" id="promo-plan-pill" hidden></span>
 +          <div>
-+            <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
-+            <span class="pro-msg" id="pr-msg"></span>
++            <h2 style="margin-bottom:.25rem">Post your channels</h2>
++            <p class="muted" id="promo-gate" style="margin:0"></p>
 +          </div>
-+          <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
-+        </form>
-+      </section>
-+
-+      <section class="promo-board" id="promo-board" aria-live="polite">
-+        <p class="muted" id="promo-empty" hidden>No one has posted yet. Be the first.</p>
-+      </section>
-+    </main>
-+
-+    <footer class="footer">
-+      <div class="container footer-inner">
-+        <a class="footer-brand" href="/">Clipery</a>
-+        <div class="footer-links">
-+          <a href="/studio">Studio</a>
-+          <a href="/library">Library</a>
-+          <a href="/promo">Promo</a>
-+          <a href="/pricing">Pricing</a>
-+        </div>
-+        <div>(c) <span id="year"></span></div>
-+      </div>
-+    </footer>
-+
-+    <script src="/shared.js?v=2"></script>
-+    <script src="/promo.js?v=1"></script>
-+  </body>
-+</html>
++          <div style="display:flex;align-items:center;gap:.6rem">
++            <span class="pill" id="promo-plan-pill" hidden></span>
++            <button type="button" class="btn btn-primary" id="promo-open" hidden>Post your channels</button>
++          </div>
+         </div>
+-        <p class="muted" id="promo-gate"></p>
+-        <form id="promo-form" class="promo-form" hidden>
++        <form id="promo-form" class="promo-form" hidden style="margin-top:1rem">
+           <div class="promo-row">
+             <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
+             <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
+@@ -50,6 +55,7 @@
+           </div>
+           <div>
+             <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
++            <button class="btn btn-ghost" type="button" id="pr-cancel">Cancel</button>
+             <span class="pro-msg" id="pr-msg"></span>
+           </div>
+           <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
+@@ -75,6 +81,6 @@
+     </footer>
+ 
+     <script src="/shared.js?v=2"></script>
+-    <script src="/promo.js?v=1"></script>
++    <script src="/promo.js?v=2"></script>
+   </body>
+ </html>
 diff --git a/clipery/public/promo.js b/clipery/public/promo.js
-new file mode 100644
-index 0000000..fa592b0
---- /dev/null
+index fa592b0..177fd44 100644
+--- a/clipery/public/promo.js
 +++ b/clipery/public/promo.js
-@@ -0,0 +1,141 @@
-+/* Promo board: paid members post their channels once a week; Studio first, then Pro, then Starter. */
-+(function () {
-+  "use strict";
-+  var $ = function (id) { return document.getElementById(id); };
-+  var y = $("year");
-+  if (y) y.textContent = new Date().getFullYear();
-+
-+  function esc(s) {
-+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
-+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
-+    });
-+  }
-+  function msg(text, err) {
-+    var el = $("pr-msg");
-+    el.textContent = text || "";
-+    el.style.color = err ? "#ff6b6b" : "#7ee2a8";
-+  }
-+  function handleOf(url) {
-+    try {
-+      var u = new URL(url);
-+      var seg = u.pathname.split("/").filter(Boolean);
-+      var last = seg[seg.length - 1] || u.hostname;
-+      return decodeURIComponent(last).replace(/^@/, "");
-+    } catch (_) { return url; }
-+  }
-+  var PLAN_NAME = { studio: "Studio", pro: "Pro", starter: "Starter" };
-+
-+  function cardHtml(p) {
-+    var links = [];
-+    if (p.youtube) links.push('<a class="promo-link yt" href="' + esc(p.youtube) + '" target="_blank" rel="noopener nofollow">YouTube <span>@' + esc(handleOf(p.youtube)) + "</span></a>");
-+    if (p.tiktok) links.push('<a class="promo-link tt" href="' + esc(p.tiktok) + '" target="_blank" rel="noopener nofollow">TikTok <span>@' + esc(handleOf(p.tiktok)) + "</span></a>");
-+    if (p.instagram) links.push('<a class="promo-link ig" href="' + esc(p.instagram) + '" target="_blank" rel="noopener nofollow">Instagram <span>@' + esc(handleOf(p.instagram)) + "</span></a>");
-+    return (
-+      '<article class="promo-card tier-' + esc(p.plan) + (p.mine ? " mine" : "") + '" data-id="' + esc(p.id) + '">' +
-+        '<div class="promo-top">' +
-+          '<span class="pill ' + esc(p.plan) + '">' + esc(PLAN_NAME[p.plan] || p.plan) + "</span>" +
-+          (p.mine ? '<button type="button" class="mini ghost" data-del>Remove</button>' : "") +
-+        "</div>" +
-+        "<h3>" + esc(p.name) + "</h3>" +
-+        (p.tagline ? "<p>" + esc(p.tagline) + "</p>" : "") +
-+        '<div class="promo-links">' + links.join("") + "</div>" +
-+      "</article>"
-+    );
-+  }
-+
-+  function render(d) {
-+    var board = $("promo-board");
-+    var rows = d.promos || [];
-+    $("promo-empty").hidden = rows.length > 0;
-+    var html = "";
-+    var tiers = [["studio", "Studio creators"], ["pro", "Pro creators"], ["starter", "Starter creators"]];
-+    tiers.forEach(function (t) {
-+      var group = rows.filter(function (p) { return p.plan === t[0]; });
-+      if (!group.length) return;
-+      html += '<h2 class="promo-tier-h ' + t[0] + '">' + t[1] + " <small>" + group.length + "</small></h2>";
-+      html += '<div class="promo-grid">' + group.map(cardHtml).join("") + "</div>";
-+    });
-+    board.querySelectorAll(".promo-tier-h, .promo-grid").forEach(function (n) { n.remove(); });
-+    board.insertAdjacentHTML("beforeend", html);
-+
-+    var me = d.me;
-+    var gate = $("promo-gate");
-+    var form = $("promo-form");
-+    var pill = $("promo-plan-pill");
-+    if (!me) {
-+      gate.innerHTML = 'Log in with a paid plan to post your channels. <a href="/login?next=/promo">Log in</a>';
-+      form.hidden = true;
-+      return;
-+    }
-+    pill.hidden = false;
-+    pill.className = "pill " + me.plan;
-+    pill.textContent = me.planLabel + " plan";
-+    if (!me.canPost) {
-+      gate.innerHTML = "The promo board is for paid plans. <a href=\"/pricing\">Upgrade</a> to Starter, Pro or Studio to post your channels.";
-+      form.hidden = true;
-+      return;
-+    }
-+    form.hidden = false;
-+    if (!$("pr-name").value) $("pr-name").value = me.name || "";
-+    var mine = rows.filter(function (p) { return p.mine; })[0];
-+    if (mine) {
-+      $("pr-name").value = mine.name || "";
-+      $("pr-tagline").value = mine.tagline || "";
-+      $("pr-youtube").value = mine.youtube || "";
-+      $("pr-tiktok").value = mine.tiktok || "";
-+      $("pr-instagram").value = mine.instagram || "";
-+    }
-+    if (me.nextAllowedAt) {
-+      var days = Math.ceil((me.nextAllowedAt - Date.now()) / 86400000);
-+      gate.textContent = "Your card is live. You can post again in " + days + " day" + (days === 1 ? "" : "s") + ".";
-+      $("pr-submit").disabled = true;
-+    } else {
-+      gate.textContent = me.plan === "studio"
-+        ? "Studio accounts are shown at the very top of the board."
-+        : me.plan === "pro" ? "Pro accounts are shown right under Studio." : "Starter accounts are listed after Studio and Pro.";
-+      $("pr-submit").disabled = false;
-+    }
-+  }
-+
-+  async function load() {
-+    var res = await fetch("/api/promo");
-+    var d = await res.json().catch(function () { return {}; });
-+    render(d);
-+  }
-+
-+  $("promo-form").addEventListener("submit", async function (ev) {
-+    ev.preventDefault();
-+    msg("");
-+    var btn = $("pr-submit");
-+    btn.disabled = true;
-+    var res = await fetch("/api/promo", {
-+      method: "POST",
-+      headers: { "Content-Type": "application/json" },
-+      body: JSON.stringify({
-+        name: $("pr-name").value,
-+        tagline: $("pr-tagline").value,
-+        youtube: $("pr-youtube").value,
-+        tiktok: $("pr-tiktok").value,
-+        instagram: $("pr-instagram").value,
-+      }),
-+    });
-+    var d = await res.json().catch(function () { return {}; });
-+    if (!res.ok || !d.ok) {
-+      msg(d.error || "Could not post.", true);
-+      btn.disabled = false;
-+      return;
-+    }
-+    msg("Posted. You are on the board.");
-+    load();
-+  });
-+
-+  $("promo-board").addEventListener("click", async function (e) {
-+    if (!e.target.hasAttribute("data-del")) return;
-+    var card = e.target.closest(".promo-card");
-+    if (!card || !confirm("Remove your card from the board?")) return;
-+    await fetch("/api/promo/" + card.getAttribute("data-id"), { method: "DELETE" });
-+    load();
-+  });
-+
-+  load();
-+})();
-diff --git a/clipery/public/rank.html b/clipery/public/rank.html
-index 218ef5e..7997ec7 100644
---- a/clipery/public/rank.html
-+++ b/clipery/public/rank.html
-@@ -18,6 +18,7 @@
-         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav" aria-label="Primary">
-           <a href="/library" data-nav>Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-           <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
-           <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
-         </nav>
-diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index af9be49..56cac4e 100644
---- a/clipery/public/studio.html
-+++ b/clipery/public/studio.html
-@@ -128,6 +128,7 @@
-         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
-         <nav class="nav">
-           <a href="/library">Library</a>
-+          <a href="/promo" data-nav>Promo</a>
-           <a href="/pricing" class="nav-hide-sm">Pricing</a>
-           <a class="btn btn-primary nav-studio" href="/studio">Studio</a>
-         </nav>
-diff --git a/clipery/public/styles.css b/clipery/public/styles.css
-index 5a28c60..4d52589 100644
---- a/clipery/public/styles.css
-+++ b/clipery/public/styles.css
-@@ -2844,3 +2844,37 @@ body.studio-app {
- .price-card .price .was { font-size: 1rem; font-weight: 600; opacity: 0.5; margin-right: 0.3rem; }
- .price-card .tag-deal { background: linear-gradient(135deg, #c8f542, #9be04a); color: #111; }
- .deal-note { font-size: 0.9rem; color: #ffc2b0; margin-top: 0.6rem; }
-+
-+/* ------------------------------ promo board ------------------------------ */
-+.promo-page .pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
-+.promo-page .pill.starter { background: rgba(139,124,255,0.2); color: #b9aeff; }
-+.promo-page .pill.pro { background: rgba(255,138,76,0.2); color: #ffc09a; }
-+.promo-page .pill.studio { background: linear-gradient(135deg, rgba(255,77,109,0.35), rgba(255,138,76,0.35)); color: #ffe1c4; border: 1px solid rgba(255,138,76,0.5); }
-+.promo-page .pill.free { background: rgba(255,255,255,0.1); color: #c9c5d8; }
-+.promo-page .mini { font: inherit; font-size: 0.75rem; padding: 0.25rem 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.18); background: transparent; color: inherit; cursor: pointer; }
-+.promo-page .mini:hover { background: rgba(255,255,255,0.06); }
-+.promo-form { display: flex; flex-direction: column; gap: 0.8rem; }
-+.promo-row { display: flex; flex-wrap: wrap; gap: 0.8rem 1rem; }
-+.promo-row label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.8rem; color: var(--muted, #9894a6); flex: 1 1 220px; max-width: 320px; }
-+.promo-row input { height: 34px; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: inherit; padding: 0 0.7rem; font: inherit; font-size: 0.88rem; }
-+.promo-row input:focus { outline: none; border-color: rgba(255,138,76,0.6); }
-+.promo-lbl { font-weight: 700; }
-+.promo-lbl.yt { color: #ff5c5c; } .promo-lbl.tt { color: #6ff0ea; } .promo-lbl.ig { color: #ff7ac6; }
-+.promo-tier-h { margin: 1.6rem 0 0.7rem; font-size: 0.85rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted, #9894a6); display: flex; align-items: center; gap: 0.6rem; }
-+.promo-tier-h small { font-size: 0.72rem; background: rgba(255,255,255,0.08); padding: 0.1rem 0.5rem; border-radius: 999px; }
-+.promo-tier-h.studio { color: #ffb08a; }
-+.promo-tier-h::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.08); }
-+.promo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.9rem; }
-+.promo-card { border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 1rem 1.1rem; background: rgba(255,255,255,0.02); display: flex; flex-direction: column; gap: 0.45rem; transition: transform 0.15s, border-color 0.15s; }
-+.promo-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.2); }
-+.promo-card.tier-studio { border-color: rgba(255,138,76,0.45); background: linear-gradient(180deg, rgba(255,77,109,0.08), rgba(255,255,255,0.02)); box-shadow: 0 8px 30px rgba(255,77,109,0.12); }
-+.promo-card.tier-pro { border-color: rgba(255,138,76,0.22); }
-+.promo-card.mine { outline: 1px dashed rgba(255,255,255,0.25); }
-+.promo-top { display: flex; justify-content: space-between; align-items: center; }
-+.promo-card h3 { margin: 0.2rem 0 0; font-size: 1.05rem; }
-+.promo-card p { margin: 0; font-size: 0.85rem; color: var(--muted, #9894a6); }
-+.promo-links { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
-+.promo-link { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 700; text-decoration: none; padding: 0.3rem 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); color: #f4f1ea; }
-+.promo-link span { font-weight: 500; color: var(--muted, #9894a6); }
-+.promo-link:hover { border-color: rgba(255,255,255,0.3); }
-+.promo-link.yt:hover { border-color: #ff5c5c; } .promo-link.tt:hover { border-color: #6ff0ea; } .promo-link.ig:hover { border-color: #ff7ac6; }
-diff --git a/clipery/server.js b/clipery/server.js
-index 7097296..6e16fbb 100644
---- a/clipery/server.js
-+++ b/clipery/server.js
-@@ -27,6 +27,7 @@ const {
- } = require("./lib/linkVideoEngine");
- const { normalizeSubStyle } = require("./lib/subtitles");
- const auth = require("./lib/auth");
-+const promo = require("./lib/promo");
- const oauth = require("./lib/oauth");
- 
- const PORT = process.env.PORT || 3000;
-@@ -82,6 +83,8 @@ const ROUTES = {
-   "/account.html": "account.html",
-   "/waitlist": "waitlist.html",
-   "/waitlist.html": "waitlist.html",
-+  "/promo": "promo.html",
-+  "/promo.html": "promo.html",
-   "/job": "job.html",
-   "/job.html": "job.html",
-   "/admin": "admin.html",
-@@ -705,6 +708,36 @@ const server = http.createServer(async (req, res) => {
-       return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie(req) });
+@@ -62,9 +62,11 @@
+     var gate = $("promo-gate");
+     var form = $("promo-form");
+     var pill = $("promo-plan-pill");
++    var open = $("promo-open");
++    form.hidden = true;
++    open.hidden = true;
+     if (!me) {
+       gate.innerHTML = 'Log in with a paid plan to post your channels. <a href="/login?next=/promo">Log in</a>';
+-      form.hidden = true;
+       return;
      }
+     pill.hidden = false;
+@@ -72,10 +74,8 @@
+     pill.textContent = me.planLabel + " plan";
+     if (!me.canPost) {
+       gate.innerHTML = "The promo board is for paid plans. <a href=\"/pricing\">Upgrade</a> to Starter, Pro or Studio to post your channels.";
+-      form.hidden = true;
+       return;
+     }
+-    form.hidden = false;
+     if (!$("pr-name").value) $("pr-name").value = me.name || "";
+     var mine = rows.filter(function (p) { return p.mine; })[0];
+     if (mine) {
+@@ -90,6 +90,7 @@
+       gate.textContent = "Your card is live. You can post again in " + days + " day" + (days === 1 ? "" : "s") + ".";
+       $("pr-submit").disabled = true;
+     } else {
++      open.hidden = false;
+       gate.textContent = me.plan === "studio"
+         ? "Studio accounts are shown at the very top of the board."
+         : me.plan === "pro" ? "Pro accounts are shown right under Studio." : "Starter accounts are listed after Studio and Pro.";
+@@ -103,6 +104,17 @@
+     render(d);
+   }
  
-+    /* ------------------------------ promo board ------------------------------ */
-+    if (pathname === "/api/promo" && req.method === "GET") {
-+      const viewer = auth.currentUser(req);
-+      const people = new Map(auth.listUsers().map((u) => [u.id, u.plan]));
-+      const rows = promo.board((id) => people.get(id) || "free", viewer ? viewer.id : null);
-+      const me = viewer
-+        ? {
-+            plan: auth.planOf(viewer).id,
-+            planLabel: auth.planOf(viewer).label,
-+            canPost: promo.tierOf(auth.planOf(viewer).id) > 0,
-+            nextAllowedAt: promo.nextAllowedAt(viewer.id),
-+            name: viewer.name || "",
-+          }
-+        : null;
-+      return send(res, 200, { ok: true, promos: rows, me });
-+    }
-+    if (pathname === "/api/promo" && req.method === "POST") {
-+      const user = auth.currentUser(req);
-+      if (!user) return send(res, 401, { ok: false, error: "Please log in." });
-+      let body = {};
-+      try { body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}"); } catch (_) {}
-+      const r = promo.post(user, auth.planOf(user).id, body);
-+      return send(res, r.ok ? 200 : r.status || 400, r);
-+    }
-+    if (pathname.startsWith("/api/promo/") && req.method === "DELETE") {
-+      const user = auth.currentUser(req);
-+      const r = promo.remove(pathname.slice("/api/promo/".length), user, auth.isAdmin(user));
-+      return send(res, r.ok ? 200 : r.status || 400, r);
-+    }
++  $("promo-open").addEventListener("click", function () {
++    $("promo-form").hidden = false;
++    $("promo-open").hidden = true;
++    $("pr-name").focus();
++  });
++  $("pr-cancel").addEventListener("click", function () {
++    $("promo-form").hidden = true;
++    $("promo-open").hidden = false;
++    msg("");
++  });
 +
-     if (pathname === "/api/auth/me" && req.method === "GET") {
-       const user = auth.currentUser(req);
-       if (!user) return send(res, 200, { ok: true, user: null });
+   $("promo-form").addEventListener("submit", async function (ev) {
+     ev.preventDefault();
+     msg("");
