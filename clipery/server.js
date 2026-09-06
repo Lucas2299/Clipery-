@@ -34,14 +34,10 @@ const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const PUBLIC = path.join(ROOT, "public");
 const DATA_DIR = path.join(ROOT, "data");
-const WAITLIST_FILE = path.join(DATA_DIR, "waitlist.json");
 const JOBS_DIR = path.join(DATA_DIR, "jobs");
 
 for (const d of [DATA_DIR, UPLOADS, JOBS_DIR, path.join(PUBLIC, "clips")]) {
   if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
-}
-if (!fs.existsSync(WAITLIST_FILE)) {
-  fs.writeFileSync(WAITLIST_FILE, JSON.stringify({ signups: [] }, null, 2));
 }
 
 // Only heavy MEDIA files may live in the browser cache. Code files (.js/.css/.html/.json...)
@@ -81,8 +77,6 @@ const ROUTES = {
   "/pricing.html": "pricing.html",
   "/account": "account.html",
   "/account.html": "account.html",
-  "/waitlist": "waitlist.html",
-  "/waitlist.html": "waitlist.html",
   "/promo": "promo.html",
   "/promo.html": "promo.html",
   "/job": "job.html",
@@ -158,20 +152,6 @@ const queue = [];
 // One render at a time by default: ffmpeg plus whisper will happily eat every
 // core on a small server. Raise it only on a machine with room to spare.
 const MAX_QUEUE = Math.max(1, Number(process.env.CLIPERY_MAX_QUEUE) || 20);
-
-function readWaitlist() {
-  try {
-    const data = JSON.parse(fs.readFileSync(WAITLIST_FILE, "utf8"));
-    if (!data || !Array.isArray(data.signups)) return { signups: [] };
-    return data;
-  } catch {
-    return { signups: [] };
-  }
-}
-
-function writeWaitlist(data) {
-  fs.writeFileSync(WAITLIST_FILE, JSON.stringify(data, null, 2));
-}
 
 function send(res, status, body, headers = {}) {
   const payload = typeof body === "string" ? body : JSON.stringify(body);
@@ -860,62 +840,6 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // Waitlist
-    if (pathname === "/api/waitlist" && req.method === "GET") {
-      const data = readWaitlist();
-      return send(res, 200, {
-        count: data.signups.length,
-        recent: data.signups.slice(-8).map((s) => ({
-          name: s.name ? s.name.split(" ")[0] : "Creator",
-          role: s.role || "creator",
-          at: s.createdAt,
-        })),
-      });
-    }
-
-    if (pathname === "/api/waitlist" && req.method === "POST") {
-      const buf = await parseBody(req, 1e6);
-      const body = JSON.parse(buf.toString("utf8") || "{}");
-      const email = String(body.email || "")
-        .trim()
-        .toLowerCase();
-      const name = String(body.name || "").trim().slice(0, 80);
-      const role = String(body.role || "creator").trim().slice(0, 40);
-      const source = String(body.source || "landing").trim().slice(0, 40);
-      const interest = String(body.interest || "").trim().slice(0, 200);
-
-      if (!isValidEmail(email)) {
-        return send(res, 400, { ok: false, error: "Please enter a valid email." });
-      }
-
-      const data = readWaitlist();
-      const existing = data.signups.find((s) => s.email === email);
-      if (existing) {
-        return send(res, 200, {
-          ok: true,
-          already: true,
-          position: data.signups.findIndex((s) => s.email === email) + 1,
-          count: data.signups.length,
-          message: "You're already on the list.",
-        });
-      }
-      data.signups.push({
-        email,
-        name,
-        role,
-        source,
-        interest,
-        createdAt: new Date().toISOString(),
-      });
-      writeWaitlist(data);
-      return send(res, 201, {
-        ok: true,
-        already: false,
-        position: data.signups.length,
-        count: data.signups.length,
-        message: "You're on the list.",
-      });
-    }
 
     // List jobs
     if (pathname === "/api/jobs" && req.method === "GET") {

@@ -1242,106 +1242,6 @@ textarea {
   color: var(--accent-3);
 }
 
-/* Waitlist */
-.waitlist-card {
-  border-radius: 24px;
-  border: 1px solid var(--border);
-  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 77, 109, 0.14), transparent 55%),
-    var(--bg-elevated);
-  padding: clamp(1.5rem, 4vw, 2.5rem);
-  display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
-  gap: 2rem;
-  align-items: start;
-}
-
-@media (max-width: 800px) {
-  .waitlist-card {
-    grid-template-columns: 1fr;
-  }
-}
-
-.waitlist-form-wrap {
-  padding: 1.35rem;
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.35);
-}
-
-.perks {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.perk {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  font-size: 0.92rem;
-  color: var(--text-muted);
-}
-
-.perk::before {
-  content: "✓";
-  color: var(--accent-3);
-  font-weight: 700;
-}
-
-.count-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  background: rgba(196, 245, 66, 0.1);
-  border: 1px solid rgba(196, 245, 66, 0.2);
-  color: var(--accent-3);
-  font-weight: 600;
-  font-size: 0.78rem;
-}
-
-.form-success-state {
-  display: none;
-  text-align: center;
-  padding: 1rem 0.5rem;
-}
-
-.form-success-state.show {
-  display: block;
-}
-
-.form-success-state .big-check {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(196, 245, 66, 0.12);
-  border: 1px solid rgba(196, 245, 66, 0.3);
-  display: grid;
-  place-items: center;
-  margin: 0 auto 0.9rem;
-  color: var(--accent-3);
-  font-size: 1.4rem;
-}
-
-.position-badge {
-  display: inline-block;
-  margin-top: 0.5rem;
-  padding: 0.35rem 0.8rem;
-  border-radius: 999px;
-  background: rgba(255, 77, 109, 0.12);
-  border: 1px solid rgba(255, 77, 109, 0.3);
-  color: var(--accent-2);
-  font-weight: 700;
-  font-family: var(--mono);
-  font-size: 0.85rem;
-}
-
-.hide {
-  display: none !important;
-}
-
 /* Library */
 .job-list {
   display: flex;
@@ -2898,3 +2798,7 @@ body.studio-app {
 .pmodal-msg.err { display: block; background: rgba(255,77,109,0.12); border: 1px solid rgba(255,77,109,0.4); color: #ffb3c1; }
 .pmodal-msg.ok { display: block; background: rgba(200,245,66,0.1); border: 1px solid rgba(200,245,66,0.35); color: #dcf98d; }
 @keyframes cauthFade { from { opacity: 0; } to { opacity: 1; } }
+
+.hide {
+  display: none !important;
+}

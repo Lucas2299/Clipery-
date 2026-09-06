@@ -5,7 +5,7 @@ Full working AI clip studio:
 - **Studio** — upload or sample → Viral clips **or** Ranking analysis
 - **Rank links** — paste TikTok/short URLs → scored board + playbook
 - **Library / Job pages** — every job saved, clips playable & downloadable
-- **Pricing + Waitlist**
+- **Pricing**
 
 ## Run
 
@@ -37,7 +37,6 @@ Open http://localhost:3000
 | `/library` | All jobs |
 | `/job/:id` | Job detail + live progress |
 | `/pricing` | Packages |
-| `/waitlist` | Founding waitlist |
 
 ## API
 
@@ -49,7 +48,6 @@ Open http://localhost:3000
 - `GET /api/jobs`
 - `GET/POST /api/rank/links`
 - `GET /api/rank/links/:id`
-- `GET/POST /api/waitlist`
 
 ## Sign in with Google / Apple (optional)
 
