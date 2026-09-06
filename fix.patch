@@ -1,95 +1,153 @@
 diff --git a/clipery/public/promo.html b/clipery/public/promo.html
-index 5c7c6e0..5f27bd7 100644
+index 5f27bd7..de8c346 100644
 --- a/clipery/public/promo.html
 +++ b/clipery/public/promo.html
-@@ -34,11 +34,16 @@
- 
-       <section class="acct-card promo-post" id="promo-post">
-         <div class="acct-card-head">
--          <h2>Post your channels</h2>
--          <span class="pill" id="promo-plan-pill" hidden></span>
-+          <div>
-+            <h2 style="margin-bottom:.25rem">Post your channels</h2>
-+            <p class="muted" id="promo-gate" style="margin:0"></p>
-+          </div>
-+          <div style="display:flex;align-items:center;gap:.6rem">
-+            <span class="pill" id="promo-plan-pill" hidden></span>
-+            <button type="button" class="btn btn-primary" id="promo-open" hidden>Post your channels</button>
-+          </div>
+@@ -7,7 +7,7 @@
+     <meta name="description" content="Creators on Clipery share their YouTube, TikTok and Instagram. Follow, collab, grow together." />
+     <meta name="theme-color" content="#07070b" />
+     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+-    <link rel="stylesheet" href="/styles.css?v=71" />
++    <link rel="stylesheet" href="/styles.css?v=73" />
+   </head>
+   <body data-auth-modal>
+     <div class="bg-grid" aria-hidden="true"></div>
+@@ -43,23 +43,22 @@
+             <button type="button" class="btn btn-primary" id="promo-open" hidden>Post your channels</button>
+           </div>
          </div>
--        <p class="muted" id="promo-gate"></p>
--        <form id="promo-form" class="promo-form" hidden>
-+        <form id="promo-form" class="promo-form" hidden style="margin-top:1rem">
-           <div class="promo-row">
-             <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
-             <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
-@@ -50,6 +55,7 @@
+-        <form id="promo-form" class="promo-form" hidden style="margin-top:1rem">
+-          <div class="promo-row">
+-            <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
+-            <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
++        <div class="pmodal-back" id="promo-modal" aria-hidden="true">
++          <div class="pmodal-card" role="dialog" aria-modal="true" aria-labelledby="pmodal-title">
++            <button type="button" class="pmodal-x" id="pr-cancel" aria-label="Close">&times;</button>
++            <h2 id="pmodal-title">Post your channels</h2>
++            <p class="pmodal-sub">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
++            <form id="promo-form">
++              <div class="pmodal-f"><label for="pr-name">Name shown</label><input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></div>
++              <div class="pmodal-f"><label for="pr-tagline">One line about you</label><input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></div>
++              <div class="pmodal-f"><label for="pr-youtube" class="yt">YouTube</label><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></div>
++              <div class="pmodal-f"><label for="pr-tiktok" class="tt">TikTok</label><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></div>
++              <div class="pmodal-f"><label for="pr-instagram" class="ig">Instagram</label><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></div>
++              <div class="pmodal-msg" id="pr-msg"></div>
++              <button class="pmodal-go" type="submit" id="pr-submit">Post to the board</button>
++            </form>
            </div>
-           <div>
-             <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
-+            <button class="btn btn-ghost" type="button" id="pr-cancel">Cancel</button>
-             <span class="pro-msg" id="pr-msg"></span>
-           </div>
-           <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
-@@ -75,6 +81,6 @@
+-          <div class="promo-row">
+-            <label><span class="promo-lbl yt">YouTube</span><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></label>
+-            <label><span class="promo-lbl tt">TikTok</span><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></label>
+-            <label><span class="promo-lbl ig">Instagram</span><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></label>
+-          </div>
+-          <div>
+-            <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
+-            <button class="btn btn-ghost" type="button" id="pr-cancel">Cancel</button>
+-            <span class="pro-msg" id="pr-msg"></span>
+-          </div>
+-          <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
+-        </form>
++        </div>
+       </section>
+ 
+       <section class="promo-board" id="promo-board" aria-live="polite">
+@@ -81,6 +80,6 @@
      </footer>
  
      <script src="/shared.js?v=2"></script>
--    <script src="/promo.js?v=1"></script>
-+    <script src="/promo.js?v=2"></script>
+-    <script src="/promo.js?v=2"></script>
++    <script src="/promo.js?v=3"></script>
    </body>
  </html>
 diff --git a/clipery/public/promo.js b/clipery/public/promo.js
-index fa592b0..177fd44 100644
+index 177fd44..6318a47 100644
 --- a/clipery/public/promo.js
 +++ b/clipery/public/promo.js
-@@ -62,9 +62,11 @@
+@@ -13,7 +13,19 @@
+   function msg(text, err) {
+     var el = $("pr-msg");
+     el.textContent = text || "";
+-    el.style.color = err ? "#ff6b6b" : "#7ee2a8";
++    el.className = "pmodal-msg" + (text ? (err ? " err" : " ok") : "");
++  }
++  function openModal() {
++    $("promo-modal").classList.add("on");
++    $("promo-modal").setAttribute("aria-hidden", "false");
++    document.body.style.overflow = "hidden";
++    setTimeout(function () { $("pr-name").focus(); }, 50);
++  }
++  function closeModal() {
++    $("promo-modal").classList.remove("on");
++    $("promo-modal").setAttribute("aria-hidden", "true");
++    document.body.style.overflow = "";
++    msg("");
+   }
+   function handleOf(url) {
+     try {
+@@ -60,10 +72,8 @@
+ 
+     var me = d.me;
      var gate = $("promo-gate");
-     var form = $("promo-form");
+-    var form = $("promo-form");
      var pill = $("promo-plan-pill");
-+    var open = $("promo-open");
-+    form.hidden = true;
-+    open.hidden = true;
+     var open = $("promo-open");
+-    form.hidden = true;
+     open.hidden = true;
      if (!me) {
        gate.innerHTML = 'Log in with a paid plan to post your channels. <a href="/login?next=/promo">Log in</a>';
--      form.hidden = true;
-       return;
-     }
-     pill.hidden = false;
-@@ -72,10 +74,8 @@
-     pill.textContent = me.planLabel + " plan";
-     if (!me.canPost) {
-       gate.innerHTML = "The promo board is for paid plans. <a href=\"/pricing\">Upgrade</a> to Starter, Pro or Studio to post your channels.";
--      form.hidden = true;
-       return;
-     }
--    form.hidden = false;
-     if (!$("pr-name").value) $("pr-name").value = me.name || "";
-     var mine = rows.filter(function (p) { return p.mine; })[0];
-     if (mine) {
-@@ -90,6 +90,7 @@
-       gate.textContent = "Your card is live. You can post again in " + days + " day" + (days === 1 ? "" : "s") + ".";
-       $("pr-submit").disabled = true;
-     } else {
-+      open.hidden = false;
-       gate.textContent = me.plan === "studio"
-         ? "Studio accounts are shown at the very top of the board."
-         : me.plan === "pro" ? "Pro accounts are shown right under Studio." : "Starter accounts are listed after Studio and Pro.";
-@@ -103,6 +104,17 @@
+@@ -104,16 +114,10 @@
      render(d);
    }
  
-+  $("promo-open").addEventListener("click", function () {
-+    $("promo-form").hidden = false;
-+    $("promo-open").hidden = true;
-+    $("pr-name").focus();
-+  });
-+  $("pr-cancel").addEventListener("click", function () {
-+    $("promo-form").hidden = true;
-+    $("promo-open").hidden = false;
-+    msg("");
-+  });
-+
+-  $("promo-open").addEventListener("click", function () {
+-    $("promo-form").hidden = false;
+-    $("promo-open").hidden = true;
+-    $("pr-name").focus();
+-  });
+-  $("pr-cancel").addEventListener("click", function () {
+-    $("promo-form").hidden = true;
+-    $("promo-open").hidden = false;
+-    msg("");
+-  });
++  $("promo-open").addEventListener("click", openModal);
++  $("pr-cancel").addEventListener("click", closeModal);
++  $("promo-modal").addEventListener("click", function (e) { if (e.target === $("promo-modal")) closeModal(); });
++  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
+ 
    $("promo-form").addEventListener("submit", async function (ev) {
      ev.preventDefault();
-     msg("");
+@@ -138,6 +142,7 @@
+       return;
+     }
+     msg("Posted. You are on the board.");
++    setTimeout(closeModal, 900);
+     load();
+   });
+ 
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index 4d52589..318a0b4 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2878,3 +2878,23 @@ body.studio-app {
+ .promo-link span { font-weight: 500; color: var(--muted, #9894a6); }
+ .promo-link:hover { border-color: rgba(255,255,255,0.3); }
+ .promo-link.yt:hover { border-color: #ff5c5c; } .promo-link.tt:hover { border-color: #6ff0ea; } .promo-link.ig:hover { border-color: #ff7ac6; }
++/* promo post popup - same look as the login popup */
++.pmodal-back { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; background: rgba(4,4,8,0.78); backdrop-filter: blur(6px); padding: 1.1rem; animation: cauthFade 0.18s ease; }
++.pmodal-back.on { display: flex; }
++@keyframes pmodalPop { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
++.pmodal-card { width: 100%; max-width: 420px; max-height: 92vh; overflow: auto; position: relative; background: #0e0e14; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 1.9rem 1.7rem 1.6rem; box-shadow: 0 30px 80px rgba(0,0,0,0.6); animation: pmodalPop 0.2s ease; color: #f4f1ea; text-align: left; }
++.pmodal-card h2 { font-size: 1.45rem; margin: 0 0 0.3rem; font-weight: 800; letter-spacing: -0.01em; }
++.pmodal-sub { color: #9894a6; font-size: 0.88rem; margin: 0 0 1.2rem; line-height: 1.5; }
++.pmodal-x { position: absolute; top: 0.85rem; right: 0.9rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #9894a6; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
++.pmodal-x:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
++.pmodal-f { margin: 0 0 0.85rem; }
++.pmodal-f label { display: block; font-size: 0.8rem; font-weight: 700; color: #c9c5d8; margin: 0 0 0.32rem; }
++.pmodal-f label.yt { color: #ff5c5c; } .pmodal-f label.tt { color: #6ff0ea; } .pmodal-f label.ig { color: #ff7ac6; }
++.pmodal-f input { width: 100%; padding: 0.72rem 0.9rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.4); color: #f4f1ea; font: inherit; font-size: 0.94rem; box-sizing: border-box; }
++.pmodal-f input:focus { outline: none; border-color: #ff4d6d; }
++.pmodal-go { width: 100%; margin-top: 0.35rem; padding: 0.8rem 1rem; border: none; border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.96rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #ff4d6d, #ff8a4c); box-shadow: 0 10px 26px rgba(255,77,109,0.32); }
++.pmodal-go:disabled { opacity: 0.6; cursor: default; }
++.pmodal-msg { display: none; margin: 0 0 1rem; padding: 0.7rem 0.85rem; border-radius: 12px; font-size: 0.86rem; line-height: 1.45; }
++.pmodal-msg.err { display: block; background: rgba(255,77,109,0.12); border: 1px solid rgba(255,77,109,0.4); color: #ffb3c1; }
++.pmodal-msg.ok { display: block; background: rgba(200,245,66,0.1); border: 1px solid rgba(200,245,66,0.35); color: #dcf98d; }
++@keyframes cauthFade { from { opacity: 0; } to { opacity: 1; } }

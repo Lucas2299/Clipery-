@@ -13,7 +13,19 @@
   function msg(text, err) {
     var el = $("pr-msg");
     el.textContent = text || "";
-    el.style.color = err ? "#ff6b6b" : "#7ee2a8";
+    el.className = "pmodal-msg" + (text ? (err ? " err" : " ok") : "");
+  }
+  function openModal() {
+    $("promo-modal").classList.add("on");
+    $("promo-modal").setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+    setTimeout(function () { $("pr-name").focus(); }, 50);
+  }
+  function closeModal() {
+    $("promo-modal").classList.remove("on");
+    $("promo-modal").setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+    msg("");
   }
   function handleOf(url) {
     try {
@@ -60,10 +72,8 @@
 
     var me = d.me;
     var gate = $("promo-gate");
-    var form = $("promo-form");
     var pill = $("promo-plan-pill");
     var open = $("promo-open");
-    form.hidden = true;
     open.hidden = true;
     if (!me) {
       gate.innerHTML = 'Log in with a paid plan to post your channels. <a href="/login?next=/promo">Log in</a>';
@@ -104,16 +114,10 @@
     render(d);
   }
 
-  $("promo-open").addEventListener("click", function () {
-    $("promo-form").hidden = false;
-    $("promo-open").hidden = true;
-    $("pr-name").focus();
-  });
-  $("pr-cancel").addEventListener("click", function () {
-    $("promo-form").hidden = true;
-    $("promo-open").hidden = false;
-    msg("");
-  });
+  $("promo-open").addEventListener("click", openModal);
+  $("pr-cancel").addEventListener("click", closeModal);
+  $("promo-modal").addEventListener("click", function (e) { if (e.target === $("promo-modal")) closeModal(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeModal(); });
 
   $("promo-form").addEventListener("submit", async function (ev) {
     ev.preventDefault();
@@ -138,6 +142,7 @@
       return;
     }
     msg("Posted. You are on the board.");
+    setTimeout(closeModal, 900);
     load();
   });
 
