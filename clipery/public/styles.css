@@ -2878,3 +2878,23 @@ body.studio-app {
 .promo-link span { font-weight: 500; color: var(--muted, #9894a6); }
 .promo-link:hover { border-color: rgba(255,255,255,0.3); }
 .promo-link.yt:hover { border-color: #ff5c5c; } .promo-link.tt:hover { border-color: #6ff0ea; } .promo-link.ig:hover { border-color: #ff7ac6; }
+/* promo post popup - same look as the login popup */
+.pmodal-back { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; background: rgba(4,4,8,0.78); backdrop-filter: blur(6px); padding: 1.1rem; animation: cauthFade 0.18s ease; }
+.pmodal-back.on { display: flex; }
+@keyframes pmodalPop { from { opacity: 0; transform: translateY(14px) scale(0.98); } to { opacity: 1; transform: none; } }
+.pmodal-card { width: 100%; max-width: 420px; max-height: 92vh; overflow: auto; position: relative; background: #0e0e14; border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 1.9rem 1.7rem 1.6rem; box-shadow: 0 30px 80px rgba(0,0,0,0.6); animation: pmodalPop 0.2s ease; color: #f4f1ea; text-align: left; }
+.pmodal-card h2 { font-size: 1.45rem; margin: 0 0 0.3rem; font-weight: 800; letter-spacing: -0.01em; }
+.pmodal-sub { color: #9894a6; font-size: 0.88rem; margin: 0 0 1.2rem; line-height: 1.5; }
+.pmodal-x { position: absolute; top: 0.85rem; right: 0.9rem; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; border: 1px solid rgba(255,255,255,0.14); background: transparent; color: #9894a6; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.pmodal-x:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
+.pmodal-f { margin: 0 0 0.85rem; }
+.pmodal-f label { display: block; font-size: 0.8rem; font-weight: 700; color: #c9c5d8; margin: 0 0 0.32rem; }
+.pmodal-f label.yt { color: #ff5c5c; } .pmodal-f label.tt { color: #6ff0ea; } .pmodal-f label.ig { color: #ff7ac6; }
+.pmodal-f input { width: 100%; padding: 0.72rem 0.9rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.4); color: #f4f1ea; font: inherit; font-size: 0.94rem; box-sizing: border-box; }
+.pmodal-f input:focus { outline: none; border-color: #ff4d6d; }
+.pmodal-go { width: 100%; margin-top: 0.35rem; padding: 0.8rem 1rem; border: none; border-radius: 999px; cursor: pointer; font: inherit; font-size: 0.96rem; font-weight: 800; color: #fff; background: linear-gradient(135deg, #ff4d6d, #ff8a4c); box-shadow: 0 10px 26px rgba(255,77,109,0.32); }
+.pmodal-go:disabled { opacity: 0.6; cursor: default; }
+.pmodal-msg { display: none; margin: 0 0 1rem; padding: 0.7rem 0.85rem; border-radius: 12px; font-size: 0.86rem; line-height: 1.45; }
+.pmodal-msg.err { display: block; background: rgba(255,77,109,0.12); border: 1px solid rgba(255,77,109,0.4); color: #ffb3c1; }
+.pmodal-msg.ok { display: block; background: rgba(200,245,66,0.1); border: 1px solid rgba(200,245,66,0.35); color: #dcf98d; }
+@keyframes cauthFade { from { opacity: 0; } to { opacity: 1; } }

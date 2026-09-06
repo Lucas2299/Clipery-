@@ -7,7 +7,7 @@
     <meta name="description" content="Creators on Clipery share their YouTube, TikTok and Instagram. Follow, collab, grow together." />
     <meta name="theme-color" content="#07070b" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="/styles.css?v=71" />
+    <link rel="stylesheet" href="/styles.css?v=73" />
   </head>
   <body data-auth-modal>
     <div class="bg-grid" aria-hidden="true"></div>
@@ -43,23 +43,22 @@
             <button type="button" class="btn btn-primary" id="promo-open" hidden>Post your channels</button>
           </div>
         </div>
-        <form id="promo-form" class="promo-form" hidden style="margin-top:1rem">
-          <div class="promo-row">
-            <label>Name shown<input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></label>
-            <label>One line about you<input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></label>
+        <div class="pmodal-back" id="promo-modal" aria-hidden="true">
+          <div class="pmodal-card" role="dialog" aria-modal="true" aria-labelledby="pmodal-title">
+            <button type="button" class="pmodal-x" id="pr-cancel" aria-label="Close">&times;</button>
+            <h2 id="pmodal-title">Post your channels</h2>
+            <p class="pmodal-sub">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
+            <form id="promo-form">
+              <div class="pmodal-f"><label for="pr-name">Name shown</label><input type="text" id="pr-name" maxlength="40" placeholder="Your creator name" /></div>
+              <div class="pmodal-f"><label for="pr-tagline">One line about you</label><input type="text" id="pr-tagline" maxlength="120" placeholder="Gaming clips, 3 uploads a week" /></div>
+              <div class="pmodal-f"><label for="pr-youtube" class="yt">YouTube</label><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></div>
+              <div class="pmodal-f"><label for="pr-tiktok" class="tt">TikTok</label><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></div>
+              <div class="pmodal-f"><label for="pr-instagram" class="ig">Instagram</label><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></div>
+              <div class="pmodal-msg" id="pr-msg"></div>
+              <button class="pmodal-go" type="submit" id="pr-submit">Post to the board</button>
+            </form>
           </div>
-          <div class="promo-row">
-            <label><span class="promo-lbl yt">YouTube</span><input type="text" id="pr-youtube" placeholder="@handle or channel URL" /></label>
-            <label><span class="promo-lbl tt">TikTok</span><input type="text" id="pr-tiktok" placeholder="@handle or profile URL" /></label>
-            <label><span class="promo-lbl ig">Instagram</span><input type="text" id="pr-instagram" placeholder="@handle or profile URL" /></label>
-          </div>
-          <div>
-            <button class="btn btn-primary" type="submit" id="pr-submit">Post to the board</button>
-            <button class="btn btn-ghost" type="button" id="pr-cancel">Cancel</button>
-            <span class="pro-msg" id="pr-msg"></span>
-          </div>
-          <p class="muted" style="margin: 0.4rem 0 0">Once a week per account. Posting again replaces your previous card. Add at least one link.</p>
-        </form>
+        </div>
       </section>
 
       <section class="promo-board" id="promo-board" aria-live="polite">
@@ -81,6 +80,6 @@
     </footer>
 
     <script src="/shared.js?v=2"></script>
-    <script src="/promo.js?v=2"></script>
+    <script src="/promo.js?v=3"></script>
   </body>
 </html>
