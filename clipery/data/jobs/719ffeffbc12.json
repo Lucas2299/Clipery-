@@ -1,0 +1,2368 @@
+{
+  "id": "719ffeffbc12",
+  "userId": "a5fdcea12490c893",
+  "status": "done",
+  "stage": "complete",
+  "progress": 100,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "genre": "talking",
+  "createdAt": "2026-09-06T09:26:24.558Z",
+  "sourceName": "719ffeffbc12-src.mp4.part",
+  "subtitles": true,
+  "hook": false,
+  "hookMode": "intro",
+  "clips": [
+    {
+      "rank": 1,
+      "reframe": "static",
+      "score": 74,
+      "viralScore": 74,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Hook: a real number",
+        "No payoff",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "million dollar check was a puzzle.",
+      "title": "High-energy cut",
+      "start": 264.35,
+      "end": 306.8,
+      "duration": 42.45,
+      "dimensions": {
+        "total": 74,
+        "viralScore": 74,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Hook: a real number",
+          "No payoff",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 81,
+        "length": 98,
+        "pacing": 97,
+        "retention": 97,
+        "cta": 45,
+        "replay": 94,
+        "energy": 70,
+        "punch": 98,
+        "scores": {
+          "hook": 74,
+          "curiosity": 54,
+          "emotion": 65,
+          "value": 69,
+          "completion": 57,
+          "surprise": 70,
+          "payoff": 38,
+          "retention": 75
+        },
+        "brain": {
+          "topic": [
+            "crosswalk",
+            "puzzle",
+            "cube",
+            "square"
+          ],
+          "words": 150,
+          "story": 70,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 40,
+          "punchline": 75,
+          "conclusion": 25,
+          "educational": 58,
+          "emotional": 25,
+          "roles": [
+            "statement",
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 63,
+          "notes": [
+            "tells a story",
+            "surprising turn",
+            "concrete numbers",
+            "asks a question"
+          ],
+          "summary": "a story about crosswalk, puzzle, without a clear payoff"
+        },
+        "summary": "a story about crosswalk, puzzle, without a clear payoff",
+        "topic": [
+          "crosswalk",
+          "puzzle",
+          "cube",
+          "square"
+        ],
+        "quote": "million dollar check was a puzzle.",
+        "wpm": 210,
+        "motion": 37,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 57
+      },
+      "scores": {
+        "hook": 74,
+        "curiosity": 54,
+        "emotion": 65,
+        "value": 69,
+        "completion": 57,
+        "surprise": 70,
+        "payoff": 38,
+        "retention": 75
+      },
+      "summary": "a story about crosswalk, puzzle, without a clear payoff",
+      "edit": {
+        "start": 264.35,
+        "end": 306.8,
+        "duration": 42.45,
+        "anchor": null,
+        "reasons": [],
+        "captions": true,
+        "emphasis": [
+          "million"
+        ],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 1
+        }
+      },
+      "url": "/clips/719ffeffbc12/clip-1.mp4",
+      "downloadName": "viral-74-rank1-719ffeffbc12.mp4",
+      "postTip": "Post this first - highest viral chance"
+    },
+    {
+      "rank": 2,
+      "reframe": "follow",
+      "score": 71,
+      "viralScore": 71,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "No payoff",
+        "Surprising turn",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "Buffalo is in New York that actually makes a lot of sense.",
+      "title": "High-energy cut",
+      "start": 399.61,
+      "end": 441.2,
+      "duration": 41.59,
+      "dimensions": {
+        "total": 71,
+        "viralScore": 71,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "No payoff",
+          "Surprising turn",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 96,
+        "retention": 97,
+        "cta": 45,
+        "replay": 93,
+        "energy": 68,
+        "punch": 98,
+        "scores": {
+          "hook": 60,
+          "curiosity": 46,
+          "emotion": 61,
+          "value": 56,
+          "completion": 57,
+          "surprise": 75,
+          "payoff": 38,
+          "retention": 82
+        },
+        "brain": {
+          "topic": [
+            "gift",
+            "deciphered",
+            "queensland",
+            "hemsworth"
+          ],
+          "words": 141,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 20,
+          "punchline": 75,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 25,
+          "roles": [
+            "tension",
+            "statement"
+          ],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 63,
+          "notes": [
+            "surprising turn"
+          ],
+          "summary": "a talking moment about gift, deciphered, without a clear payoff"
+        },
+        "summary": "a talking moment about gift, deciphered, without a clear payoff",
+        "topic": [
+          "gift",
+          "deciphered",
+          "queensland",
+          "hemsworth"
+        ],
+        "quote": "Buffalo is in New York that actually makes a lot of sense.",
+        "wpm": 203,
+        "motion": 42,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 57
+      },
+      "scores": {
+        "hook": 60,
+        "curiosity": 46,
+        "emotion": 61,
+        "value": 56,
+        "completion": 57,
+        "surprise": 75,
+        "payoff": 38,
+        "retention": 82
+      },
+      "summary": "a talking moment about gift, deciphered, without a clear payoff",
+      "edit": {
+        "start": 399.61,
+        "end": 441.2,
+        "duration": 41.59,
+        "anchor": null,
+        "reasons": [],
+        "captions": true,
+        "emphasis": [
+          "everyone",
+          "50",
+          "49",
+          "biggest"
+        ],
+        "deadAir": [
+          {
+            "from": 434.22,
+            "to": 436.12,
+            "secs": 1.9
+          }
+        ],
+        "trimmable": 1.3,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 1.4,
+          "emphasis": 4
+        },
+        "trimmed": 1.4
+      },
+      "url": "/clips/719ffeffbc12/clip-2.mp4",
+      "downloadName": "viral-71-rank2-719ffeffbc12.mp4",
+      "postTip": "Strong follow-up post"
+    },
+    {
+      "rank": 3,
+      "reframe": "static",
+      "score": 71,
+      "viralScore": 71,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Emotional moment",
+        "No payoff",
+        "Surprising turn",
+        "Lots of action / movement"
+      ],
+      "quote": "If you continue to look through these videos, you'd find three more locations.",
+      "title": "High-energy cut",
+      "start": 495.57,
+      "end": 535.36,
+      "duration": 39.79,
+      "dimensions": {
+        "total": 71,
+        "viralScore": 71,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Emotional moment",
+          "No payoff",
+          "Surprising turn",
+          "Lots of action / movement"
+        ],
+        "hook": 74,
+        "length": 98,
+        "pacing": 94,
+        "retention": 97,
+        "cta": 45,
+        "replay": 92,
+        "energy": 66,
+        "punch": 97,
+        "scores": {
+          "hook": 65,
+          "curiosity": 40,
+          "emotion": 84,
+          "value": 52,
+          "completion": 45,
+          "surprise": 73,
+          "payoff": 38,
+          "retention": 85
+        },
+        "brain": {
+          "topic": [
+            "message",
+            "shorts",
+            "wanted",
+            "super"
+          ],
+          "words": 117,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 70,
+          "punchline": 55,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 35,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 51,
+          "notes": [
+            "surprising turn"
+          ],
+          "summary": "a big reaction about message, shorts, without a clear payoff"
+        },
+        "summary": "a big reaction about message, shorts, without a clear payoff",
+        "topic": [
+          "message",
+          "shorts",
+          "wanted",
+          "super"
+        ],
+        "quote": "If you continue to look through these videos, you'd find three more locations.",
+        "wpm": 237,
+        "motion": 41,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 45
+      },
+      "scores": {
+        "hook": 65,
+        "curiosity": 40,
+        "emotion": 84,
+        "value": 52,
+        "completion": 45,
+        "surprise": 73,
+        "payoff": 38,
+        "retention": 85
+      },
+      "summary": "a big reaction about message, shorts, without a clear payoff",
+      "edit": {
+        "start": 495.57,
+        "end": 535.36,
+        "duration": 39.79,
+        "anchor": null,
+        "reasons": [],
+        "captions": true,
+        "emphasis": [],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": null,
+          "trimmed": 0,
+          "emphasis": 0
+        }
+      },
+      "url": "/clips/719ffeffbc12/clip-3.mp4",
+      "downloadName": "viral-71-rank3-719ffeffbc12.mp4",
+      "postTip": "Strong follow-up post"
+    },
+    {
+      "rank": 4,
+      "reframe": "static",
+      "score": 65,
+      "viralScore": 65,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: a real number + curiosity gap",
+        "No payoff",
+        "Lots of action / movement",
+        "Dramatic pause"
+      ],
+      "quote": "And to win the million dollars, you need to find 91 locations hidden throughout all the...",
+      "title": "Cold-open hook",
+      "start": 51.66,
+      "end": 89.16,
+      "duration": 37.5,
+      "dimensions": {
+        "total": 65,
+        "viralScore": 65,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: a real number + curiosity gap",
+          "No payoff",
+          "Lots of action / movement",
+          "Dramatic pause"
+        ],
+        "hook": 79,
+        "length": 98,
+        "pacing": 98,
+        "retention": 98,
+        "cta": 45,
+        "replay": 96,
+        "energy": 72,
+        "punch": 98,
+        "scores": {
+          "hook": 79,
+          "curiosity": 48,
+          "emotion": 54,
+          "value": 70,
+          "completion": 65,
+          "surprise": 62,
+          "payoff": 38,
+          "retention": 72
+        },
+        "brain": {
+          "topic": [
+            "locations",
+            "dollars",
+            "special",
+            "vault"
+          ],
+          "words": 103,
+          "story": 70,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 26,
+          "punchline": 45,
+          "conclusion": 25,
+          "educational": 61,
+          "emotional": 25,
+          "roles": [
+            "statement",
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "ends on an unanswered question"
+          ],
+          "selfContained": 65,
+          "notes": [
+            "tells a story",
+            "concrete numbers",
+            "asks a question"
+          ],
+          "summary": "a story about locations, dollars, without a clear payoff"
+        },
+        "summary": "a story about locations, dollars, without a clear payoff",
+        "topic": [
+          "locations",
+          "dollars",
+          "special",
+          "vault"
+        ],
+        "quote": "And to win the million dollars, you need to find 91 locations hidden throughout all the...",
+        "wpm": 165,
+        "motion": 60,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "arc": 65,
+        "anchor": "And to win the million dollars, you need to find 91 locations hidden throughout all these clues."
+      },
+      "scores": {
+        "hook": 79,
+        "curiosity": 48,
+        "emotion": 54,
+        "value": 70,
+        "completion": 65,
+        "surprise": 62,
+        "payoff": 38,
+        "retention": 72
+      },
+      "summary": "a story about locations, dollars, without a clear payoff",
+      "edit": {
+        "start": 51.66,
+        "end": 89.16,
+        "duration": 37.5,
+        "anchor": "And to win the million dollars, you need to find 91 locations hidden throughout all these clues.",
+        "reasons": [],
+        "captions": true,
+        "emphasis": [
+          "million",
+          "91",
+          "12"
+        ],
+        "deadAir": [],
+        "trimmable": 0,
+        "applied": {
+          "punchIn": {
+            "from": 0.05,
+            "to": 5.99
+          },
+          "trimmed": 0,
+          "emphasis": 3
+        },
+        "punchIn": {
+          "from": 0.05,
+          "to": 5.99
+        }
+      },
+      "url": "/clips/719ffeffbc12/clip-4.mp4",
+      "downloadName": "viral-65-rank4-719ffeffbc12.mp4",
+      "postTip": "Schedule later / A-B test"
+    }
+  ],
+  "rankings": [
+    {
+      "rank": 1,
+      "score": 74,
+      "viralScore": 74,
+      "verdict": "Good to post",
+      "verdictKey": "good",
+      "reasons": [
+        "Hook: a real number",
+        "No payoff",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "million dollar check was a puzzle.",
+      "title": "High-energy cut",
+      "start": 264.35,
+      "end": 306.8,
+      "duration": 42.45,
+      "dimensions": {
+        "total": 74,
+        "viralScore": 74,
+        "verdict": "Good to post",
+        "verdictKey": "good",
+        "reasons": [
+          "Hook: a real number",
+          "No payoff",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 81,
+        "length": 98,
+        "pacing": 97,
+        "retention": 97,
+        "cta": 45,
+        "replay": 94,
+        "energy": 70,
+        "punch": 98,
+        "scores": {
+          "hook": 74,
+          "curiosity": 54,
+          "emotion": 65,
+          "value": 69,
+          "completion": 57,
+          "surprise": 70,
+          "payoff": 38,
+          "retention": 75
+        },
+        "brain": {
+          "topic": [
+            "crosswalk",
+            "puzzle",
+            "cube",
+            "square"
+          ],
+          "words": 150,
+          "story": 70,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 40,
+          "punchline": 75,
+          "conclusion": 25,
+          "educational": 58,
+          "emotional": 25,
+          "roles": [
+            "statement",
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 63,
+          "notes": [
+            "tells a story",
+            "surprising turn",
+            "concrete numbers",
+            "asks a question"
+          ],
+          "summary": "a story about crosswalk, puzzle, without a clear payoff"
+        },
+        "summary": "a story about crosswalk, puzzle, without a clear payoff",
+        "topic": [
+          "crosswalk",
+          "puzzle",
+          "cube",
+          "square"
+        ],
+        "quote": "million dollar check was a puzzle.",
+        "wpm": 210,
+        "motion": 37,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 57
+      }
+    },
+    {
+      "rank": 2,
+      "score": 71,
+      "viralScore": 71,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "No payoff",
+        "Surprising turn",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "Buffalo is in New York that actually makes a lot of sense.",
+      "title": "High-energy cut",
+      "start": 399.61,
+      "end": 441.2,
+      "duration": 41.59,
+      "dimensions": {
+        "total": 71,
+        "viralScore": 71,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "No payoff",
+          "Surprising turn",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 72,
+        "length": 98,
+        "pacing": 96,
+        "retention": 97,
+        "cta": 45,
+        "replay": 93,
+        "energy": 68,
+        "punch": 98,
+        "scores": {
+          "hook": 60,
+          "curiosity": 46,
+          "emotion": 61,
+          "value": 56,
+          "completion": 57,
+          "surprise": 75,
+          "payoff": 38,
+          "retention": 82
+        },
+        "brain": {
+          "topic": [
+            "gift",
+            "deciphered",
+            "queensland",
+            "hemsworth"
+          ],
+          "words": 141,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 20,
+          "punchline": 75,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 25,
+          "roles": [
+            "tension",
+            "statement"
+          ],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 63,
+          "notes": [
+            "surprising turn"
+          ],
+          "summary": "a talking moment about gift, deciphered, without a clear payoff"
+        },
+        "summary": "a talking moment about gift, deciphered, without a clear payoff",
+        "topic": [
+          "gift",
+          "deciphered",
+          "queensland",
+          "hemsworth"
+        ],
+        "quote": "Buffalo is in New York that actually makes a lot of sense.",
+        "wpm": 203,
+        "motion": 42,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 57
+      }
+    },
+    {
+      "rank": 3,
+      "score": 71,
+      "viralScore": 71,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Emotional moment",
+        "No payoff",
+        "Surprising turn",
+        "Lots of action / movement"
+      ],
+      "quote": "If you continue to look through these videos, you'd find three more locations.",
+      "title": "High-energy cut",
+      "start": 495.57,
+      "end": 535.36,
+      "duration": 39.79,
+      "dimensions": {
+        "total": 71,
+        "viralScore": 71,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Emotional moment",
+          "No payoff",
+          "Surprising turn",
+          "Lots of action / movement"
+        ],
+        "hook": 74,
+        "length": 98,
+        "pacing": 94,
+        "retention": 97,
+        "cta": 45,
+        "replay": 92,
+        "energy": 66,
+        "punch": 97,
+        "scores": {
+          "hook": 65,
+          "curiosity": 40,
+          "emotion": 84,
+          "value": 52,
+          "completion": 45,
+          "surprise": 73,
+          "payoff": 38,
+          "retention": 85
+        },
+        "brain": {
+          "topic": [
+            "message",
+            "shorts",
+            "wanted",
+            "super"
+          ],
+          "words": 117,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 70,
+          "punchline": 55,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 35,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "cut off at the end"
+          ],
+          "selfContained": 51,
+          "notes": [
+            "surprising turn"
+          ],
+          "summary": "a big reaction about message, shorts, without a clear payoff"
+        },
+        "summary": "a big reaction about message, shorts, without a clear payoff",
+        "topic": [
+          "message",
+          "shorts",
+          "wanted",
+          "super"
+        ],
+        "quote": "If you continue to look through these videos, you'd find three more locations.",
+        "wpm": 237,
+        "motion": 41,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "cut off at the end"
+        ],
+        "arc": 45
+      }
+    },
+    {
+      "rank": 4,
+      "score": 66,
+      "viralScore": 66,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: opens with a question",
+        "No payoff",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "What if I told you, that's only 10 of the entire puzzle?",
+      "title": "High-energy cut",
+      "start": 249.27,
+      "end": 291.67,
+      "duration": 42.4,
+      "dimensions": {
+        "total": 66,
+        "viralScore": 66,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: opens with a question",
+          "No payoff",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 74,
+        "length": 98,
+        "pacing": 96,
+        "retention": 97,
+        "cta": 45,
+        "replay": 93,
+        "energy": 69,
+        "punch": 97,
+        "scores": {
+          "hook": 76,
+          "curiosity": 70,
+          "emotion": 61,
+          "value": 69,
+          "completion": 65,
+          "surprise": 59,
+          "payoff": 38,
+          "retention": 68
+        },
+        "brain": {
+          "topic": [
+            "puzzle",
+            "cube",
+            "crosswalk",
+            "rubik's"
+          ],
+          "words": 146,
+          "story": 70,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 60,
+          "punchline": 45,
+          "conclusion": 25,
+          "educational": 58,
+          "emotional": 25,
+          "roles": [
+            "tension",
+            "statement"
+          ],
+          "missing": [
+            "no payoff",
+            "ends on an unanswered question"
+          ],
+          "selfContained": 65,
+          "notes": [
+            "tells a story",
+            "concrete numbers",
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a story about puzzle, cube, without a clear payoff"
+        },
+        "summary": "a story about puzzle, cube, without a clear payoff",
+        "topic": [
+          "puzzle",
+          "cube",
+          "crosswalk",
+          "rubik's"
+        ],
+        "quote": "What if I told you, that's only 10 of the entire puzzle?",
+        "wpm": 209,
+        "motion": 41,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "arc": 65,
+        "anchor": "What if I told you, that's only 10 of the entire puzzle?"
+      }
+    },
+    {
+      "rank": 5,
+      "score": 65,
+      "viralScore": 65,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Hook: a real number + curiosity gap",
+        "No payoff",
+        "Lots of action / movement",
+        "Dramatic pause"
+      ],
+      "quote": "And to win the million dollars, you need to find 91 locations hidden throughout all the...",
+      "title": "Cold-open hook",
+      "start": 51.66,
+      "end": 89.57,
+      "duration": 37.91,
+      "dimensions": {
+        "total": 65,
+        "viralScore": 65,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Hook: a real number + curiosity gap",
+          "No payoff",
+          "Lots of action / movement",
+          "Dramatic pause"
+        ],
+        "hook": 79,
+        "length": 98,
+        "pacing": 98,
+        "retention": 98,
+        "cta": 45,
+        "replay": 96,
+        "energy": 72,
+        "punch": 98,
+        "scores": {
+          "hook": 79,
+          "curiosity": 48,
+          "emotion": 54,
+          "value": 70,
+          "completion": 65,
+          "surprise": 62,
+          "payoff": 38,
+          "retention": 72
+        },
+        "brain": {
+          "topic": [
+            "locations",
+            "dollars",
+            "special",
+            "vault"
+          ],
+          "words": 103,
+          "story": 70,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 26,
+          "punchline": 45,
+          "conclusion": 25,
+          "educational": 61,
+          "emotional": 25,
+          "roles": [
+            "statement",
+            "tension"
+          ],
+          "missing": [
+            "no payoff",
+            "ends on an unanswered question"
+          ],
+          "selfContained": 65,
+          "notes": [
+            "tells a story",
+            "concrete numbers",
+            "asks a question"
+          ],
+          "summary": "a story about locations, dollars, without a clear payoff"
+        },
+        "summary": "a story about locations, dollars, without a clear payoff",
+        "topic": [
+          "locations",
+          "dollars",
+          "special",
+          "vault"
+        ],
+        "quote": "And to win the million dollars, you need to find 91 locations hidden throughout all the...",
+        "wpm": 165,
+        "motion": 60,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "arc": 65,
+        "anchor": "And to win the million dollars, you need to find 91 locations hidden throughout all these clues."
+      }
+    },
+    {
+      "rank": 6,
+      "score": 64,
+      "viralScore": 64,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "No payoff",
+        "Surprising turn",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "Beast on his chess knowledge thanks Andrea But that mentioned it wasn't random if you r...",
+      "title": "High-energy cut",
+      "start": 383.79,
+      "end": 424.74,
+      "duration": 40.95,
+      "dimensions": {
+        "total": 64,
+        "viralScore": 64,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "No payoff",
+          "Surprising turn",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 65,
+        "length": 98,
+        "pacing": 93,
+        "retention": 96,
+        "cta": 45,
+        "replay": 92,
+        "energy": 65,
+        "punch": 97,
+        "scores": {
+          "hook": 60,
+          "curiosity": 46,
+          "emotion": 61,
+          "value": 56,
+          "completion": 73,
+          "surprise": 92,
+          "payoff": 38,
+          "retention": 70
+        },
+        "brain": {
+          "topic": [
+            "position",
+            "wasn't",
+            "deciphered",
+            "knowledge"
+          ],
+          "words": 149,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 60,
+          "punchline": 100,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 25,
+          "roles": [
+            "tension",
+            "statement"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 73,
+          "notes": [
+            "surprising turn"
+          ],
+          "summary": "a talking moment about position, wasn't, without a clear payoff"
+        },
+        "summary": "a talking moment about position, wasn't, without a clear payoff",
+        "topic": [
+          "position",
+          "wasn't",
+          "deciphered",
+          "knowledge"
+        ],
+        "quote": "Beast on his chess knowledge thanks Andrea But that mentioned it wasn't random if you r...",
+        "wpm": 221,
+        "motion": 37,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 73,
+        "anchor": "Beast on his chess knowledge thanks Andrea But that mentioned it wasn't random if you recreate the final position I think we need to find what position it is set it up and try to read the message."
+      }
+    },
+    {
+      "rank": 7,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 605.01,
+      "end": 645.01,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 45,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 8,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 821.09,
+      "end": 861.09,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 70,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 9,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 1027.17,
+      "end": 1067.165896,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 90,
+        "replay": 45,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 10,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 648.23,
+      "end": 688.23,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 45,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 11,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 734.66,
+      "end": 774.66,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 70,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 12,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 864.3,
+      "end": 904.3,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 90,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 13,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 950.74,
+      "end": 990.74,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 90,
+        "replay": 45,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 14,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 561.8,
+      "end": 601.8,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 45,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 15,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 691.44,
+      "end": 731.44,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 70,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 16,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length"
+      ],
+      "quote": null,
+      "title": "Viral angle",
+      "start": 777.87,
+      "end": 817.87,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 70,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 17,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 907.52,
+      "end": 947.52,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 90,
+        "replay": 44,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 18,
+      "score": 61,
+      "viralScore": 61,
+      "verdict": "Okay / test it",
+      "verdictKey": "okay",
+      "reasons": [
+        "Ideal short-form length",
+        "Strong closer / CTA zone"
+      ],
+      "quote": null,
+      "title": "Closer punch",
+      "start": 993.95,
+      "end": 1033.95,
+      "duration": 40,
+      "dimensions": {
+        "total": 61,
+        "viralScore": 61,
+        "verdict": "Okay / test it",
+        "verdictKey": "okay",
+        "reasons": [
+          "Ideal short-form length",
+          "Strong closer / CTA zone"
+        ],
+        "hook": 49,
+        "length": 98,
+        "pacing": 16,
+        "retention": 66,
+        "cta": 90,
+        "replay": 45,
+        "energy": 20,
+        "punch": 33,
+        "scores": {
+          "hook": 50,
+          "curiosity": 40,
+          "emotion": 35,
+          "value": 35,
+          "completion": 40,
+          "surprise": 30,
+          "payoff": 40,
+          "retention": 47
+        },
+        "brain": null,
+        "summary": null,
+        "topic": [],
+        "quote": null,
+        "wpm": 0,
+        "missing": [],
+        "arc": 40,
+        "anchor": null
+      }
+    },
+    {
+      "rank": 19,
+      "score": 59,
+      "viralScore": 59,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Hook: a real number",
+        "Useful takeaway",
+        "No payoff",
+        "Lots of action / movement"
+      ],
+      "quote": "Months ago, I put a million dollars in this bowl and then on a Super Bowl commercial, c...",
+      "title": "Cold-open hook",
+      "start": 0,
+      "end": 29.97,
+      "duration": 29.97,
+      "dimensions": {
+        "total": 59,
+        "viralScore": 59,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Hook: a real number",
+          "Useful takeaway",
+          "No payoff",
+          "Lots of action / movement"
+        ],
+        "hook": 70,
+        "length": 98,
+        "pacing": 100,
+        "retention": 99,
+        "cta": 45,
+        "replay": 97,
+        "energy": 76,
+        "punch": 100,
+        "scores": {
+          "hook": 66,
+          "curiosity": 40,
+          "emotion": 53,
+          "value": 85,
+          "completion": 61,
+          "surprise": 63,
+          "payoff": 38,
+          "retention": 77
+        },
+        "brain": {
+          "topic": [
+            "super",
+            "bowl",
+            "dollars",
+            "first"
+          ],
+          "words": 101,
+          "story": 30,
+          "setup": 45,
+          "conflict": 25,
+          "claim": 55,
+          "reaction": 32,
+          "punchline": 45,
+          "conclusion": 25,
+          "educational": 97,
+          "emotional": 25,
+          "roles": [
+            "statement"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "concrete numbers"
+          ],
+          "summary": "a useful takeaway about super, bowl, without a clear payoff"
+        },
+        "summary": "a useful takeaway about super, bowl, without a clear payoff",
+        "topic": [
+          "super",
+          "bowl",
+          "dollars",
+          "first"
+        ],
+        "quote": "Months ago, I put a million dollars in this bowl and then on a Super Bowl commercial, c...",
+        "wpm": 203,
+        "motion": 47,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "Months ago, I put a million dollars in this bowl and then on a Super Bowl commercial, close it up boys, I said whoever solved a hundred puzzles first spread all across the internet would win the money inside."
+      }
+    },
+    {
+      "rank": 20,
+      "score": 59,
+      "viralScore": 59,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Weak opening line",
+        "Useful takeaway",
+        "No payoff",
+        "Lots of action / movement"
+      ],
+      "quote": "But if you overlaid these dots together and counted the numbers from top to bottom, you...",
+      "title": "High-energy cut",
+      "start": 184.98,
+      "end": 223.3,
+      "duration": 38.32,
+      "dimensions": {
+        "total": 59,
+        "viralScore": 59,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Weak opening line",
+          "Useful takeaway",
+          "No payoff",
+          "Lots of action / movement"
+        ],
+        "hook": 55,
+        "length": 98,
+        "pacing": 98,
+        "retention": 98,
+        "cta": 45,
+        "replay": 95,
+        "energy": 71,
+        "punch": 100,
+        "scores": {
+          "hook": 43,
+          "curiosity": 40,
+          "emotion": 53,
+          "value": 77,
+          "completion": 65,
+          "surprise": 61,
+          "payoff": 38,
+          "retention": 73
+        },
+        "brain": {
+          "topic": [
+            "numbers",
+            "receipt",
+            "you'd",
+            "cream"
+          ],
+          "words": 114,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 20,
+          "punchline": 45,
+          "conclusion": 25,
+          "educational": 79,
+          "emotional": 25,
+          "roles": [
+            "tension",
+            "statement"
+          ],
+          "missing": [
+            "no payoff",
+            "ends on an unanswered question"
+          ],
+          "selfContained": 65,
+          "notes": [
+            "concrete numbers",
+            "asks a question"
+          ],
+          "summary": "a useful takeaway about numbers, receipt, without a clear payoff"
+        },
+        "summary": "a useful takeaway about numbers, receipt, without a clear payoff",
+        "topic": [
+          "numbers",
+          "receipt",
+          "you'd",
+          "cream"
+        ],
+        "quote": "But if you overlaid these dots together and counted the numbers from top to bottom, you...",
+        "wpm": 179,
+        "motion": 50,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "arc": 65,
+        "anchor": "But if you overlaid these dots together and counted the numbers from top to bottom, you'd get these atomic numbers."
+      }
+    },
+    {
+      "rank": 21,
+      "score": 57,
+      "viralScore": 57,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Weak opening line",
+        "No payoff",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "But if you want to know how to solve the rest of the puzzles in this pregame video, her...",
+      "title": "High-energy cut",
+      "start": 316.48,
+      "end": 353.76,
+      "duration": 37.28,
+      "dimensions": {
+        "total": 57,
+        "viralScore": 57,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Weak opening line",
+          "No payoff",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 47,
+        "length": 98,
+        "pacing": 97,
+        "retention": 98,
+        "cta": 45,
+        "replay": 94,
+        "energy": 71,
+        "punch": 97,
+        "scores": {
+          "hook": 35,
+          "curiosity": 40,
+          "emotion": 53,
+          "value": 70,
+          "completion": 65,
+          "surprise": 61,
+          "payoff": 38,
+          "retention": 73
+        },
+        "brain": {
+          "topic": [
+            "video",
+            "puzzles",
+            "solve",
+            "thank"
+          ],
+          "words": 136,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 55,
+          "reaction": 20,
+          "punchline": 45,
+          "conclusion": 25,
+          "educational": 61,
+          "emotional": 25,
+          "roles": [
+            "tension",
+            "statement"
+          ],
+          "missing": [
+            "no payoff",
+            "ends on an unanswered question"
+          ],
+          "selfContained": 65,
+          "notes": [
+            "concrete numbers",
+            "asks a question"
+          ],
+          "summary": "a talking moment about video, puzzles, without a clear payoff"
+        },
+        "summary": "a talking moment about video, puzzles, without a clear payoff",
+        "topic": [
+          "video",
+          "puzzles",
+          "solve",
+          "thank"
+        ],
+        "quote": "But if you want to know how to solve the rest of the puzzles in this pregame video, her...",
+        "wpm": 222,
+        "motion": 52,
+        "complete": false,
+        "missing": [
+          "no payoff",
+          "ends on an unanswered question"
+        ],
+        "arc": 65,
+        "anchor": "But if you want to know how to solve the rest of the puzzles in this pregame video, here's the instruction."
+      }
+    },
+    {
+      "rank": 22,
+      "score": 55,
+      "viralScore": 55,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Kept the build-up",
+        "Weak opening line",
+        "No payoff",
+        "Lots of action / movement"
+      ],
+      "quote": "And did you catch the smoke bomb?",
+      "title": "Cold-open hook",
+      "start": 170.73,
+      "end": 198.9,
+      "duration": 28.17,
+      "dimensions": {
+        "total": 55,
+        "viralScore": 55,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Kept the build-up",
+          "Weak opening line",
+          "No payoff",
+          "Lots of action / movement"
+        ],
+        "hook": 51,
+        "length": 98,
+        "pacing": 99,
+        "retention": 99,
+        "cta": 45,
+        "replay": 97,
+        "energy": 73,
+        "punch": 100,
+        "scores": {
+          "hook": 39,
+          "curiosity": 62,
+          "emotion": 53,
+          "value": 58,
+          "completion": 61,
+          "surprise": 66,
+          "payoff": 38,
+          "retention": 73
+        },
+        "brain": {
+          "topic": [
+            "numbers",
+            "yellow",
+            "you'd",
+            "dots"
+          ],
+          "words": 95,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 55,
+          "conclusion": 25,
+          "educational": 40,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [
+            "surprising turn",
+            "asks a question",
+            "question then answer"
+          ],
+          "summary": "a talking moment about numbers, yellow, without a clear payoff"
+        },
+        "summary": "a talking moment about numbers, yellow, without a clear payoff",
+        "topic": [
+          "numbers",
+          "yellow",
+          "you'd",
+          "dots"
+        ],
+        "quote": "And did you catch the smoke bomb?",
+        "wpm": 206,
+        "motion": 60,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "This may look like one plus one, but this is an S."
+      }
+    },
+    {
+      "rank": 23,
+      "score": 52,
+      "viralScore": 52,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "Weak opening line",
+        "No payoff",
+        "Lots of action / movement",
+        "Fast, energetic delivery"
+      ],
+      "quote": "But if you play the video in reverse, the Morse code pattern spells Kabul.",
+      "title": "Cold-open hook",
+      "start": 123.77,
+      "end": 152.25,
+      "duration": 28.48,
+      "dimensions": {
+        "total": 52,
+        "viralScore": 52,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "Weak opening line",
+          "No payoff",
+          "Lots of action / movement",
+          "Fast, energetic delivery"
+        ],
+        "hook": 54,
+        "length": 98,
+        "pacing": 99,
+        "retention": 99,
+        "cta": 45,
+        "replay": 97,
+        "energy": 73,
+        "punch": 99,
+        "scores": {
+          "hook": 43,
+          "curiosity": 40,
+          "emotion": 53,
+          "value": 52,
+          "completion": 61,
+          "surprise": 44,
+          "payoff": 38,
+          "retention": 68
+        },
+        "brain": {
+          "topic": [
+            "spells",
+            "arrows",
+            "ports",
+            "laser"
+          ],
+          "words": 95,
+          "story": 45,
+          "setup": 45,
+          "conflict": 50,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 25,
+          "roles": [
+            "tension"
+          ],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 61,
+          "notes": [],
+          "summary": "a talking moment about spells, arrows, without a clear payoff"
+        },
+        "summary": "a talking moment about spells, arrows, without a clear payoff",
+        "topic": [
+          "spells",
+          "arrows",
+          "ports",
+          "laser"
+        ],
+        "quote": "But if you play the video in reverse, the Morse code pattern spells Kabul.",
+        "wpm": 205,
+        "motion": 37,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 61,
+        "anchor": "But if you play the video in reverse, the Morse code pattern spells Kabul."
+      }
+    },
+    {
+      "rank": 24,
+      "score": 52,
+      "viralScore": 52,
+      "verdict": "Low priority",
+      "verdictKey": "low",
+      "reasons": [
+        "No payoff",
+        "More movement than usual",
+        "Fast, energetic delivery",
+        "Sudden burst of action"
+      ],
+      "quote": "By counting how many seconds each color stayed on on top of the tower and mapping those...",
+      "title": "High-energy cut",
+      "start": 468.74,
+      "end": 495.69,
+      "duration": 26.95,
+      "dimensions": {
+        "total": 52,
+        "viralScore": 52,
+        "verdict": "Low priority",
+        "verdictKey": "low",
+        "reasons": [
+          "No payoff",
+          "More movement than usual",
+          "Fast, energetic delivery",
+          "Sudden burst of action"
+        ],
+        "hook": 60,
+        "length": 98,
+        "pacing": 93,
+        "retention": 96,
+        "cta": 45,
+        "replay": 92,
+        "energy": 64,
+        "punch": 98,
+        "scores": {
+          "hook": 52,
+          "curiosity": 40,
+          "emotion": 50,
+          "value": 52,
+          "completion": 49,
+          "surprise": 44,
+          "payoff": 38,
+          "retention": 71
+        },
+        "brain": {
+          "topic": [
+            "numbers",
+            "hidden",
+            "using",
+            "billboards"
+          ],
+          "words": 91,
+          "story": 30,
+          "setup": 45,
+          "conflict": 25,
+          "claim": 30,
+          "reaction": 20,
+          "punchline": 25,
+          "conclusion": 25,
+          "educational": 25,
+          "emotional": 25,
+          "roles": [],
+          "missing": [
+            "no payoff"
+          ],
+          "selfContained": 49,
+          "notes": [],
+          "summary": "a talking moment about numbers, hidden, without a clear payoff"
+        },
+        "summary": "a talking moment about numbers, hidden, without a clear payoff",
+        "topic": [
+          "numbers",
+          "hidden",
+          "using",
+          "billboards"
+        ],
+        "quote": "By counting how many seconds each color stayed on on top of the tower and mapping those...",
+        "wpm": 204,
+        "motion": 32,
+        "complete": false,
+        "missing": [
+          "no payoff"
+        ],
+        "arc": 49,
+        "anchor": "By counting how many seconds each color stayed on on top of the tower and mapping those numbers to the letters of the alphabet."
+      }
+    }
+  ],
+  "error": null,
+  "duration": 1067.17,
+  "candidateCount": 24,
+  "sceneCount": 199,
+  "stageNote": null,
+  "transcribed": true,
+  "viralAnalysis": {
+    "analyzed": 24,
+    "topViralScore": 74,
+    "likelyViral": 0,
+    "postOrder": [
+      {
+        "rank": 1,
+        "title": "High-energy cut",
+        "viralScore": 74,
+        "verdict": "Good to post"
+      },
+      {
+        "rank": 2,
+        "title": "High-energy cut",
+        "viralScore": 71,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 3,
+        "title": "High-energy cut",
+        "viralScore": 71,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 4,
+        "title": "Cold-open hook",
+        "viralScore": 65,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 5,
+        "title": "Viral angle",
+        "viralScore": 61,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 6,
+        "title": "Viral angle",
+        "viralScore": 61,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 7,
+        "title": "Closer punch",
+        "viralScore": 61,
+        "verdict": "Okay / test it"
+      },
+      {
+        "rank": 8,
+        "title": "Viral angle",
+        "viralScore": 61,
+        "verdict": "Okay / test it"
+      }
+    ],
+    "summary": "AI analyzed 24 moments. Best clip scored 74 - still worth testing."
+  },
+  "subtitlesApplied": true,
+  "renderNote": "one clip could not be rendered and was left out",
+  "completedAt": "2026-09-06T09:39:47.870Z"
+}

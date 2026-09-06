@@ -1,73 +1,83 @@
-diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
-index df02019..237e136 100644
---- a/clipery/lib/auth.js
-+++ b/clipery/lib/auth.js
-@@ -257,15 +257,17 @@ const PLANS = {
-   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
-   free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
-   starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4 },
--  plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
--  pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
--  unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
-+  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8 },
-+  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10 },
- };
-+// Old plan ids from earlier versions keep working for existing accounts.
-+const PLAN_ALIASES = { plus: "pro", unlimited: "studio" };
+diff --git a/clipery/lib/facedetect.py b/clipery/lib/facedetect.py
+index ef94e26..22c8abd 100644
+--- a/clipery/lib/facedetect.py
++++ b/clipery/lib/facedetect.py
+@@ -118,17 +118,37 @@ class YuNetDetector:
  
- const currentMonth = () => new Date().toISOString().slice(0, 7); // YYYY-MM
  
- function planOf(user) {
--  return PLANS[(user && user.plan) || "free"] || PLANS.free;
-+  const id = (user && user.plan) || "free";
-+  return PLANS[id] || PLANS[PLAN_ALIASES[id]] || PLANS.free;
- }
+ def build_detector(cv2):
+-    """Whichever detector this OpenCV build actually supports."""
+-    if hasattr(cv2, "CascadeClassifier") and hasattr(cv2, "data"):
+-        return HaarDetector(cv2), None
+-    if hasattr(cv2, "FaceDetectorYN_create"):
++    """Best detector this OpenCV build supports: YuNet (neural, 2023) first,
++    classic Haar cascades as the fallback. CLIPERY_DETECTOR=haar forces Haar."""
++    import os
++    want = os.environ.get("CLIPERY_DETECTOR", "").lower()
++    has_haar = hasattr(cv2, "CascadeClassifier") and hasattr(cv2, "data")
++    if want != "haar" and hasattr(cv2, "FaceDetectorYN_create"):
+         model = YuNetDetector.find_model()
+         if model:
+-            return YuNetDetector(cv2, model), None
+-        return None, "yunet-model-missing"
++            try:
++                return YuNetDetector(cv2, model), None
++            except Exception:
++                pass
++        if not has_haar:
++            return None, "yunet-model-missing"
++    if has_haar:
++        return HaarDetector(cv2), None
+     return None, "no-face-detector"
  
- /** Usage for this month, reset automatically when the month rolls over. */
-@@ -330,6 +332,7 @@ function listUsers() {
-     const limit = planOf(u).videos + (Number(u.bonusVideos) || 0);
-     return {
-       ...publicUser(u),
-+      plan: planOf(u).id,
-       role: isAdmin(u) ? "owner" : "member",
-       bonusVideos: Number(u.bonusVideos) || 0,
-       planLabel: planOf(u).label,
-@@ -371,7 +374,8 @@ function changePassword(userId, current, next) {
  
- /** Owner action: move somebody to another plan. */
- function setPlan(userId, plan) {
--  if (!PLANS[plan]) return { ok: false, status: 400, error: "Unknown plan." };
-+  plan = PLANS[plan] ? plan : PLAN_ALIASES[plan];
-+  if (!plan) return { ok: false, status: 400, error: "Unknown plan." };
-   const users = readUsers();
-   const user = users.find((u) => u.id === userId);
-   if (!user) return { ok: false, status: 404, error: "Account not found." };
-diff --git a/clipery/public/admin.html b/clipery/public/admin.html
-index 0fb7b6d..a5b78ba 100644
---- a/clipery/public/admin.html
-+++ b/clipery/public/admin.html
-@@ -31,9 +31,9 @@
-       table.adm-t tr:hover td { background: rgba(255,255,255,.03); }
-       .pill { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 800; }
-       .pill.free { background: rgba(255,255,255,.1); color: #c9c5d8; }
--      .pill.plus { background: rgba(139,124,255,.2); color: #b9aeff; }
-+      .pill.starter, .pill.plus { background: rgba(139,124,255,.2); color: #b9aeff; }
-       .pill.pro { background: rgba(255,138,76,.2); color: #ffc09a; }
--      .pill.unlimited { background: rgba(200,245,66,.16); color: #dcf98d; }
-+      .pill.studio, .pill.unlimited { background: rgba(200,245,66,.16); color: #dcf98d; }
-       .pill.owner { background: rgba(255,77,109,.2); color: #ffb3c1; }
-       select, .adm input[type="number"] {
-         background: rgba(0,0,0,.45); color: #f4f1ea; border: 1px solid rgba(255,255,255,.16);
-diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
-index 8ee82a0..c1822b1 100644
---- a/clipery/public/pricing.html
-+++ b/clipery/public/pricing.html
-@@ -107,7 +107,7 @@
-       fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
-         if (!d || !d.user) return;
-         var plan = d.user.plan || "free";
--        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", unlimited: "unlimited" };
-+        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", studio: "unlimited", unlimited: "unlimited" };
-         var card = map[plan] ? document.querySelector('.price-card[data-plan="' + map[plan] + '"]') : null;
-         if (card) {
-           card.classList.add("current");
++if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "--which":
++    # python3 lib/facedetect.py --which  -> prints which face detector is active
++    try:
++        import cv2 as _cv2
++    except Exception as e:
++        print("no-opencv:", e)
++        sys.exit(1)
++    _d, _why = build_detector(_cv2)
++    print("opencv", _cv2.__version__, "detector:", _d.name if _d else _why)
++    sys.exit(0)
++
++
+ def cluster(xs, gap=0.18):
+     """Group face positions into speakers sitting at different spots."""
+     if not xs:
+diff --git a/clipery/scripts/doctor.js b/clipery/scripts/doctor.js
+index 53891e5..315ef90 100644
+--- a/clipery/scripts/doctor.js
++++ b/clipery/scripts/doctor.js
+@@ -67,6 +67,13 @@ check("OpenCV (face tracking)", () => {
+   if (parseInt(v, 10) >= 5) return null;
+   return v;
+ }, pipHint("'opencv-python-headless<5'"), "smart reframing - the crop follows the speaker");
++check("Face detector", () => {
++  const r = tryRun(process.platform === "win32" ? "python" : "python3", [require("path").join(__dirname, "..", "lib", "facedetect.py"), "--which"]);
++  if (!r) return null;
++  const m = /detector:\s*(\S+)/.exec(r);
++  if (!m) return null;
++  return m[1] === "yunet" ? "yunet (neural, recommended)" : m[1] === "haar" ? "haar (classic - run setup.sh again to fetch YuNet)" : null;
++}, "curl -L -o lib/models/face_detection_yunet.onnx https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx", "which face model follows the speaker");
+ check("faster-whisper (transcript)", pyModule("faster_whisper"), pipHint("faster-whisper"), "the brain: hooks, story, payoff, captions");
+ 
+ const pad = Math.max(...results.map((r) => r.name.length));
+diff --git a/clipery/setup.sh b/clipery/setup.sh
+index 658cb2c..7d74eaf 100755
+--- a/clipery/setup.sh
++++ b/clipery/setup.sh
+@@ -24,6 +24,12 @@ PKGS="yt-dlp[default,curl-cffi] faster-whisper opencv-python-headless<5 pocketsp
+ pip3 install --break-system-packages $PKGS 2>/dev/null \
+   || pip3 install $PKGS
+ 
++# YuNet face model (230KB) - much better than the classic Haar fallback
++MODEL_DIR="$(dirname "$0")/clipery/lib/models"; [ -d "$(dirname "$0")/lib" ] && MODEL_DIR="$(dirname "$0")/lib/models"
++mkdir -p "$MODEL_DIR"
++[ -s "$MODEL_DIR/face_detection_yunet.onnx" ] || curl -sL -o "$MODEL_DIR/face_detection_yunet.onnx" \
++  https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx || true
++
+ echo "== 4/4 Checking what made it =="
+ node clipery/scripts/doctor.js 2>/dev/null || node scripts/doctor.js 2>/dev/null || true
+ echo ""

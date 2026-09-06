@@ -24,6 +24,12 @@ PKGS="yt-dlp faster-whisper opencv-python-headless<5 pocketsphinx"
 pip3 install --break-system-packages $PKGS 2>/dev/null \
   || pip3 install $PKGS
 
+# YuNet face model (230KB) - much better than the classic Haar fallback
+MODEL_DIR="$(dirname "$0")/clipery/lib/models"; [ -d "$(dirname "$0")/lib" ] && MODEL_DIR="$(dirname "$0")/lib/models"
+mkdir -p "$MODEL_DIR"
+[ -s "$MODEL_DIR/face_detection_yunet.onnx" ] || curl -sL -o "$MODEL_DIR/face_detection_yunet.onnx" \
+  https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx || true
+
 echo "== 4/4 Checking what made it =="
 node clipery/scripts/doctor.js 2>/dev/null || node scripts/doctor.js 2>/dev/null || true
 echo ""

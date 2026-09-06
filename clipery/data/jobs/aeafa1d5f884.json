@@ -1,0 +1,19 @@
+{
+  "id": "aeafa1d5f884",
+  "userId": "a5fdcea12490c893",
+  "status": "error",
+  "stage": "probing",
+  "progress": 0,
+  "mode": "viral",
+  "modeLabel": "Viral clips",
+  "genre": "stream",
+  "createdAt": "2026-09-06T09:05:31.969Z",
+  "sourceName": "aeafa1d5f884-src.mp4.part",
+  "subtitles": true,
+  "hook": false,
+  "hookMode": "intro",
+  "clips": [],
+  "rankings": [],
+  "error": "Your Starter plan allows videos up to 20 minutes - this one is 41 minutes. Trim it or upgrade your plan.",
+  "refunded": true
+}
