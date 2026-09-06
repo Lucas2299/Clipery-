@@ -1,217 +1,39 @@
 diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
-index 982ccbd..aeac52a 100644
+index aeac52a..9fde67b 100644
 --- a/clipery/lib/auth.js
 +++ b/clipery/lib/auth.js
-@@ -256,6 +256,7 @@ const PLANS = {
+@@ -256,7 +256,7 @@ const PLANS = {
    // maxClips   - how many clips we cut out of ONE source video
    // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
    free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
-+  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 40, maxClips: 6 },
+-  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 40, maxClips: 6 },
++  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 40, maxClips: 4 },
    plus: { id: "plus", label: "Plus", videos: 50, maxMinutes: 60, maxClips: 8 },
    pro: { id: "pro", label: "Pro", videos: 200, maxMinutes: 180, maxClips: 10 },
    unlimited: { id: "unlimited", label: "Unlimited", videos: Infinity, maxMinutes: 240, maxClips: 10 },
 diff --git a/clipery/public/index.html b/clipery/public/index.html
-index 9f18e81..9cbb84a 100644
+index 9cbb84a..7dec099 100644
 --- a/clipery/public/index.html
 +++ b/clipery/public/index.html
-@@ -219,6 +219,9 @@
-       .price h3{font-size:1.1rem;margin-bottom:.35rem}
-       .price .amt{font-size:2.25rem;font-weight:800;letter-spacing:-.04em;margin:.2rem 0}
-       .price .amt span{font-size:.95rem;font-weight:500;color:var(--muted)}
-+      .price .amt .was{font-size:1.1rem;font-weight:600;color:var(--dim);margin-right:.35rem}
-+      .price .tag-deal{background:linear-gradient(135deg,var(--lime),#9be04a);color:#111}
-+      .deal-note{margin-top:.8rem;font-size:.9rem;color:#ffc2b0}
-       .price .blurb{color:var(--dim);font-size:.88rem;margin-bottom:1.15rem}
-       .price ul{list-style:none;margin:0 0 1.4rem;flex:1}
-       .price li{padding:.4rem 0;font-size:.92rem;color:var(--muted);display:flex;gap:.5rem;border-bottom:1px solid rgba(255,255,255,.04)}
-@@ -405,48 +408,49 @@
-           <p>Plans sized for every creator — from free testing to serious volume.</p>
-         </div>
-         <div class="pricing">
--          <article class="price reveal">
-+          <div class="price reveal" data-plan="starter">
-+            <span class="tag tag-deal">First month -50%</span>
-             <h3>Starter</h3>
--            <div class="amt">$0 <span>/ month</span></div>
--            <p class="blurb">One free test run, no card.</p>
-+            <div class="amt"><s class="was">EUR 8</s> EUR 4 <span>first month, then EUR 8 / month</span></div>
-+            <p class="blurb">For creators getting started with shorts.</p>
+@@ -416,7 +416,7 @@
              <ul>
--              <li>1 long video to test (up to 20 min)</li>
--              <li>4 AI clips from it</li>
-+              <li>10 long videos per month</li>
-+              <li>Videos up to 40 minutes</li>
-+              <li>6 AI clips per video</li>
+               <li>10 long videos per month</li>
+               <li>Videos up to 40 minutes</li>
+-              <li>6 AI clips per video</li>
++              <li>Up to 4 AI clips per video</li>
                <li>Viral score &amp; ranking</li>
--              <li>9:16 exports</li>
--              <li>Library access</li>
-+              <li>Captions, 9:16 exports, library</li>
+               <li>Captions, 9:16 exports, library</li>
              </ul>
--            <a class="btn btn-ghost btn-block" href="/studio">Start free</a>
--          </article>
--          <article class="price pop reveal">
-+            <a class="btn btn-ghost btn-block" href="/waitlist">Get Starter</a>
-+          </div>
-+          <div class="price reveal pop" data-plan="pro">
-             <span class="tag">Most popular</span>
-             <h3>Pro</h3>
--            <div class="amt">$19 <span>/ month</span></div>
-+            <div class="amt"><s class="was">EUR 20</s> EUR 10 <span>first month, then EUR 20 / month</span></div>
-             <p class="blurb">For creators posting every week.</p>
-             <ul>
--              <li>25 videos per month</li>
--              <li>12 AI clips per video</li>
-+              <li>50 long videos per month</li>
-+              <li>Videos up to 60 minutes</li>
-+              <li>8 AI clips per video</li>
-               <li>Rank video (up to 5 sources)</li>
--              <li>Batch processing</li>
-               <li>Priority AI queue</li>
-               <li>Compilation exports</li>
-             </ul>
-             <a class="btn btn-primary btn-block" href="/waitlist">Get Pro</a>
--          </article>
--          <article class="price reveal">
-+          </div>
-+          <div class="price reveal" data-plan="unlimited">
-             <h3>Studio</h3>
--            <div class="amt">$49 <span>/ month</span></div>
-+            <div class="amt"><s class="was">EUR 50</s> EUR 25 <span>first month, then EUR 50 / month</span></div>
-             <p class="blurb">For teams and high-volume channels.</p>
-             <ul>
--              <li>Unlimited videos / month</li>
--              <li>20 AI clips per video</li>
-+              <li>Unlimited videos per month</li>
-+              <li>Videos up to 4 hours</li>
-+              <li>10 AI clips per video</li>
-               <li>Everything in Pro</li>
-               <li>Deep ranking analytics</li>
--              <li>Team-ready clip library</li>
-               <li>Fastest processing lane</li>
-             </ul>
-             <a class="btn btn-ghost btn-block" href="/waitlist">Get Studio</a>
--          </article>
-+          </div>
-         </div>
-       </section>
- 
-@@ -497,7 +501,7 @@
-           </details>
-           <details>
-             <summary>Is there a free plan?</summary>
--            <p>Yes. Starter gives you one free long video (up to 20 minutes) turned into 4 ranked AI clips. No credit card needed to open the studio.</p>
-+            <p>Yes. Every new account gets one free long video (up to 20 minutes) turned into 4 ranked AI clips. No credit card needed to open the studio.</p>
-           </details>
-         </div>
-       </section>
-@@ -752,6 +756,15 @@
-       })();
-     </script>
-     <script>
-+      // Launch offer line under the pricing title.
-+      (function () {
-+        var h = document.querySelector("#pricing .sec-h");
-+        if (!h) return;
-+        var n = document.createElement("p");
-+        n.className = "deal-note";
-+        n.textContent = "Launch offer: your first month is 50% off on every plan. New accounts also get one free test video (20 min, 4 clips).";
-+        h.appendChild(n);
-+      })();
-       // Free plan wording (kept in one place).
-       document.querySelectorAll("p").forEach(function (p) {
-         if (p.textContent.indexOf("Free plan includes 3 videos a month") === 0) {
 diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
-index 45634a3..e3d4b1e 100644
+index e3d4b1e..780b5a9 100644
 --- a/clipery/public/pricing.html
 +++ b/clipery/public/pricing.html
-@@ -28,33 +28,35 @@
-         <div class="eyebrow">Pricing</div>
-         <h1>Start free. Scale when you blow up.</h1>
-         <p style="margin-inline: auto">Plans sized for every creator - from free testing to serious volume.</p>
-+        <p class="deal-note" style="margin-inline: auto">Launch offer: your first month is 50% off on every plan. New accounts also get one free test video (20 min, 4 clips).</p>
-         <p class="muted" id="plan-current" hidden style="margin-inline: auto"></p>
-       </div>
- 
-       <div class="pricing-grid">
--        <div class="price-card" data-plan="free">
-+        <div class="price-card" data-plan="starter">
-+          <span class="tag tag-deal">First month -50%</span>
-           <h3>Starter</h3>
--          <div class="price">$0 <span>/ month</span></div>
--          <p class="blurb">One free test run, no card.</p>
-+          <div class="price"><s class="was">EUR 8</s> EUR 4 <span>first month, then EUR 8 / month</span></div>
-+          <p class="blurb">For creators getting started with shorts.</p>
+@@ -41,7 +41,7 @@
            <ul>
--            <li>1 long video to test (up to 20 min)</li>
--            <li>4 AI clips from it</li>
-+            <li>10 long videos per month</li>
-+            <li>Videos up to 40 minutes</li>
-+            <li>6 AI clips per video</li>
+             <li>10 long videos per month</li>
+             <li>Videos up to 40 minutes</li>
+-            <li>6 AI clips per video</li>
++            <li>Up to 4 AI clips per video</li>
              <li>Viral score &amp; ranking</li>
--            <li>9:16 exports</li>
--            <li>Library access</li>
-+            <li>Captions, 9:16 exports, library</li>
+             <li>Captions, 9:16 exports, library</li>
            </ul>
--          <a class="btn btn-ghost btn-block" href="/studio">Start free</a>
-+          <a class="btn btn-ghost btn-block" href="/waitlist">Get Starter</a>
-         </div>
-         <div class="price-card featured" data-plan="pro">
-           <span class="tag">Most popular</span>
-           <h3>Pro</h3>
--          <div class="price">$19 <span>/ month</span></div>
-+          <div class="price"><s class="was">EUR 20</s> EUR 10 <span>first month, then EUR 20 / month</span></div>
-           <p class="blurb">For creators posting every week.</p>
-           <ul>
--            <li>25 videos per month</li>
--            <li>12 AI clips per video</li>
-+            <li>50 long videos per month</li>
-+            <li>Videos up to 60 minutes</li>
-+            <li>8 AI clips per video</li>
-             <li>Rank video (up to 5 sources)</li>
--            <li>Batch processing</li>
-             <li>Priority AI queue</li>
-             <li>Compilation exports</li>
-           </ul>
-@@ -62,14 +64,14 @@
-         </div>
-         <div class="price-card" data-plan="unlimited">
-           <h3>Studio</h3>
--          <div class="price">$49 <span>/ month</span></div>
-+          <div class="price"><s class="was">EUR 50</s> EUR 25 <span>first month, then EUR 50 / month</span></div>
-           <p class="blurb">For teams and high-volume channels.</p>
-           <ul>
--            <li>Unlimited videos / month</li>
--            <li>20 AI clips per video</li>
-+            <li>Unlimited videos per month</li>
-+            <li>Videos up to 4 hours</li>
-+            <li>10 AI clips per video</li>
-             <li>Everything in Pro</li>
-             <li>Deep ranking analytics</li>
--            <li>Team-ready clip library</li>
-             <li>Fastest processing lane</li>
-           </ul>
-           <a class="btn btn-ghost btn-block" href="/waitlist">Get Studio</a>
-@@ -105,8 +107,8 @@
-       fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
-         if (!d || !d.user) return;
-         var plan = d.user.plan || "free";
--        var map = { free: "free", plus: "pro", pro: "pro", unlimited: "unlimited" };
--        var card = document.querySelector('.price-card[data-plan="' + (map[plan] || "free") + '"]');
-+        var map = { free: null, starter: "starter", plus: "pro", pro: "pro", unlimited: "unlimited" };
-+        var card = map[plan] ? document.querySelector('.price-card[data-plan="' + map[plan] + '"]') : null;
-         if (card) {
-           card.classList.add("current");
-           var a = card.querySelector("a.btn");
-diff --git a/clipery/public/styles.css b/clipery/public/styles.css
-index ae7179a..5a28c60 100644
---- a/clipery/public/styles.css
-+++ b/clipery/public/styles.css
-@@ -2839,3 +2839,8 @@ body.studio-app {
- .nav .nav-studio:hover::after { animation: navShine 0.85s ease; }
- .nav .nav-studio.active { color: #fff; font-weight: 600; }
- @keyframes navShine { to { transform: translateX(120%); } }
-+
-+/* Launch deal on pricing cards */
-+.price-card .price .was { font-size: 1rem; font-weight: 600; opacity: 0.5; margin-right: 0.3rem; }
-+.price-card .tag-deal { background: linear-gradient(135deg, #c8f542, #9be04a); color: #111; }
-+.deal-note { font-size: 0.9rem; color: #ffc2b0; margin-top: 0.6rem; }
