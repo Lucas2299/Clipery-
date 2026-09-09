@@ -388,8 +388,132 @@ function chargeVideo(req, res) {
     planLabel: auth.planOf(me).label,
     maxMinutes: auth.planOf(me).maxMinutes,
     maxClips: auth.planOf(me).maxClips,
+    maxHeight: auth.planOf(me).maxHeight || 720,
+    maxUploadMB: auth.planOf(me).maxUploadMB || 1024,
   };
   return me;
+}
+
+/** Plan upload limit for the logged-in user, before we accept a big body. */
+function uploadLimitBytes(req) {
+  const me = auth.currentUser(req);
+  const mb = me ? (auth.planOf(me).maxUploadMB || 1024) : 100;
+  return mb * 1024 * 1024;
+}
+
+/**
+ * Stream a multipart upload to disk instead of holding it in RAM, so a 2 GB
+ * video does not need 2 GB of memory. Text fields are kept in memory; every
+ * file part is written to `dir` and returned as {name, filename, path, size}.
+ * Rejects with .status=413 when the body passes `maxBytes`.
+ */
+function parseMultipartToDisk(req, contentType, dir, maxBytes) {
+  return new Promise((resolve, reject) => {
+    const m = /boundary=(?:"([^"]+)"|([^;]+))/i.exec(contentType || "");
+    if (!m) return reject(new Error("Missing multipart boundary"));
+    const sep = Buffer.from(`\r\n--${m[1] || m[2]}`);
+    const first = Buffer.from(`--${m[1] || m[2]}`);
+    const parts = [];
+    const pending = []; // file streams still flushing to disk
+    let buf = Buffer.alloc(0);
+    let total = 0;
+    let cur = null; // {name, filename, path, stream, size, chunks}
+    let started = false;
+    let done = false;
+
+    const cleanup = () => {
+      if (cur && cur.stream) {
+        const p = cur.path;
+        cur.stream.on("close", () => fs.rm(p, { force: true }, () => {}));
+        cur.stream.destroy();
+      } else if (cur && cur.path) fs.rm(cur.path, { force: true }, () => {});
+      parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
+    };
+    const fail = (err) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      // Stop reading but keep the socket alive long enough to answer.
+      req.pause();
+      req.removeAllListeners("data");
+      req.resume();
+      reject(err);
+    };
+    const settle = () => Promise.all(pending).then(() => resolve(parts), reject);
+    const finishPart = () => {
+      if (!cur) return;
+      if (cur.stream) {
+        const st = cur.stream;
+        pending.push(new Promise((ok, bad) => { st.on("finish", ok); st.on("error", bad); }));
+        st.end();
+        parts.push({ name: cur.name, filename: cur.filename, path: cur.path, size: cur.size });
+      } else parts.push({ name: cur.name, filename: null, body: Buffer.concat(cur.chunks) });
+      cur = null;
+    };
+    const openPart = (header) => {
+      const nameMatch = /name="([^"]+)"/i.exec(header);
+      const fileMatch = /filename="([^"]*)"/i.exec(header);
+      cur = { name: nameMatch ? nameMatch[1] : "", filename: fileMatch ? fileMatch[1] : null, size: 0, chunks: [] };
+      if (fileMatch) {
+        cur.path = path.join(dir, `${crypto.randomBytes(8).toString("hex")}.part`);
+        cur.stream = fs.createWriteStream(cur.path);
+        cur.stream.on("error", fail);
+      }
+    };
+    const write = (chunk) => {
+      if (!cur || !chunk.length) return;
+      cur.size += chunk.length;
+      if (cur.stream) cur.stream.write(chunk); else cur.chunks.push(chunk);
+    };
+
+    req.on("data", (chunk) => {
+      if (done) return;
+      total += chunk.length;
+      if (total > maxBytes) { const e = new Error("too large"); e.status = 413; return fail(e); }
+      buf = buf.length ? Buffer.concat([buf, chunk]) : chunk;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        if (!started) {
+          const i = buf.indexOf(first);
+          if (i < 0) { buf = buf.subarray(Math.max(0, buf.length - first.length)); return; }
+          buf = buf.subarray(i + first.length);
+          started = true;
+          // after the first boundary we are positioned like after a "\r\n--boundary"
+        }
+        if (!cur) {
+          // expect: (--)? CRLF headers CRLF CRLF
+          if (buf.length < 2) return;
+          if (buf[0] === 45 && buf[1] === 45) { done = true; finishPart(); return settle(); }
+          const he = buf.indexOf("\r\n\r\n");
+          if (he < 0) return;
+          openPart(buf.subarray(0, he).toString("utf8"));
+          buf = buf.subarray(he + 4);
+        }
+        const j = buf.indexOf(sep);
+        if (j < 0) {
+          const keep = sep.length;
+          if (buf.length > keep) { write(buf.subarray(0, buf.length - keep)); buf = buf.subarray(buf.length - keep); }
+          return;
+        }
+        write(buf.subarray(0, j));
+        finishPart();
+        buf = buf.subarray(j + sep.length);
+      }
+    });
+    req.on("end", () => { if (!done) { done = true; finishPart(); settle(); } });
+    req.on("error", fail);
+  });
+}
+
+function partText(parts, name) {
+  const p = parts.find((x) => x.name === name && !x.filename);
+  return p && p.body ? p.body.toString("utf8") : "";
+}
+function uploadTooBig(res, req) {
+  const me = auth.currentUser(req);
+  const mb = me ? (auth.planOf(me).maxUploadMB || 1024) : 100;
+  const human = mb >= 1024 ? `${Math.round(mb / 1024)} GB` : `${mb} MB`;
+  return send(res, 413, { ok: false, error: `That file is over your plan's ${human} upload limit. Compress it or upgrade your plan.`, upgrade: true });
 }
 
 function seedJob(jobId, extra = {}) {
@@ -431,7 +555,10 @@ async function runQueueItem(item) {
         writeJob(job);
       }
       const outBase = path.join(UPLOADS, `${item.meta.jobId}-src`);
-      const got = await downloadUrl(item.url, outBase);
+      const got = await downloadUrl(item.url, outBase, {
+        maxHeight: item.meta.maxHeight || 720,
+        maxSizeMB: item.meta.maxUploadMB || 1024,
+      });
       if (job) {
         job = readJob(item.meta.jobId) || job;
         job.sourceName = got.title || item.url;
@@ -734,6 +861,8 @@ const server = http.createServer(async (req, res) => {
           videosTotal: auth.planOf(user).videos === Infinity ? null : auth.planOf(user).videos + (Number(user.bonusVideos) || 0),
           maxMinutes: auth.planOf(user).maxMinutes,
           maxClipsPerVideo: auth.planOf(user).maxClips,
+          maxHeight: auth.planOf(user).maxHeight || 720,
+          maxUploadMB: auth.planOf(user).maxUploadMB || 1024,
         },
       });
     }
@@ -913,25 +1042,24 @@ const server = http.createServer(async (req, res) => {
           error: "Send multipart form with field 'video'.",
         });
       }
-      const buf = await parseBody(req);
-      const parts = parseMultipart(buf, ct);
-      const filePart = parts.find(
-        (p) =>
-          (p.name === "video" || p.name === "videos" || p.name === "file") &&
-          p.body &&
-          p.body.length > 1000
-      );
-      const modePart = parts.find((p) => p.name === "mode");
-      const mode = normalizeMode(
-        modePart ? modePart.body.toString("utf8") : "viral"
-      );
-
-      if (!filePart || !filePart.body?.length) {
-        console.error("Single upload parts:", parts.map((p) => ({ name: p.name, filename: p.filename, len: p.body?.length })));
-        return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
+      if (!auth.currentUser(req)) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
+      let parts;
+      try {
+        parts = await parseMultipartToDisk(req, ct, UPLOADS, uploadLimitBytes(req));
+      } catch (e) {
+        if (e.status === 413) return uploadTooBig(res, req);
+        return send(res, 400, { ok: false, error: "Upload failed: " + e.message });
       }
-      if (filePart.body.length > 100 * 1024 * 1024) {
-        return send(res, 400, { ok: false, error: "Max upload size is 100MB." });
+      const dropFiles = () => parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
+      const filePart = parts.find(
+        (p) => (p.name === "video" || p.name === "videos" || p.name === "file") && p.path && p.size > 1000
+      );
+      const mode = normalizeMode(partText(parts, "mode") || "viral");
+
+      if (!filePart) {
+        dropFiles();
+        console.error("Single upload parts:", parts.map((p) => ({ name: p.name, filename: p.filename, len: p.size || (p.body && p.body.length) })));
+        return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
       }
 
       const orig = filePart.filename || "upload.mp4";
@@ -943,26 +1071,17 @@ const server = http.createServer(async (req, res) => {
       }
       if (!ext) ext = ".mp4";
 
-      const subsPart = parts.find((p) => p.name === "subtitles");
-      const subtitles = wantSubtitles(subsPart ? subsPart.body.toString("utf8") : "");
-      const subStyle = readSubStyle((n) => {
-        const p = parts.find((x) => x.name === n);
-        return p ? p.body.toString("utf8") : "";
-      });
-      const hookOpts = readHook((n) => {
-        const p = parts.find((x) => x.name === n);
-        return p ? p.body.toString("utf8") : "";
-      });
-      const trends = readTrends((n) => {
-        const p = parts.find((x) => x.name === n);
-        return p ? p.body.toString("utf8") : "";
-      });
+      const get = (n) => partText(parts, n);
+      const subtitles = wantSubtitles(get("subtitles"));
+      const subStyle = readSubStyle(get);
+      const hookOpts = readHook(get);
+      const trends = readTrends(get);
 
       const jobId = crypto.randomBytes(6).toString("hex");
       const owner = chargeVideo(req, res);
-      if (!owner) return;
+      if (!owner) { dropFiles(); return; }
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
-      fs.writeFileSync(dest, filePart.body);
+      fs.renameSync(filePart.path, dest);
       const genre = readGenre(get("genre"));
       seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends, genre });
       const q = enqueue(dest, {
@@ -1039,15 +1158,18 @@ const server = http.createServer(async (req, res) => {
     if (pathname === "/api/editor/upload" && req.method === "POST") {
       const ct = req.headers["content-type"] || "";
       if (!ct.includes("multipart/form-data")) return send(res, 400, { ok: false, error: "Send multipart form with field 'video'." });
-      const buf = await parseBody(req);
-      const parts = parseMultipart(buf, ct);
-      const get = (n) => {
-        const p = parts.find((x) => x.name === n);
-        return p ? p.body.toString("utf8") : "";
-      };
-      const filePart = parts.find((p) => (p.name === "video" || p.name === "file") && p.body && p.body.length > 1000);
-      if (!filePart) return send(res, 400, { ok: false, error: "No video file received. Choose a file first." });
-      if (filePart.body.length > 100 * 1024 * 1024) return send(res, 400, { ok: false, error: "Max upload size is 100MB." });
+      if (!auth.currentUser(req)) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
+      let parts;
+      try {
+        parts = await parseMultipartToDisk(req, ct, UPLOADS, uploadLimitBytes(req));
+      } catch (e) {
+        if (e.status === 413) return uploadTooBig(res, req);
+        return send(res, 400, { ok: false, error: "Upload failed: " + e.message });
+      }
+      const dropFiles = () => parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
+      const get = (n) => partText(parts, n);
+      const filePart = parts.find((p) => (p.name === "video" || p.name === "file") && p.path && p.size > 1000);
+      if (!filePart) { dropFiles(); return send(res, 400, { ok: false, error: "No video file received. Choose a file first." }); }
       const orig = filePart.filename || "upload.mp4";
       let ext = path.extname(orig).toLowerCase() || ".mp4";
       if (![".mp4", ".mov", ".webm", ".mkv", ".m4v"].includes(ext)) ext = ".mp4";
@@ -1059,9 +1181,9 @@ const server = http.createServer(async (req, res) => {
       const trends = readTrends(get);
       const jobId = crypto.randomBytes(6).toString("hex");
       const owner = chargeVideo(req, res);
-      if (!owner) return;
+      if (!owner) { dropFiles(); return; }
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
-      fs.writeFileSync(dest, filePart.body);
+      fs.renameSync(filePart.path, dest);
       const meta = {
         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
         subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, trends,
@@ -1350,8 +1472,15 @@ const server = http.createServer(async (req, res) => {
       if (!ct.includes("multipart/form-data")) {
         return send(res, 400, { ok: false, error: "Send multipart with videos[] files." });
       }
-      const buf = await parseBody(req, 200 * 1024 * 1024);
-      const parts = parseMultipart(buf, ct);
+      if (!auth.currentUser(req)) return send(res, 401, { ok: false, error: "Please log in.", login: "/login" });
+      let parts;
+      try {
+        parts = await parseMultipartToDisk(req, ct, UPLOADS, uploadLimitBytes(req));
+      } catch (e) {
+        if (e.status === 413) return uploadTooBig(res, req);
+        return send(res, 400, { ok: false, error: "Upload failed: " + e.message });
+      }
+      const dropFiles = () => parts.forEach((p) => { if (p.path) fs.rm(p.path, { force: true }, () => {}); });
       const files = parts.filter((p) => {
         const n = String(p.name || "");
         const isVideoField =
@@ -1359,35 +1488,36 @@ const server = http.createServer(async (req, res) => {
           n === "videos[]" ||
           n === "video" ||
           n.startsWith("videos");
-        return isVideoField && p.body && p.body.length > 1000;
+        return isVideoField && p.path && p.size > 1000;
       });
       if (files.length < 2) {
+        dropFiles();
         return send(res, 400, {
           ok: false,
           error: files.length ? "Add at least 2 videos (max 5)." : "No video file received.",
         });
       }
       if (files.length > 5) {
+        dropFiles();
         return send(res, 400, { ok: false, error: "Maximum 5 videos." });
+      }
+      const tooBig = files.find((f) => f.size > 200 * 1024 * 1024);
+      if (tooBig) {
+        dropFiles();
+        return send(res, 400, { ok: false, error: `File too large: ${tooBig.filename} (max 200MB each for ranking)` });
       }
       const jobId = crypto.randomBytes(6).toString("hex");
       const owner = chargeVideo(req, res);
-      if (!owner) return;
+      if (!owner) { dropFiles(); return; }
       const sources = [];
       for (let i = 0; i < files.length; i++) {
         const f = files[i];
-        if (f.body.length > 40 * 1024 * 1024) {
-          return send(res, 400, { ok: false, error: `File too large: ${f.filename} (max 40MB each)` });
-        }
         const rawName = f.filename || `video-${i + 1}.mp4`;
         let ext = path.extname(rawName).toLowerCase() || ".mp4";
         if (![".mp4", ".mov", ".webm", ".mkv", ".m4v"].includes(ext)) ext = ".mp4";
         const dest = path.join(UPLOADS, `${jobId}-${i}${ext}`);
-        fs.writeFileSync(dest, f.body);
-        const labelPart = parts.find((p) => p.name === `label_${i}`);
-        const customLabel = labelPart
-          ? String(labelPart.body.toString("utf8") || "").trim().slice(0, 40)
-          : "";
+        fs.renameSync(f.path, dest);
+        const customLabel = String(partText(parts, `label_${i}`) || "").trim().slice(0, 40);
         sources.push({
           path: dest,
           label:

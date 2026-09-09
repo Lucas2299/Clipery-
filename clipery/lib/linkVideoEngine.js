@@ -160,8 +160,14 @@ function scoreVideo(meta, energy, index, label) {
 }
 
 /** Download a single URL with yt-dlp. Returns file path or throws. */
-async function downloadUrl(url, outBase) {
+/**
+ * opts.maxHeight  - 720 (Starter/Free) or 1080 (Pro/Studio)
+ * opts.maxSizeMB  - refuse bigger downloads (short clips for Rank default to 40MB)
+ */
+async function downloadUrl(url, outBase, opts = {}) {
   const platform = detectPlatform(url);
+  const maxHeight = Number(opts.maxHeight) === 1080 ? 1080 : 720;
+  const maxSizeMB = Number(opts.maxSizeMB) > 0 ? Number(opts.maxSizeMB) : 40;
 
   // Built-in sample pack shortcuts
   if (url.startsWith("sample:") || url.startsWith("/samples/rank-pack/")) {
@@ -177,9 +183,9 @@ async function downloadUrl(url, outBase) {
   // scripts. tryYtdlp already escalates through browser impersonation,
   // cookies and a proxy; here we just turn the last error into advice.
   try {
-    await tryYtdlp(url, outBase);
+    await tryYtdlp(url, outBase, { maxHeight, maxSizeMB });
   } catch (e) {
-    throw new Error(explainDownloadError(platform, e.message || String(e)));
+    throw new Error(explainDownloadError(platform, e.message || String(e), maxSizeMB));
   }
   const file = findDownloaded(outBase);
   if (!file) throw new Error("Download finished but no file found for " + url);
@@ -190,12 +196,12 @@ async function downloadUrl(url, outBase) {
 const COOKIES_FILE = (process.env.CLIPERY_COOKIES || "").trim();
 const PROXY = (process.env.CLIPERY_PROXY || "").trim();
 
-function commonArgs(outBase) {
+function commonArgs(outBase, maxSizeMB) {
   const a = [
     "--no-playlist",
     "--no-warnings",
     "-4",
-    "--max-filesize", "40M",
+    "--max-filesize", `${Math.round(maxSizeMB || 40)}M`,
     "--merge-output-format", "mp4",
     "-o", outBase + ".%(ext)s",
     "--extractor-args", "youtube:player_client=android",
@@ -210,16 +216,18 @@ function commonArgs(outBase) {
  *   1. normal            2. pretend to be Chrome (needs the curl_cffi add-on)
  *   3. + cookies file    4. plain "best" format as a last resort
  */
-async function tryYtdlp(url, outBase) {
-  const fmt = ["-f", "bv*[height<=720]+ba/b[height<=720]/b"];
+async function tryYtdlp(url, outBase, o = {}) {
+  const h = Number(o.maxHeight) === 1080 ? 1080 : 720;
+  const base = commonArgs(outBase, o.maxSizeMB);
+  const fmt = ["-f", `bv*[height<=${h}]+ba/b[height<=${h}]/b`];
   const attempts = [
-    [...commonArgs(outBase), ...fmt, url],
-    [...commonArgs(outBase), ...fmt, "--impersonate", "chrome", url],
+    [...base, ...fmt, url],
+    [...base, ...fmt, "--impersonate", "chrome", url],
   ];
   if (COOKIES_FILE && fs.existsSync(COOKIES_FILE)) {
-    attempts.push([...commonArgs(outBase), ...fmt, "--impersonate", "chrome", "--cookies", COOKIES_FILE, url]);
+    attempts.push([...base, ...fmt, "--impersonate", "chrome", "--cookies", COOKIES_FILE, url]);
   }
-  attempts.push([...commonArgs(outBase), "-f", "b", url]);
+  attempts.push([...base, "-f", `b[height<=${h}]/b`, url]);
 
   let last = null;
   for (let i = 0; i < attempts.length; i++) {
@@ -243,7 +251,7 @@ async function tryYtdlp(url, outBase) {
 }
 
 /** Turn yt-dlp's stderr into something a non-technical owner can act on. */
-function explainDownloadError(platform, msg) {
+function explainDownloadError(platform, msg, maxSizeMB) {
   const m = String(msg || "");
   const site = platform === "tiktok" ? "TikTok" : platform === "instagram" ? "Instagram" : "This site";
   if (/ENOENT|not found|spawn/i.test(m) && /yt-dlp/i.test(m)) {
@@ -257,7 +265,7 @@ function explainDownloadError(platform, msg) {
   }
   if (/Unsupported URL/i.test(m)) return `That link is not a direct video page. Open the video, copy the URL from the address bar and try again.`;
   if (/private|login required|log in/i.test(m)) return `${site} says this video is private or needs a login. Set CLIPERY_COOKIES to a cookies.txt from a logged-in browser.`;
-  if (/File is larger than max-filesize|max-filesize/i.test(m)) return `That video is over the 40MB link limit. Download it and use Upload instead.`;
+  if (/File is larger than max-filesize|max-filesize/i.test(m)) return `That video is over the ${maxSizeMB || 40}MB link limit for your plan. Download it and use Upload instead, or upgrade.`;
   if (/Unable to extract|Cannot parse|Failed to parse JSON/i.test(m)) {
     return `${site} changed something and this yt-dlp version cannot read it. Update it: pip install -U "yt-dlp[default,curl-cffi]" and restart the server.`;
   }
@@ -793,7 +801,7 @@ async function processLinksToRankingVideo(links, options = {}) {
 
     const outBase = path.join(dlDir, `src-${i}`);
     try {
-      const got = await downloadUrl(url, outBase);
+      const got = await downloadUrl(url, outBase, { maxHeight: options.maxHeight, maxSizeMB: 60 });
       sources.push({
         path: got.file,
         label: item.hook || item.label || got.title || `Video ${i + 1}`,
