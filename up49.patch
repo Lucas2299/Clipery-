@@ -1,0 +1,382 @@
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index 67d789b..1486d6d 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -336,6 +336,33 @@ function listUsers() {
+   });
+ }
+ 
++/** The user renames themselves. */
++function updateProfile(userId, fields) {
++  const users = readUsers();
++  const user = users.find((u) => u.id === userId);
++  if (!user) return { ok: false, status: 404, error: "Account not found." };
++  const name = String((fields && fields.name) || "").trim().slice(0, 60);
++  if (!name) return { ok: false, status: 400, error: "Name cannot be empty." };
++  user.name = name;
++  writeUsers(users);
++  return { ok: true, user: publicUser(user) };
++}
++
++/** The user changes their own password (needs the current one). */
++function changePassword(userId, current, next) {
++  const users = readUsers();
++  const user = users.find((u) => u.id === userId);
++  if (!user) return { ok: false, status: 404, error: "Account not found." };
++  if (!user.hash) return { ok: false, status: 400, error: "This account signs in with Google or Apple and has no password." };
++  if (!verifyPassword(current, user.salt, user.hash)) return { ok: false, status: 401, error: "Current password is wrong." };
++  if (String(next || "").length < 8) return { ok: false, status: 400, error: "New password must be at least 8 characters." };
++  const h = hashPassword(next);
++  user.salt = h.salt;
++  user.hash = h.hash;
++  writeUsers(users);
++  return { ok: true };
++}
++
+ /** Owner action: move somebody to another plan. */
+ function setPlan(userId, plan) {
+   if (!PLANS[plan]) return { ok: false, status: 400, error: "Unknown plan." };
+@@ -396,6 +423,9 @@ module.exports = {
+   destroySession,
+   currentUser,
+   publicUser,
++  updateProfile,
++  changePassword,
++  usageOf,
+   parseCookies,
+   clearCookie,
+   isSecureRequest,
+diff --git a/clipery/public/account.html b/clipery/public/account.html
+new file mode 100644
+index 0000000..6007c1c
+--- /dev/null
++++ b/clipery/public/account.html
+@@ -0,0 +1,93 @@
++<!DOCTYPE html>
++<html lang="en">
++  <head>
++    <meta charset="utf-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1" />
++    <title>Account - Clipery</title>
++    <meta name="theme-color" content="#07070b" />
++    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
++    <link rel="stylesheet" href="/styles.css" />
++  </head>
++  <body>
++    <div class="bg-grid" aria-hidden="true"></div>
++    <div class="bg-glow bg-glow-1" aria-hidden="true"></div>
++
++    <header class="header">
++      <div class="header-inner">
++        <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
++        <nav class="nav" aria-label="Primary">
++          <a href="/studio" data-nav>Studio</a>
++          <a href="/library" data-nav>Library</a>
++          <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary btn-sm" href="/studio">New clip job</a>
++        </nav>
++      </div>
++    </header>
++
++    <main class="page container acct">
++      <div class="page-hero">
++        <div class="eyebrow">Account</div>
++        <h1>Your account</h1>
++        <p class="muted" id="acct-email"></p>
++      </div>
++
++      <section class="acct-card">
++        <div class="acct-card-head">
++          <h2>Your plan</h2>
++          <a class="btn btn-ghost btn-sm" href="/pricing">Change plan</a>
++        </div>
++        <div class="acct-plan">
++          <div class="acct-plan-name" id="acct-plan">-</div>
++          <div class="acct-plan-detail" id="acct-plan-detail"></div>
++        </div>
++        <div class="acct-usage">
++          <div class="acct-usage-row"><span>Videos left this month</span><strong id="acct-left">-</strong></div>
++          <div class="pro-bar"><div class="pro-fill" id="acct-fill" style="width:0%"></div></div>
++          <p class="muted" id="acct-usage-note"></p>
++        </div>
++      </section>
++
++      <section class="acct-card">
++        <h2>Your name</h2>
++        <form id="name-form" class="acct-form">
++          <input type="text" id="acct-name" maxlength="60" placeholder="Your name" required />
++          <button class="btn btn-primary" type="submit">Save name</button>
++          <span class="pro-msg" id="name-msg"></span>
++        </form>
++      </section>
++
++      <section class="acct-card" id="pw-card">
++        <h2>Password</h2>
++        <form id="pw-form" class="acct-form acct-form-col">
++          <input type="password" id="pw-current" placeholder="Current password" autocomplete="current-password" required />
++          <input type="password" id="pw-next" placeholder="New password (8+ characters)" autocomplete="new-password" minlength="8" required />
++          <div>
++            <button class="btn btn-primary" type="submit">Change password</button>
++            <span class="pro-msg" id="pw-msg"></span>
++          </div>
++        </form>
++        <p class="muted" id="pw-social" hidden>This account signs in with Google or Apple, so there is no password to change.</p>
++      </section>
++
++      <section class="acct-card acct-card-row">
++        <div><h2>Log out</h2><p class="muted">Sign out on this device.</p></div>
++        <button type="button" class="btn btn-ghost" id="acct-logout">Log out</button>
++      </section>
++    </main>
++
++    <footer class="footer">
++      <div class="container footer-inner">
++        <a class="footer-brand" href="/">Clipery</a>
++        <div class="footer-links">
++          <a href="/studio">Studio</a>
++          <a href="/library">Library</a>
++          <a href="/pricing">Pricing</a>
++        </div>
++        <div>(c) <span id="year"></span></div>
++      </div>
++    </footer>
++
++    <script src="/shared.js?v=2"></script>
++    <script src="/account.js?v=1"></script>
++  </body>
++</html>
+diff --git a/clipery/public/account.js b/clipery/public/account.js
+new file mode 100644
+index 0000000..c9a305a
+--- /dev/null
++++ b/clipery/public/account.js
+@@ -0,0 +1,71 @@
++/* Account page: plan + videos left, rename, change password, log out. */
++(function () {
++  "use strict";
++  var $ = function (id) { return document.getElementById(id); };
++  var y = $("year");
++  if (y) y.textContent = new Date().getFullYear();
++
++  function msg(id, text, err) {
++    var el = $(id);
++    if (!el) return;
++    el.textContent = text || "";
++    el.style.color = err ? "#ff6b6b" : "#7ee2a8";
++  }
++
++  async function load() {
++    var res = await fetch("/api/auth/me");
++    var d = await res.json().catch(function () { return {}; });
++    if (!d || !d.user) { location.href = "/login?next=/account"; return; }
++    var u = d.user;
++    $("acct-email").textContent = u.email;
++    $("acct-name").value = u.name || "";
++    $("acct-plan").textContent = u.planLabel || "Free";
++    $("acct-plan-detail").textContent =
++      (u.videosTotal == null ? "Unlimited videos" : u.videosTotal + " videos a month") +
++      " - up to " + u.maxMinutes + " min each - " + u.maxClipsPerVideo + " clips per video";
++    if (u.videosTotal == null) {
++      $("acct-left").textContent = "Unlimited";
++      $("acct-fill").style.width = "100%";
++      $("acct-usage-note").textContent = "";
++    } else {
++      var left = u.videosLeft == null ? 0 : u.videosLeft;
++      $("acct-left").textContent = left + " of " + u.videosTotal;
++      $("acct-fill").style.width = Math.round((left / Math.max(1, u.videosTotal)) * 100) + "%";
++      $("acct-usage-note").textContent = left === 0
++        ? "You have used all your videos this month. Change plan to get more, or wait for next month."
++        : "Videos reset at the start of every month. Failed jobs never count.";
++    }
++    var social = !(u.providers || []).includes("password");
++    $("pw-form").hidden = social;
++    $("pw-social").hidden = !social;
++  }
++
++  $("name-form").addEventListener("submit", async function (ev) {
++    ev.preventDefault();
++    msg("name-msg", "");
++    var res = await fetch("/api/auth/profile", { method: "POST", headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({ name: $("acct-name").value }) });
++    var d = await res.json().catch(function () { return {}; });
++    if (!res.ok || !d.ok) return msg("name-msg", d.error || "Could not save.", true);
++    msg("name-msg", "Saved.");
++  });
++
++  $("pw-form").addEventListener("submit", async function (ev) {
++    ev.preventDefault();
++    msg("pw-msg", "");
++    var res = await fetch("/api/auth/password", { method: "POST", headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({ current: $("pw-current").value, next: $("pw-next").value }) });
++    var d = await res.json().catch(function () { return {}; });
++    if (!res.ok || !d.ok) return msg("pw-msg", d.error || "Could not change password.", true);
++    $("pw-current").value = "";
++    $("pw-next").value = "";
++    msg("pw-msg", "Password changed.");
++  });
++
++  $("acct-logout").addEventListener("click", async function () {
++    try { await fetch("/api/auth/logout", { method: "POST" }); } catch (e) {}
++    location.href = "/";
++  });
++
++  load().catch(function () { location.href = "/login?next=/account"; });
++})();
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 95a3d3f..6182aac 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -85,11 +85,7 @@
+       .nav-links a{color:var(--muted);font-size:.9rem;font-weight:500;transition:color .2s}
+       .nav-links a:hover{color:var(--text)}
+       .nav-cta{display:flex;gap:.55rem;align-items:center}
+-      .nav-user{display:inline-flex;align-items:center;gap:.45rem;margin-right:.2rem;max-width:180px}
+-      .nav-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#ff4d6d,#ff8a4c);color:#fff;font-weight:800;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;flex:none}
+-      .nav-name{font-size:.85rem;font-weight:700;color:#c9c5d8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+       .nav-logout{font-family:inherit;cursor:pointer}
+-      @media (max-width:640px){.nav-name{display:none}.nav-cta .nav-logout{display:inline-flex}}
+ 
+       /* BTN */
+       .btn{
+@@ -752,15 +748,13 @@
+           var cta = document.getElementById("nav-cta");
+           if (cta) {
+             var u = d.user;
+-            var who = String(u.name || u.email || "").replace(/[<>&]/g, "");
+-            var initial = who ? who.charAt(0).toUpperCase() : "?";
++            var left = u.videosTotal == null ? "unlimited videos" : (u.videosLeft == null ? 0 : u.videosLeft) + " of " + u.videosTotal + " videos left";
+             cta.innerHTML =
+-              '<span class="nav-user" title="Logged in as ' + String(u.email || "").replace(/[<>&"]/g, "") + '">' +
+-              '<span class="nav-avatar">' + initial + "</span>" +
+-              '<span class="nav-name">' + who + "</span></span>" +
+               '<a class="btn btn-ghost" href="/library">Library</a>' +
+               '<a class="btn btn-primary" href="/studio">Open Studio</a>' +
+-              '<button type="button" class="btn btn-ghost nav-logout" id="nav-logout">Log out</button>';
++              '<button type="button" class="btn btn-ghost nav-logout" id="nav-logout">Log out</button>' +
++              '<a class="nav-acct" href="/account" title="Account - ' + (u.planLabel || "Free") + " plan, " + left + '" aria-label="Account">' +
++              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></a>';
+             document.getElementById("nav-logout").addEventListener("click", function () {
+               var b = this;
+               b.disabled = true;
+diff --git a/clipery/public/shared.js b/clipery/public/shared.js
+index 87d4d57..3f453e7 100644
+--- a/clipery/public/shared.js
++++ b/clipery/public/shared.js
+@@ -278,12 +278,13 @@
+       wrap.appendChild(dash);
+     }
+     if (user) {
+-      var who = document.createElement("span");
++      var who = document.createElement("a");
++      who.href = "/account";
+       who.textContent = user.name || user.email;
+-      who.title = user.email;
++      who.title = "Account settings (" + user.email + ")";
+       who.style.cssText =
+         "font-size:0.82rem;font-weight:700;color:#c9c5d8;max-width:150px;overflow:hidden;" +
+-        "text-overflow:ellipsis;white-space:nowrap";
++        "text-overflow:ellipsis;white-space:nowrap;text-decoration:none";
+       var out = document.createElement("button");
+       out.type = "button";
+       out.textContent = "Log out";
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index 092118b..277ef3d 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2792,3 +2792,23 @@ body.studio-app {
+ .genre-opt small { display: block; font-size: 0.72rem; opacity: 0.65; margin-top: 0.15rem; line-height: 1.3; }
+ .genre-opt input:checked + span { border-color: var(--accent-2, #7c5cff); background: rgba(124, 92, 255, 0.12); }
+ .genre-opt:hover span { border-color: rgba(255,255,255,0.28); }
++
++/* ---- Account page ---- */
++.acct { max-width: 760px; }
++.acct-card { border: 1px solid var(--border, rgba(255,255,255,0.1)); border-radius: 16px; padding: 1.3rem 1.4rem; margin-bottom: 1rem; background: rgba(255,255,255,0.02); }
++.acct-card h2 { margin: 0 0 0.8rem; font-size: 1.1rem; }
++.acct-card-head { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
++.acct-card-head h2 { margin: 0; }
++.acct-card-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
++.acct-card-row h2 { margin-bottom: 0.2rem; }
++.acct-plan { margin: 0.9rem 0 1rem; }
++.acct-plan-name { font-size: 1.7rem; font-weight: 800; }
++.acct-plan-detail { opacity: 0.7; font-size: 0.9rem; margin-top: 0.15rem; }
++.acct-usage-row { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.4rem; }
++.acct-form { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
++.acct-form-col { flex-direction: column; align-items: stretch; }
++.acct-form input { flex: 1 1 220px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; color: inherit; padding: 0.65rem 0.8rem; font: inherit; }
++.acct-form input:focus { outline: none; border-color: var(--accent-2, #7c5cff); }
++.nav-acct { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #f4f1ea; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex: none; }
++.nav-acct:hover { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.1); }
++.nav-acct svg { width: 18px; height: 18px; }
+diff --git a/clipery/server.js b/clipery/server.js
+index 876256e..0807f20 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -78,6 +78,8 @@ const ROUTES = {
+   "/library.html": "library.html",
+   "/pricing": "pricing.html",
+   "/pricing.html": "pricing.html",
++  "/account": "account.html",
++  "/account.html": "account.html",
+   "/waitlist": "waitlist.html",
+   "/waitlist.html": "waitlist.html",
+   "/job": "job.html",
+@@ -100,6 +102,8 @@ const PROTECTED_PAGES = [
+   "/rank.html",
+   "/job",
+   "/job.html",
++  "/account",
++  "/account.html",
+ ];
+ const PROTECTED_API = [
+   "/api/clip/upload",
+@@ -117,7 +121,7 @@ const PROTECTED_API = [
+ 
+ // Guarded by FILE, not by URL spelling: whatever path a request uses, if it
+ // ends up serving one of these it must belong to a logged-in account.
+-const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html"]);
++const PROTECTED_FILES = new Set(["studio.html", "library.html", "rank.html", "job.html", "account.html"]);
+ // The dashboard is owner-only, a stricter club than the members pages.
+ const OWNER_FILES = new Set(["admin.html"]);
+ const CLIPS_DIR = path.join(PUBLIC, "clips");
+@@ -670,6 +674,32 @@ const server = http.createServer(async (req, res) => {
+       return send(res, 200, { ok: true, user: auth.publicUser(result.user) }, { "Set-Cookie": cookie });
+     }
+ 
++    // Account page: rename / change password. Plans are read-only here.
++    if (pathname === "/api/auth/profile" && req.method === "POST") {
++      const me = auth.currentUser(req);
++      if (!me) return send(res, 401, { ok: false, error: "Please log in." });
++      let body;
++      try {
++        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
++      } catch {
++        return send(res, 400, { ok: false, error: "Invalid request." });
++      }
++      const r = auth.updateProfile(me.id, { name: body.name });
++      return send(res, r.ok ? 200 : r.status || 400, r);
++    }
++    if (pathname === "/api/auth/password" && req.method === "POST") {
++      const me = auth.currentUser(req);
++      if (!me) return send(res, 401, { ok: false, error: "Please log in." });
++      let body;
++      try {
++        body = JSON.parse((await parseBody(req, 64 * 1024)).toString("utf8") || "{}");
++      } catch {
++        return send(res, 400, { ok: false, error: "Invalid request." });
++      }
++      const r = auth.changePassword(me.id, body.current, body.next);
++      return send(res, r.ok ? 200 : r.status || 400, r);
++    }
++
+     if (pathname === "/api/auth/logout" && req.method === "POST") {
+       auth.destroySession(auth.parseCookies(req)[auth.COOKIE]);
+       return send(res, 200, { ok: true }, { "Set-Cookie": auth.clearCookie(req) });
+@@ -686,6 +716,8 @@ const server = http.createServer(async (req, res) => {
+           isOwner: auth.isAdmin(user),
+           planLabel: auth.planOf(user).label,
+           videosLeft: left === Infinity ? null : left,
++          videosUsed: auth.usageOf ? auth.usageOf(user).videos : undefined,
++          videosTotal: auth.planOf(user).videos === Infinity ? null : auth.planOf(user).videos + (Number(user.bonusVideos) || 0),
+           maxMinutes: auth.planOf(user).maxMinutes,
+           maxClipsPerVideo: auth.planOf(user).maxClips,
+         },

@@ -1,0 +1,99 @@
+diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
+index ce9c085..3942727 100644
+--- a/clipery/lib/linkVideoEngine.js
++++ b/clipery/lib/linkVideoEngine.js
+@@ -289,11 +289,11 @@ function buildRankingOverlay({
+   total,
+   highlight = true,
+   faceX = null,
++  names = [],
+ }) {
+   const W = 608;
+   const H = 1080;
+   const titleText = escapeDrawtext(title || "Top Videos");
+-  const cap = escapeDrawtext((caption || "").slice(0, 42));
+ 
+   const crop = faceX
+     ? `crop=${W}:${H}:x='clip(iw*${faceX}-${W / 2}\\,0\\,iw-${W})'`
+@@ -306,7 +306,7 @@ function buildRankingOverlay({
+     `drawtext=text='${titleText}':fontsize=50:fontcolor=0xFFE600:borderw=5:bordercolor=black:x=(w-text_w)/2:y=42:font=Sans`,
+   ];
+ 
+-  // Left-side numbers only (1. 2. 3. ...)
++  // Left-side list: "1. Name" per line, the current one bigger and yellow
+   const startY = 160;
+   const gap = Math.min(72, Math.floor(700 / Math.max(total, 1)));
+   for (let n = 1; n <= total; n++) {
+@@ -318,13 +318,14 @@ function buildRankingOverlay({
+     filters.push(
+       `drawtext=text='${n}.':fontsize=${fs}:fontcolor=${color}:borderw=${border}:bordercolor=black:x=24:y=${y}:font=Sans`
+     );
+-  }
+-
+-  // Bottom: video name only
+-  if (cap) {
+-    filters.push(
+-      `drawtext=text='${cap}':fontsize=34:fontcolor=white:borderw=4:bordercolor=black:x=(w-text_w)/2:y=h-90:font=Sans`
+-    );
++    const raw = names[n - 1] != null ? names[n - 1] : (n === currentRank ? caption : "");
++    const name = escapeDrawtext(String(raw || "").slice(0, 22));
++    if (name) {
++      const nfs = isCurrent ? 34 : 26;
++      filters.push(
++        `drawtext=text='${name}':fontsize=${nfs}:fontcolor=${color}:borderw=${isCurrent ? 4 : 3}:bordercolor=black:x=104:y=${y + (fs - nfs) / 2 + 2}:font=Sans`
++      );
++    }
+   }
+ 
+   return filters.join(",");
+@@ -336,6 +337,7 @@ async function renderTikTokRankClip(source, outFile, {
+   rank,
+   total,
+   maxSeconds = 180,
++  names = [],
+ }) {
+   const meta = await probe(source);
+   const take = Math.min(Math.max(meta.duration || 3, 0.5), maxSeconds);
+@@ -347,6 +349,7 @@ async function renderTikTokRankClip(source, outFile, {
+     total,
+     highlight: true,
+     faceX,
++    names,
+   });
+ 
+   if (meta.hasAudio) {
+@@ -640,7 +643,8 @@ async function processMultiRank(sources, options = {}) {
+       return `Video ${rank}`;
+     }
+ 
+-    // Render each ranked clip with photo-style overlay (numbers + yellow title)
++    // Render each ranked clip with photo-style overlay (numbers + names + yellow title)
++    const allNames = scored.map((s, i) => captionFor(s, i + 1));
+     const clips = [];
+     for (let i = 0; i < scored.length; i++) {
+       const s = scored[i];
+@@ -654,6 +658,7 @@ async function processMultiRank(sources, options = {}) {
+         rank,
+         total: scored.length,
+         maxSeconds: 180, // full original length (up to 3 min safety cap)
++        names: allNames,
+       });
+       clips.push({
+         rank,
+@@ -680,14 +685,8 @@ async function processMultiRank(sources, options = {}) {
+     fs.mkdirSync(work, { recursive: true });
+     const parts = [];
+ 
+-    const intro = path.join(work, "intro.mp4");
+-    await makeListIntro(
+-      intro,
+-      boardTitle,
+-      scored.map((s, i) => captionFor(s, i + 1)),
+-      2.8
+-    );
+-    parts.push(intro);
++    // No intro card: the compilation opens straight on the first video
++    // (the list with names is already on every clip).
+ 
+     // last place -> first place (countdown reveal)
+     for (let i = scored.length - 1; i >= 0; i--) {

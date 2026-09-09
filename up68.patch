@@ -1,0 +1,83 @@
+diff --git a/clipery/lib/facedetect.py b/clipery/lib/facedetect.py
+index ef94e26..22c8abd 100644
+--- a/clipery/lib/facedetect.py
++++ b/clipery/lib/facedetect.py
+@@ -118,17 +118,37 @@ class YuNetDetector:
+ 
+ 
+ def build_detector(cv2):
+-    """Whichever detector this OpenCV build actually supports."""
+-    if hasattr(cv2, "CascadeClassifier") and hasattr(cv2, "data"):
+-        return HaarDetector(cv2), None
+-    if hasattr(cv2, "FaceDetectorYN_create"):
++    """Best detector this OpenCV build supports: YuNet (neural, 2023) first,
++    classic Haar cascades as the fallback. CLIPERY_DETECTOR=haar forces Haar."""
++    import os
++    want = os.environ.get("CLIPERY_DETECTOR", "").lower()
++    has_haar = hasattr(cv2, "CascadeClassifier") and hasattr(cv2, "data")
++    if want != "haar" and hasattr(cv2, "FaceDetectorYN_create"):
+         model = YuNetDetector.find_model()
+         if model:
+-            return YuNetDetector(cv2, model), None
+-        return None, "yunet-model-missing"
++            try:
++                return YuNetDetector(cv2, model), None
++            except Exception:
++                pass
++        if not has_haar:
++            return None, "yunet-model-missing"
++    if has_haar:
++        return HaarDetector(cv2), None
+     return None, "no-face-detector"
+ 
+ 
++if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] == "--which":
++    # python3 lib/facedetect.py --which  -> prints which face detector is active
++    try:
++        import cv2 as _cv2
++    except Exception as e:
++        print("no-opencv:", e)
++        sys.exit(1)
++    _d, _why = build_detector(_cv2)
++    print("opencv", _cv2.__version__, "detector:", _d.name if _d else _why)
++    sys.exit(0)
++
++
+ def cluster(xs, gap=0.18):
+     """Group face positions into speakers sitting at different spots."""
+     if not xs:
+diff --git a/clipery/scripts/doctor.js b/clipery/scripts/doctor.js
+index 53891e5..315ef90 100644
+--- a/clipery/scripts/doctor.js
++++ b/clipery/scripts/doctor.js
+@@ -67,6 +67,13 @@ check("OpenCV (face tracking)", () => {
+   if (parseInt(v, 10) >= 5) return null;
+   return v;
+ }, pipHint("'opencv-python-headless<5'"), "smart reframing - the crop follows the speaker");
++check("Face detector", () => {
++  const r = tryRun(process.platform === "win32" ? "python" : "python3", [require("path").join(__dirname, "..", "lib", "facedetect.py"), "--which"]);
++  if (!r) return null;
++  const m = /detector:\s*(\S+)/.exec(r);
++  if (!m) return null;
++  return m[1] === "yunet" ? "yunet (neural, recommended)" : m[1] === "haar" ? "haar (classic - run setup.sh again to fetch YuNet)" : null;
++}, "curl -L -o lib/models/face_detection_yunet.onnx https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx", "which face model follows the speaker");
+ check("faster-whisper (transcript)", pyModule("faster_whisper"), pipHint("faster-whisper"), "the brain: hooks, story, payoff, captions");
+ 
+ const pad = Math.max(...results.map((r) => r.name.length));
+diff --git a/clipery/setup.sh b/clipery/setup.sh
+index 658cb2c..7d74eaf 100755
+--- a/clipery/setup.sh
++++ b/clipery/setup.sh
+@@ -24,6 +24,12 @@ PKGS="yt-dlp[default,curl-cffi] faster-whisper opencv-python-headless<5 pocketsp
+ pip3 install --break-system-packages $PKGS 2>/dev/null \
+   || pip3 install $PKGS
+ 
++# YuNet face model (230KB) - much better than the classic Haar fallback
++MODEL_DIR="$(dirname "$0")/clipery/lib/models"; [ -d "$(dirname "$0")/lib" ] && MODEL_DIR="$(dirname "$0")/lib/models"
++mkdir -p "$MODEL_DIR"
++[ -s "$MODEL_DIR/face_detection_yunet.onnx" ] || curl -sL -o "$MODEL_DIR/face_detection_yunet.onnx" \
++  https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx || true
++
+ echo "== 4/4 Checking what made it =="
+ node clipery/scripts/doctor.js 2>/dev/null || node scripts/doctor.js 2>/dev/null || true
+ echo ""

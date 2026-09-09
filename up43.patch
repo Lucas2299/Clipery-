@@ -1,0 +1,43 @@
+diff --git a/clipery/public/editor.js b/clipery/public/editor.js
+index 44e7c15..8a8ebf9 100644
+--- a/clipery/public/editor.js
++++ b/clipery/public/editor.js
+@@ -16,7 +16,12 @@
+   fetch("/api/auth/me").then(function (r) { return r.json(); }).then(function (d) {
+     var owner = !!(d && d.user && d.user.isOwner);
+     var b = $("btn-editor");
+-    if (b) b.hidden = !owner;
++    if (b && owner) {
++      b.disabled = false;
++      b.removeAttribute("title");
++      var tag = b.querySelector(".soon-tag");
++      if (tag) tag.remove();
++    }
+     if (!owner && new URLSearchParams(location.search).get("tool") === "editor") window.setStudioMode("long");
+   }).catch(function () {});
+ 
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index a226f2f..acefec9 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -140,7 +140,7 @@
+         <div class="mode-btns" id="mode-btns">
+           <button type="button" class="btn mode-btn on" id="btn-long" onclick="window.setStudioMode('long')">Long form</button>
+           <button type="button" class="btn mode-btn off" id="btn-rank" onclick="window.setStudioMode('rank')">Rank video</button>
+-          <button type="button" class="btn mode-btn off" id="btn-editor" onclick="window.setStudioMode('editor')" hidden>Editor</button>
++          <button type="button" class="btn mode-btn off" id="btn-editor" onclick="window.setStudioMode('editor')" disabled title="Coming soon">Editor <span class="soon-tag">Coming soon</span></button>
+         </div>
+ 
+         <!-- EDITOR: review the AI plan or mark your own clips, then render -->
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index d9c72ca..068b8b4 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2770,3 +2770,7 @@ body.studio-app {
+ .ed-card .brain-panel { margin-top: .6rem; }
+ @media (max-width: 640px) { .ed-choice { grid-template-columns: 1fr; } }
+ .status-pill.review { background: rgba(255, 196, 66, 0.15); color: #ffc442; }
++
++/* Editor tab shown as "coming soon" until it opens to everyone */
++.mode-btn[disabled] { opacity: .55; cursor: not-allowed; pointer-events: none; }
++.soon-tag { display: inline-block; margin-left: .4rem; padding: .1rem .45rem; border-radius: 999px; font-size: .65rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; background: rgba(255,196,66,.18); color: #ffc442; vertical-align: middle; }

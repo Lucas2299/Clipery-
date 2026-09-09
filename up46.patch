@@ -1,0 +1,147 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index bc31c7e..60b46b7 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -821,6 +821,51 @@ function deleteJob(id) {
+   return removed;
+ }
+ 
++// ---- Lifetime stats for the landing page -----------------------------
++// Kept in its own file so deleting a job never lowers the public numbers.
++const STATS_FILE = path.join(ROOT, "data", "stats.json");
++function readStats() {
++  try {
++    return JSON.parse(fs.readFileSync(STATS_FILE, "utf8"));
++  } catch (_) {
++    return { clips: 0, scoreSum: 0, scoreN: 0, lenSum: 0, lenN: 0 };
++  }
++}
++/** Call once when a job finishes. Adds its clips to the running totals. */
++function recordStats(clips) {
++  if (!Array.isArray(clips) || !clips.length) return;
++  const st = readStats();
++  st.clips += clips.length;
++  const top = clips[0];
++  const topScore = Number(top.viralScore || top.score);
++  if (topScore > 0) {
++    st.scoreSum += topScore;
++    st.scoreN += 1;
++  }
++  for (const c of clips) {
++    const d = Number(c.duration) || Number(c.end) - Number(c.start);
++    if (d > 0) {
++      st.lenSum += d;
++      st.lenN += 1;
++    }
++  }
++  try {
++    fs.mkdirSync(path.dirname(STATS_FILE), { recursive: true });
++    fs.writeFileSync(STATS_FILE, JSON.stringify(st));
++  } catch (_) {}
++}
++/** Public numbers: real clips made so far on top of the launch baseline. */
++function publicStats() {
++  const st = readStats();
++  const base = Number(process.env.CLIPERY_STATS_BASE_CLIPS) || 300;
++  return {
++    clips: base + st.clips,
++    realClips: st.clips,
++    avgTopScore: st.scoreN ? Math.round(st.scoreSum / st.scoreN) : 91,
++    avgClipLength: st.lenN ? Math.round(st.lenSum / st.lenN) : 38,
++  };
++}
++
+ function writeJob(job) {
+   fs.writeFileSync(jobPath(job.id), JSON.stringify(job, null, 2));
+ }
+@@ -1377,6 +1422,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+     job.progress = 100;
+     job.completedAt = new Date().toISOString();
+     job.clips = clips;
++    recordStats(clips);
+     delete job.review; // the source path and transcript are not needed any more
+     writeJob(job);
+     return job;
+@@ -1680,6 +1726,8 @@ function getLinkBoard(id) {
+ 
+ module.exports = {
+   MODES,
++  publicStats,
++  recordStats,
+   processVideo,
+   renderClip,
+   deleteJob,
+diff --git a/clipery/lib/linkVideoEngine.js b/clipery/lib/linkVideoEngine.js
+index ab0ecc4..c48d552 100644
+--- a/clipery/lib/linkVideoEngine.js
++++ b/clipery/lib/linkVideoEngine.js
+@@ -699,6 +699,7 @@ async function processMultiRank(sources, options = {}) {
+     job.progress = 100;
+     job.completedAt = new Date().toISOString();
+     job.clips = clips;
++    try { require("./clipEngine").recordStats(clips); } catch (_) {}
+     writeJob(job);
+ 
+     // cleanup work dir (keep outputs)
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 96f4b46..bb199db 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -338,9 +338,9 @@
+ 
+       <section class="w">
+         <div class="stats reveal">
+-          <div class="stat"><strong data-count="2.4" data-suffix="M+">0</strong><span>clips forged</span></div>
+-          <div class="stat"><strong data-count="91">0</strong><span>avg. top-clip score</span></div>
+-          <div class="stat"><strong data-count="38" data-suffix="s">0</strong><span>avg. clip length</span></div>
++          <div class="stat"><strong data-count="300" data-stat="clips">0</strong><span>clips forged</span></div>
++          <div class="stat"><strong data-count="91" data-stat="avgTopScore">0</strong><span>avg. top-clip score</span></div>
++          <div class="stat"><strong data-count="38" data-suffix="s" data-stat="avgClipLength">0</strong><span>avg. clip length</span></div>
+         </div>
+       </section>
+ 
+@@ -522,9 +522,20 @@
+         var nums = document.querySelectorAll("[data-count]");
+         if (!nums.length) return;
+         var done = false;
++        // Live numbers from the server; the HTML values are only a fallback.
++        var live = fetch("/api/stats").then(function (r) { return r.json(); }).then(function (d) {
++          if (!d || !d.ok) return;
++          nums.forEach(function (el) {
++            var k = el.getAttribute("data-stat");
++            if (k && d[k] != null) el.setAttribute("data-count", String(d[k]));
++          });
++        }).catch(function () {});
+         function run() {
+           if (done) return;
+           done = true;
++          live.then(start);
++        }
++        function start() {
+           nums.forEach(function (el) {
+             var target = parseFloat(el.getAttribute("data-count"));
+             var suffix = el.getAttribute("data-suffix") || "";
+diff --git a/clipery/server.js b/clipery/server.js
+index ba41bb7..e4f10f1 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -8,6 +8,7 @@ const { URL } = require("url");
+ const crypto = require("crypto");
+ const {
+   processVideo,
++  publicStats,
+   deleteJob,
+   renderReviewed,
+   planManual,
+@@ -767,6 +768,11 @@ const server = http.createServer(async (req, res) => {
+       });
+     }
+ 
++    // Public counters for the landing page (no login needed).
++    if (pathname === "/api/stats" && req.method === "GET") {
++      return send(res, 200, { ok: true, ...publicStats() });
++    }
++
+     // Modes
+     if (pathname === "/api/modes" && req.method === "GET") {
+       return send(res, 200, {

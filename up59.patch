@@ -1,0 +1,16 @@
+diff --git a/clipery/public/admin.html b/clipery/public/admin.html
+index 64628eb..0fb7b6d 100644
+--- a/clipery/public/admin.html
++++ b/clipery/public/admin.html
+@@ -68,9 +68,9 @@
+       <div class="header-inner">
+         <a class="logo" href="/"><img class="logo-img" src="/logo.png" alt="Clipery" /></a>
+         <nav class="nav" aria-label="Primary">
+-          <a href="/studio" data-nav>Studio</a>
+           <a href="/library" data-nav>Library</a>
+-          <a href="/admin" data-nav class="active">Dashboard</a>
++          <a href="/pricing" data-nav class="nav-hide-sm">Pricing</a>
++          <a class="btn btn-primary nav-studio" href="/studio" data-nav>Studio</a>
+         </nav>
+       </div>
+     </header>

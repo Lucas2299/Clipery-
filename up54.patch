@@ -1,0 +1,29 @@
+diff --git a/clipery/public/account.html b/clipery/public/account.html
+index 6007c1c..e0fa9af 100644
+--- a/clipery/public/account.html
++++ b/clipery/public/account.html
+@@ -6,7 +6,7 @@
+     <title>Account - Clipery</title>
+     <meta name="theme-color" content="#07070b" />
+     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+-    <link rel="stylesheet" href="/styles.css" />
++    <link rel="stylesheet" href="/styles.css?v=53" />
+   </head>
+   <body>
+     <div class="bg-grid" aria-hidden="true"></div>
+diff --git a/clipery/public/styles.css b/clipery/public/styles.css
+index 6d247bb..03cbf6d 100644
+--- a/clipery/public/styles.css
++++ b/clipery/public/styles.css
+@@ -2807,7 +2807,10 @@ body.studio-app {
+ .acct-usage-row { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 0.4rem; }
+ .acct-form { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+ .acct-form-col { flex-direction: column; align-items: flex-start; }
+-.acct-form input { flex: 0 1 280px; width: 100%; max-width: 280px; height: 34px; line-height: 34px; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: inherit; padding: 0 0.7rem; font: inherit; font-size: 0.88rem; }
++.acct-form input,
++.acct-form input[type="text"],
++.acct-form input[type="password"] { flex: 0 1 260px; width: 100%; max-width: 260px; height: 30px !important; min-height: 0 !important; line-height: 30px; box-sizing: border-box; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 7px; color: inherit; padding: 0 0.6rem !important; margin: 0; font: inherit; font-size: 0.85rem; }
++.acct-form-col { gap: 0.45rem; }
+ .acct-form .btn { padding: 0.45rem 0.9rem; font-size: 0.88rem; }
+ .acct-form input:focus { outline: none; border-color: var(--accent-2, #7c5cff); }
+ .nav-acct { width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: #f4f1ea; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; flex: none; }
