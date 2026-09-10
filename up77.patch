@@ -1,0 +1,371 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 67091a2..44ef8d3 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -1283,6 +1283,7 @@ async function processVideo(sourcePath, options = {}) {
+           subStyle: options.subStyle || null,
+           hook: !!options.hook,
+           hookMode: options.hookMode || "intro",
++          hookTpl: options.hookTpl || "classic",
+           trends: options.trends || [],
+           maxClips: clipBudget,
+           watermark: options.watermark !== false,
+@@ -1368,7 +1369,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+           ? {
+               clipDur: +(c.end - c.start).toFixed(2),
+               subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
+-              hook: clipHook ? { enabled: true, mode: options.hookMode } : null,
++              hook: clipHook ? { enabled: true, mode: options.hookMode, template: options.hookTpl || "classic" } : null,
+               trends: options.trends,
+               edit: c.edit || null,
+               layout: c.layout && c.layout !== "auto" ? c.layout : null,
+@@ -1579,6 +1580,7 @@ async function planManual(sourcePath, options = {}) {
+         subStyle: options.subStyle || null,
+         hook: false,
+         hookMode: "intro",
++        hookTpl: options.hookTpl || "classic",
+         trends: [],
+         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+         watermark: options.watermark !== false,
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index fd1ced6..9027552 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -269,6 +269,28 @@ function trimHookTail(arr) {
+   return arr;
+ }
+ 
++/* ---------------- Hook title templates ---------------- */
++// The hook title look. The template owns colour, size and decoration (like
++// caption templates do) — ASS colours are &HAABBGGRR. `box: 3` draws a strip
++// behind the text (the box colour lives in `outline`), `rowChars` keeps big
++// shouty fonts inside the 384-unit frame, `inline` adds extra ASS tags.
++const HOOK_TEMPLATES = {
++  classic: { size: 33, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3, shadow: 0, marginV: 78, rowChars: 18, inline: "" },
++  beast:   { size: 38, color: "&H004CE7FF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 4.5, shadow: 0, marginV: 66, rowChars: 15, inline: "" },
++  news:    { size: 26, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 6, shadow: 0, marginV: 54, rowChars: 22, inline: "" },
++  neon:    { size: 34, color: "&H00FFFFFF", outline: "&H006D4DFF", back: "&H00000000", box: 1, thick: 2, shadow: 0, marginV: 72, rowChars: 17, inline: "\\be2" },
++  minimal: { size: 26, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 1.5, shadow: 1, marginV: 86, rowChars: 22, inline: "" },
++  fire:    { size: 36, color: "&H004C8AFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3.5, shadow: 0, marginV: 68, rowChars: 16, inline: "" },
++};
++function normalizeHookTemplate(v) {
++  const t = String(v || "classic").toLowerCase().trim();
++  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "classic";
++}
++function hookStyleLine(template) {
++  const T = HOOK_TEMPLATES[normalizeHookTemplate(template)];
++  return `Style: Hook,DejaVu Sans,${T.size},${T.color},${T.color},${T.outline},${T.back},1,0,0,0,100,100,0,0,${T.box},${T.thick},${T.shadow},8,12,12,${T.marginV},1`;
++}
++
+ /**
+  * Pick the punchiest phrase from the first seconds of a clip as its HOOK.
+  * Heuristic: split early speech into phrases at pauses, score for power words,
+@@ -311,13 +333,14 @@ function pickHookText(words, extraPower) {
+ }
+ 
+ /** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
+-function hookRows(text) {
+-  if (text.length <= 18) return [text];
++function hookRows(text, maxChars) {
++  const MC = Math.max(10, Number(maxChars) || 18);
++  if (text.length <= MC) return [text];
+   const ws = text.split(" ");
+   let r1 = "";
+   for (const w of ws) {
+     const t = r1 ? r1 + " " + w : w;
+-    if (t.length > 18 && r1) break;
++    if (t.length > MC && r1) break;
+     r1 = t;
+   }
+   const r2 = text.slice(r1.length).trim();
+@@ -325,13 +348,14 @@ function hookRows(text) {
+ }
+ 
+ /** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
+-function buildHook(words, clipDur, mode, trends) {
++function buildHook(words, clipDur, mode, trends, template) {
+   const extraPower = Array.isArray(trends) && trends.length ? new Set(trends) : null;
+   const text = pickHookText(words, extraPower);
+   if (!text) return null;
++  const tpl = normalizeHookTemplate(template);
+   const dur = Math.max(clipDur || 0, 0.6);
+   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
+-  return { text, rows: hookRows(text), start: 0.1, end };
++  return { text, rows: hookRows(text, HOOK_TEMPLATES[tpl].rowChars), start: 0.1, end, template: tpl };
+ }
+ 
+ async function probeDuration(p) {
+@@ -390,8 +414,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     "[V4+ Styles]",
+     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
+-    // Hook title: big bold white with a strong outline, top of frame
+-    "Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1",
++    // Hook title look comes from its template (classic = the original white shout).
++    hookStyleLine(hook && hook.template),
+     "",
+     "[Events]",
+     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+@@ -401,9 +425,9 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+   if (hook && hook.rows && hook.rows.length) {
+     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
+     if (hookText) {
+-      const col = SUB_COLORS[s.color];
++      const ht = HOOK_TEMPLATES[normalizeHookTemplate(hook.template)];
+       events.push(
+-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${col}}${hookText}`
++        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${ht.color}${ht.inline}}${hookText}`
+       );
+     }
+   }
+@@ -564,7 +588,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
+   let hook = null;
+   if (wantHook && words.length) {
+     const dur = opts.clipDur || (await probeDuration(videoPath));
+-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
++    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook && opts.hook.template);
+   }
+ 
+   if (!pages.length && !hook) {
+@@ -648,7 +672,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
+ 
+   let hook = null;
+   if (wantHook) {
+-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
++    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook && opts.hook.template);
+   }
+ 
+   if (!pages.length && !hook) return null;
+@@ -683,4 +707,6 @@ module.exports = {
+   buildHook,
+   pickHookText,
+   normalizeSubStyle,
++  normalizeHookTemplate,
++  HOOK_TEMPLATES,
+ };
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 8435867..da274b7 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -116,6 +116,13 @@
+       .sub-preview-frame.boxblack .sub-preview-cap{background:#000}
+       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
+       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
++      .hk-cap{display:block;font-weight:800;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.02em;text-align:center;line-height:1.3}
++      .hk-classic .hk-cap{color:#fff;text-shadow:-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000}
++      .hk-beast .hk-cap{color:#FFE74C;font-size:0.72rem;text-shadow:-2px 0 0 #000,2px 0 0 #000,0 -2px 0 #000,0 2px 0 #000}
++      .hk-news .hk-cap{color:#fff;background:rgba(0,0,0,0.65);padding:0.15rem 0.3rem;font-size:0.55rem}
++      .hk-neon .hk-cap{color:#fff;text-shadow:0 0 6px #FF4D6D,0 0 2px #FF4D6D,-1px 0 0 #FF4D6D,1px 0 0 #FF4D6D}
++      .hk-minimal .hk-cap{color:#fff;font-size:0.55rem;font-weight:600;text-transform:none;text-shadow:0 1px 2px rgba(0,0,0,0.6)}
++      .hk-fire .hk-cap{color:#FF8A4C;font-size:0.68rem;text-shadow:-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000}
+       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
+     </style>
+   </head>
+@@ -332,6 +339,10 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
++            <input type="hidden" id="long-hook-tpl" value="classic" />
++            <div class="sub-cards" id="long-hook-cards">
++              <button type="button" class="sub-card hk hk-classic sel" data-hooktpl="classic"><span class="hk-cap">Hook title</span><span class="sc-name">⭐ Classic</span></button>              <button type="button" class="sub-card hk hk-beast" data-hooktpl="beast"><span class="hk-cap">Hook title</span><span class="sc-name">💥 Beast</span></button>              <button type="button" class="sub-card hk hk-news" data-hooktpl="news"><span class="hk-cap">Hook title</span><span class="sc-name">📰 News</span></button>              <button type="button" class="sub-card hk hk-neon" data-hooktpl="neon"><span class="hk-cap">Hook title</span><span class="sc-name">💡 Neon</span></button>              <button type="button" class="sub-card hk hk-minimal" data-hooktpl="minimal"><span class="hk-cap">Hook title</span><span class="sc-name">🤍 Minimal</span></button>              <button type="button" class="sub-card hk hk-fire" data-hooktpl="fire"><span class="hk-cap">Hook title</span><span class="sc-name">🔥 Fire</span></button>
++            </div>
+             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+               <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
+             </label>
+@@ -510,6 +521,10 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
++            <input type="hidden" id="rank-hook-tpl" value="classic" />
++            <div class="sub-cards" id="rank-hook-cards">
++              <button type="button" class="sub-card hk hk-classic sel" data-hooktpl="classic"><span class="hk-cap">Hook title</span><span class="sc-name">⭐ Classic</span></button>              <button type="button" class="sub-card hk hk-beast" data-hooktpl="beast"><span class="hk-cap">Hook title</span><span class="sc-name">💥 Beast</span></button>              <button type="button" class="sub-card hk hk-news" data-hooktpl="news"><span class="hk-cap">Hook title</span><span class="sc-name">📰 News</span></button>              <button type="button" class="sub-card hk hk-neon" data-hooktpl="neon"><span class="hk-cap">Hook title</span><span class="sc-name">💡 Neon</span></button>              <button type="button" class="sub-card hk hk-minimal" data-hooktpl="minimal"><span class="hk-cap">Hook title</span><span class="sc-name">🤍 Minimal</span></button>              <button type="button" class="sub-card hk hk-fire" data-hooktpl="fire"><span class="hk-cap">Hook title</span><span class="sc-name">🔥 Fire</span></button>
++            </div>
+             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+               <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
+             </label>
+@@ -580,7 +595,7 @@
+       document.getElementById("year").textContent = new Date().getFullYear();
+     </script>
+     <script src="/shared.js?v=4"></script>
+-    <script src="/studio.js?v=75"></script>
++    <script src="/studio.js?v=77"></script>
+     <script src="/editor.js?v=1"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index f06f72b..a1b6a5b 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -70,7 +70,25 @@
+   function collectHook(prefix) {
+     var t = $(prefix + "-hook");
+     var m = $(prefix + "-hook-mode");
+-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro" };
++    var h = $(prefix + "-hook-tpl");
++    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", template: h ? h.value : "classic" };
++  }
++
++  /* Hook title templates: click a card, the hidden input carries the choice. */
++  function wireHookCards(prefix) {
++    var grid = $(prefix + "-hook-cards");
++    var hid = $(prefix + "-hook-tpl");
++    if (!grid || !hid) return;
++    var cards = grid.querySelectorAll(".sub-card");
++    for (var i = 0; i < cards.length; i++) {
++      cards[i].addEventListener("click", function (ev) {
++        var tpl = ev.currentTarget.getAttribute("data-hooktpl");
++        if (!tpl) return;
++        hid.value = tpl;
++        for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
++        ev.currentTarget.classList.add("sel");
++      });
++    }
+   }
+ 
+   // Hook title and subtitles are either/or: both at once fight for the
+@@ -104,6 +122,8 @@
+   }
+   wireHookToggle("long");
+   wireHookToggle("rank");
++  wireHookCards("long");
++  wireHookCards("rank");
+ 
+   // The little caption preview box is gone: the style cards already show
+   // the real look, and the box only took space.
+@@ -649,6 +669,7 @@
+           fd.append("trends", longTrends);
+           fd.append("hook", longHook.enabled ? "1" : "0");
+           fd.append("hookMode", longHook.mode);
++          fd.append("hookTpl", longHook.template);
+           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/clip/from-url", {
+@@ -667,6 +688,7 @@
+               trends: longTrends,
+               hook: longHook.enabled,
+               hookMode: longHook.mode,
++              hookTpl: longHook.template,
+             }),
+           });
+         }
+@@ -890,6 +912,7 @@
+           fd.append("trends", rankTrends);
+           fd.append("hook", rankHook.enabled ? "1" : "0");
+           fd.append("hookMode", rankHook.mode);
++          fd.append("hookTpl", rankHook.template);
+           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/rank/video/links", {
+@@ -908,6 +931,7 @@
+               trends: rankTrends,
+               hook: rankHook.enabled,
+               hookMode: rankHook.mode,
++              hookTpl: rankHook.template,
+             }),
+           });
+         }
+diff --git a/clipery/server.js b/clipery/server.js
+index 3864013..def1f97 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -25,7 +25,7 @@ const {
+   processLinksToRankingVideo,
+   downloadUrl,
+ } = require("./lib/linkVideoEngine");
+-const { normalizeSubStyle } = require("./lib/subtitles");
++const { normalizeSubStyle, normalizeHookTemplate } = require("./lib/subtitles");
+ const auth = require("./lib/auth");
+ const promo = require("./lib/promo");
+ const oauth = require("./lib/oauth");
+@@ -661,11 +661,12 @@ function readTrends(get) {
+   return [...new Set(list)].slice(0, 12);
+ }
+ 
+-// hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
++// hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip) + visual template
+ function readHook(get) {
+   return {
+     enabled: wantSubtitles(get("hook")),
+     mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
++    template: normalizeHookTemplate(get("hookTpl")),
+   };
+ }
+ 
+@@ -1085,12 +1086,12 @@ const server = http.createServer(async (req, res) => {
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.renameSync(filePart.path, dest);
+       const genre = readGenre(get("genre"));
+-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, trends, genre });
++      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends, genre });
+       const q = enqueue(dest, {
+         userId: owner && owner.id,
+         ...owner.planLimits,
+         jobId, sourceName: orig, mode, subtitles, subStyle, genre,
+-        hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
++        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends,
+       });
+       return send(res, 202, {
+         ok: true,
+@@ -1131,7 +1132,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode,
++        hookMode: hookOpts.mode, hookTpl: hookOpts.template,
+         trends,
+       });
+       const q = enqueueItem({
+@@ -1141,7 +1142,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
+-          hook: hookOpts.enabled, hookMode: hookOpts.mode, trends,
++          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends,
+         },
+       });
+       return send(res, 202, {
+@@ -1188,7 +1189,7 @@ const server = http.createServer(async (req, res) => {
+       fs.renameSync(filePart.path, dest);
+       const meta = {
+         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
+-        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, trends,
++        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends,
+         genre: readGenre(get("genre")),
+         review: true, manual, editor: true,
+       };
+@@ -1439,7 +1440,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode,
++        hookMode: hookOpts.mode, hookTpl: hookOpts.template,
+         trends,
+       });
+       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
+@@ -1455,7 +1456,7 @@ const server = http.createServer(async (req, res) => {
+           subtitles,
+           subStyle,
+           hook: hookOpts.enabled,
+-          hookMode: hookOpts.mode,
++          hookMode: hookOpts.mode, hookTpl: hookOpts.template,
+           trends,
+         },
+       });
+@@ -1554,7 +1555,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOptsUp.enabled,
+-        hookMode: hookOptsUp.mode,
++        hookMode: hookOptsUp.mode, hookTpl: hookOptsUp.template,
+         trends: trendsUp,
+       });
+       const q = enqueueItem({
+@@ -1564,7 +1565,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, trends: trendsUp,
++          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookTpl: hookOptsUp.template, trends: trendsUp,
+         },
+       });
+       return send(res, 202, {
