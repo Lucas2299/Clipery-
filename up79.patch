@@ -1,0 +1,459 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 44ef8d3..fa78b63 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -1283,7 +1283,8 @@ async function processVideo(sourcePath, options = {}) {
+           subStyle: options.subStyle || null,
+           hook: !!options.hook,
+           hookMode: options.hookMode || "intro",
+-          hookTpl: options.hookTpl || "classic",
++          hookBg: options.hookBg || "dark",
++          hookColor: options.hookColor || "white",
+           trends: options.trends || [],
+           maxClips: clipBudget,
+           watermark: options.watermark !== false,
+@@ -1369,7 +1370,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+           ? {
+               clipDur: +(c.end - c.start).toFixed(2),
+               subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
+-              hook: clipHook ? { enabled: true, mode: options.hookMode, template: options.hookTpl || "classic" } : null,
++              hook: clipHook ? { enabled: true, mode: options.hookMode, background: options.hookBg, color: options.hookColor } : null,
+               trends: options.trends,
+               edit: c.edit || null,
+               layout: c.layout && c.layout !== "auto" ? c.layout : null,
+@@ -1580,7 +1581,8 @@ async function planManual(sourcePath, options = {}) {
+         subStyle: options.subStyle || null,
+         hook: false,
+         hookMode: "intro",
+-        hookTpl: options.hookTpl || "classic",
++        hookBg: options.hookBg || "dark",
++        hookColor: options.hookColor || "white",
+         trends: [],
+         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+         watermark: options.watermark !== false,
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index 46bd6aa..e6f6bf0 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -269,28 +269,35 @@ function trimHookTail(arr) {
+   return arr;
+ }
+ 
+-/* ---------------- Hook title templates ---------------- */
+-// The hook title look. The template owns colour, size and decoration (like
+-// caption templates do) — ASS colours are &HAABBGGRR. `box: 3` draws a strip
+-// behind the text (the box colour lives in `outline`), `rowChars` keeps big
+-// shouty fonts inside the 384-unit frame, `inline` adds extra ASS tags.
+-const HOOK_TEMPLATES = {
+-  // Every hook is a title card: a background strip behind the text (box: 3,
+-  // the strip colour lives in `outline`, `thick` = its padding).
+-  classic: { size: 33, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 78, rowChars: 18, inline: "" },
+-  beast:   { size: 38, color: "&H00000000", outline: "&H004CE7FF", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 66, rowChars: 15, inline: "" },
+-  news:    { size: 26, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 6, shadow: 0, marginV: 54, rowChars: 22, inline: "" },
+-  neon:    { size: 34, color: "&H006D4DFF", outline: "&H40000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 72, rowChars: 17, inline: "\\be2" },
+-  minimal: { size: 26, color: "&H00FFFFFF", outline: "&H96000000", back: "&H00000000", box: 3, thick: 4, shadow: 0, marginV: 86, rowChars: 22, inline: "" },
+-  fire:    { size: 36, color: "&H004C8AFF", outline: "&H00000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 68, rowChars: 16, inline: "" },
++/* ---------------- Hook title styles ---------------- */
++// The hook title look = a background card + a free text colour (any of the
++// nine caption colours). ASS colours are &HAABBGGRR. The card is BorderStyle 3
++// (the card colour lives in `box`, `thick` = its padding). Light cards force
++// a readable text colour — same idea as the caption box styles.
++const HOOK_BACKGROUNDS = {
++  dark:   { box: "&H78000000", thick: 5, force: null },          // translucent black strip
++  black:  { box: "&H00000000", thick: 5, force: null },          // solid black card
++  faint:  { box: "&H96000000", thick: 4, force: null },          // faint strip
++  white:  { box: "&H00FFFFFF", thick: 5, force: "&H00000000" },  // solid white card, black text
++  yellow: { box: "&H004CE7FF", thick: 5, force: "&H00000000" },  // solid yellow card, black text
++  red:    { box: "&H003B3BFF", thick: 5, force: "&H00FFFFFF" },  // solid red card, white text
+ };
+-function normalizeHookTemplate(v) {
+-  const t = String(v || "classic").toLowerCase().trim();
+-  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "classic";
++function normalizeHookBackground(v) {
++  const t = String(v || "dark").toLowerCase().trim();
++  return HOOK_BACKGROUNDS.hasOwnProperty(t) ? t : "dark";
+ }
+-function hookStyleLine(template) {
+-  const T = HOOK_TEMPLATES[normalizeHookTemplate(template)];
+-  return `Style: Hook,DejaVu Sans,${T.size},${T.color},${T.color},${T.outline},${T.back},1,0,0,0,100,100,0,0,${T.box},${T.thick},${T.shadow},8,12,12,${T.marginV},1`;
++function normalizeHookColor(v) {
++  const t = String(v || "white").toLowerCase().trim();
++  return SUB_COLORS.hasOwnProperty(t) ? t : "white";
++}
++/** Resolved look: fixed shout size, card + readable text colour. */
++function resolveHookLook(bg, colorKey) {
++  const B = HOOK_BACKGROUNDS[normalizeHookBackground(bg)];
++  return { size: 33, color: B.force || SUB_COLORS[normalizeHookColor(colorKey)], box: B.box, thick: B.thick, marginV: 72, rowChars: 18 };
++}
++function hookStyleLine(bg, colorKey) {
++  const T = resolveHookLook(bg, colorKey);
++  return `Style: Hook,DejaVu Sans,${T.size},${T.color},${T.color},${T.box},&H00000000,1,0,0,0,100,100,0,0,3,${T.thick},0,8,12,12,${T.marginV},1`;
+ }
+ 
+ /**
+@@ -335,14 +342,13 @@ function pickHookText(words, extraPower) {
+ }
+ 
+ /** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
+-function hookRows(text, maxChars) {
+-  const MC = Math.max(10, Number(maxChars) || 18);
+-  if (text.length <= MC) return [text];
++function hookRows(text) {
++  if (text.length <= 18) return [text];
+   const ws = text.split(" ");
+   let r1 = "";
+   for (const w of ws) {
+     const t = r1 ? r1 + " " + w : w;
+-    if (t.length > MC && r1) break;
++    if (t.length > 18 && r1) break;
+     r1 = t;
+   }
+   const r2 = text.slice(r1.length).trim();
+@@ -350,14 +356,15 @@ function hookRows(text, maxChars) {
+ }
+ 
+ /** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
+-function buildHook(words, clipDur, mode, trends, template) {
++function buildHook(words, clipDur, mode, trends, look) {
+   const extraPower = Array.isArray(trends) && trends.length ? new Set(trends) : null;
+   const text = pickHookText(words, extraPower);
+   if (!text) return null;
+-  const tpl = normalizeHookTemplate(template);
+   const dur = Math.max(clipDur || 0, 0.6);
+   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
+-  return { text, rows: hookRows(text, HOOK_TEMPLATES[tpl].rowChars), start: 0.1, end, template: tpl };
++  const bg = normalizeHookBackground(look && look.background);
++  const col = normalizeHookColor(look && look.color);
++  return { text, rows: hookRows(text), start: 0.1, end, background: bg, color: col };
+ }
+ 
+ async function probeDuration(p) {
+@@ -416,8 +423,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     "[V4+ Styles]",
+     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
+-    // Hook title look comes from its template (classic = the original white shout).
+-    hookStyleLine(hook && hook.template),
++    // Hook title look: background card + text colour.
++    hookStyleLine(hook && hook.background, hook && hook.color),
+     "",
+     "[Events]",
+     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+@@ -427,9 +434,9 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+   if (hook && hook.rows && hook.rows.length) {
+     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
+     if (hookText) {
+-      const ht = HOOK_TEMPLATES[normalizeHookTemplate(hook.template)];
++      const hl = resolveHookLook(hook.background, hook.color);
+       events.push(
+-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${ht.color}${ht.inline}}${hookText}`
++        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
+       );
+     }
+   }
+@@ -590,7 +597,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
+   let hook = null;
+   if (wantHook && words.length) {
+     const dur = opts.clipDur || (await probeDuration(videoPath));
+-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook && opts.hook.template);
++    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook);
+   }
+ 
+   if (!pages.length && !hook) {
+@@ -674,7 +681,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
+ 
+   let hook = null;
+   if (wantHook) {
+-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook && opts.hook.template);
++    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook);
+   }
+ 
+   if (!pages.length && !hook) return null;
+@@ -709,6 +716,7 @@ module.exports = {
+   buildHook,
+   pickHookText,
+   normalizeSubStyle,
+-  normalizeHookTemplate,
+-  HOOK_TEMPLATES,
++  normalizeHookBackground,
++  normalizeHookColor,
++  HOOK_BACKGROUNDS,
+ };
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index a84e74c..3e9de0a 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -117,12 +117,12 @@
+       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
+       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
+       .hk-cap{display:block;font-weight:800;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.02em;text-align:center;line-height:1.3;padding:0.15rem 0.2rem}
+-      .hk-classic .hk-cap{color:#fff;background:rgba(0,0,0,0.53)}
+-      .hk-beast .hk-cap{color:#000;background:#FFE74C;font-size:0.72rem}
+-      .hk-news .hk-cap{color:#fff;background:rgba(0,0,0,0.53);font-size:0.55rem}
+-      .hk-neon .hk-cap{color:#FF4D6D;background:rgba(0,0,0,0.75);text-shadow:0 0 6px #FF4D6D,0 0 2px #FF4D6D}
+-      .hk-minimal .hk-cap{color:#fff;background:rgba(0,0,0,0.41);font-size:0.55rem;font-weight:600;text-transform:none}
+-      .hk-fire .hk-cap{color:#FF8A4C;background:#000;font-size:0.68rem}
++      .hk-dark .hk-cap{color:#fff;background:rgba(0,0,0,0.53)}
++      .hk-black .hk-cap{color:#fff;background:#000}
++      .hk-faint .hk-cap{color:#fff;background:rgba(0,0,0,0.41)}
++      .hk-white .hk-cap{color:#000;background:#fff}
++      .hk-yellow .hk-cap{color:#000;background:#FFE74C}
++      .hk-red .hk-cap{color:#fff;background:#FF3B3B}
+       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
+     </style>
+   </head>
+@@ -339,10 +339,23 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
+-            <input type="hidden" id="long-hook-tpl" value="classic" />
++            <input type="hidden" id="long-hook-bg" value="dark" />
+             <div class="sub-cards" id="long-hook-cards">
+-              <button type="button" class="sub-card hk hk-classic sel" data-hooktpl="classic"><span class="hk-cap">Hook title</span><span class="sc-name">⭐ Classic</span></button>              <button type="button" class="sub-card hk hk-beast" data-hooktpl="beast"><span class="hk-cap">Hook title</span><span class="sc-name">💥 Beast</span></button>              <button type="button" class="sub-card hk hk-news" data-hooktpl="news"><span class="hk-cap">Hook title</span><span class="sc-name">📰 News</span></button>              <button type="button" class="sub-card hk hk-neon" data-hooktpl="neon"><span class="hk-cap">Hook title</span><span class="sc-name">💡 Neon</span></button>              <button type="button" class="sub-card hk hk-minimal" data-hooktpl="minimal"><span class="hk-cap">Hook title</span><span class="sc-name">🤍 Minimal</span></button>              <button type="button" class="sub-card hk hk-fire" data-hooktpl="fire"><span class="hk-cap">Hook title</span><span class="sc-name">🔥 Fire</span></button>
++              <button type="button" class="sub-card hk hk-dark sel" data-hookbg="dark"><span class="hk-cap">Hook title</span><span class="sc-name">⬛ Dark</span></button>              <button type="button" class="sub-card hk hk-black" data-hookbg="black"><span class="hk-cap">Hook title</span><span class="sc-name">🖤 Black</span></button>              <button type="button" class="sub-card hk hk-faint" data-hookbg="faint"><span class="hk-cap">Hook title</span><span class="sc-name">🌫️ Faint</span></button>              <button type="button" class="sub-card hk hk-white" data-hookbg="white"><span class="hk-cap">Hook title</span><span class="sc-name">⬜ White</span></button>              <button type="button" class="sub-card hk hk-yellow" data-hookbg="yellow"><span class="hk-cap">Hook title</span><span class="sc-name">🟨 Yellow</span></button>              <button type="button" class="sub-card hk hk-red" data-hookbg="red"><span class="hk-cap">Hook title</span><span class="sc-name">🟥 Red</span></button>
+             </div>
++            <label>Text color
++              <select id="long-hook-color">
++                <option value="white" selected>White</option>
++                <option value="yellow">Yellow</option>
++                <option value="pink">Clipery pink</option>
++                <option value="orange">Orange</option>
++                <option value="red">Red</option>
++                <option value="green">Green</option>
++                <option value="cyan">Cyan</option>
++                <option value="blue">Blue</option>
++                <option value="purple">Purple</option>
++              </select>
++            </label>
+             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+               <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
+             </label>
+@@ -521,10 +534,23 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
+-            <input type="hidden" id="rank-hook-tpl" value="classic" />
++            <input type="hidden" id="rank-hook-bg" value="dark" />
+             <div class="sub-cards" id="rank-hook-cards">
+-              <button type="button" class="sub-card hk hk-classic sel" data-hooktpl="classic"><span class="hk-cap">Hook title</span><span class="sc-name">⭐ Classic</span></button>              <button type="button" class="sub-card hk hk-beast" data-hooktpl="beast"><span class="hk-cap">Hook title</span><span class="sc-name">💥 Beast</span></button>              <button type="button" class="sub-card hk hk-news" data-hooktpl="news"><span class="hk-cap">Hook title</span><span class="sc-name">📰 News</span></button>              <button type="button" class="sub-card hk hk-neon" data-hooktpl="neon"><span class="hk-cap">Hook title</span><span class="sc-name">💡 Neon</span></button>              <button type="button" class="sub-card hk hk-minimal" data-hooktpl="minimal"><span class="hk-cap">Hook title</span><span class="sc-name">🤍 Minimal</span></button>              <button type="button" class="sub-card hk hk-fire" data-hooktpl="fire"><span class="hk-cap">Hook title</span><span class="sc-name">🔥 Fire</span></button>
++              <button type="button" class="sub-card hk hk-dark sel" data-hookbg="dark"><span class="hk-cap">Hook title</span><span class="sc-name">⬛ Dark</span></button>              <button type="button" class="sub-card hk hk-black" data-hookbg="black"><span class="hk-cap">Hook title</span><span class="sc-name">🖤 Black</span></button>              <button type="button" class="sub-card hk hk-faint" data-hookbg="faint"><span class="hk-cap">Hook title</span><span class="sc-name">🌫️ Faint</span></button>              <button type="button" class="sub-card hk hk-white" data-hookbg="white"><span class="hk-cap">Hook title</span><span class="sc-name">⬜ White</span></button>              <button type="button" class="sub-card hk hk-yellow" data-hookbg="yellow"><span class="hk-cap">Hook title</span><span class="sc-name">🟨 Yellow</span></button>              <button type="button" class="sub-card hk hk-red" data-hookbg="red"><span class="hk-cap">Hook title</span><span class="sc-name">🟥 Red</span></button>
+             </div>
++            <label>Text color
++              <select id="rank-hook-color">
++                <option value="white" selected>White</option>
++                <option value="yellow">Yellow</option>
++                <option value="pink">Clipery pink</option>
++                <option value="orange">Orange</option>
++                <option value="red">Red</option>
++                <option value="green">Green</option>
++                <option value="cyan">Cyan</option>
++                <option value="blue">Blue</option>
++                <option value="purple">Purple</option>
++              </select>
++            </label>
+             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+               <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
+             </label>
+@@ -595,7 +621,7 @@
+       document.getElementById("year").textContent = new Date().getFullYear();
+     </script>
+     <script src="/shared.js?v=4"></script>
+-    <script src="/studio.js?v=77"></script>
++    <script src="/studio.js?v=79"></script>
+     <script src="/editor.js?v=1"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index a1b6a5b..e1b3b8a 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -70,21 +70,22 @@
+   function collectHook(prefix) {
+     var t = $(prefix + "-hook");
+     var m = $(prefix + "-hook-mode");
+-    var h = $(prefix + "-hook-tpl");
+-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", template: h ? h.value : "classic" };
++    var b = $(prefix + "-hook-bg");
++    var c = $(prefix + "-hook-color");
++    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", background: b ? b.value : "dark", color: c ? c.value : "white" };
+   }
+ 
+-  /* Hook title templates: click a card, the hidden input carries the choice. */
+-  function wireHookCards(prefix) {
++  /* Hook title background: click a card, the hidden input carries the choice. */
++  function wireHookBgCards(prefix) {
+     var grid = $(prefix + "-hook-cards");
+-    var hid = $(prefix + "-hook-tpl");
++    var hid = $(prefix + "-hook-bg");
+     if (!grid || !hid) return;
+     var cards = grid.querySelectorAll(".sub-card");
+     for (var i = 0; i < cards.length; i++) {
+       cards[i].addEventListener("click", function (ev) {
+-        var tpl = ev.currentTarget.getAttribute("data-hooktpl");
+-        if (!tpl) return;
+-        hid.value = tpl;
++        var bg = ev.currentTarget.getAttribute("data-hookbg");
++        if (!bg) return;
++        hid.value = bg;
+         for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
+         ev.currentTarget.classList.add("sel");
+       });
+@@ -122,8 +123,8 @@
+   }
+   wireHookToggle("long");
+   wireHookToggle("rank");
+-  wireHookCards("long");
+-  wireHookCards("rank");
++  wireHookBgCards("long");
++  wireHookBgCards("rank");
+ 
+   // The little caption preview box is gone: the style cards already show
+   // the real look, and the box only took space.
+@@ -669,7 +670,8 @@
+           fd.append("trends", longTrends);
+           fd.append("hook", longHook.enabled ? "1" : "0");
+           fd.append("hookMode", longHook.mode);
+-          fd.append("hookTpl", longHook.template);
++          fd.append("hookBg", longHook.background);
++          fd.append("hookColor", longHook.color);
+           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/clip/from-url", {
+@@ -688,7 +690,8 @@
+               trends: longTrends,
+               hook: longHook.enabled,
+               hookMode: longHook.mode,
+-              hookTpl: longHook.template,
++              hookBg: longHook.background,
++              hookColor: longHook.color,
+             }),
+           });
+         }
+@@ -912,7 +915,8 @@
+           fd.append("trends", rankTrends);
+           fd.append("hook", rankHook.enabled ? "1" : "0");
+           fd.append("hookMode", rankHook.mode);
+-          fd.append("hookTpl", rankHook.template);
++          fd.append("hookBg", rankHook.background);
++          fd.append("hookColor", rankHook.color);
+           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/rank/video/links", {
+@@ -931,7 +935,8 @@
+               trends: rankTrends,
+               hook: rankHook.enabled,
+               hookMode: rankHook.mode,
+-              hookTpl: rankHook.template,
++              hookBg: rankHook.background,
++              hookColor: rankHook.color,
+             }),
+           });
+         }
+diff --git a/clipery/server.js b/clipery/server.js
+index def1f97..757bdbe 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -25,7 +25,7 @@ const {
+   processLinksToRankingVideo,
+   downloadUrl,
+ } = require("./lib/linkVideoEngine");
+-const { normalizeSubStyle, normalizeHookTemplate } = require("./lib/subtitles");
++const { normalizeSubStyle, normalizeHookBackground, normalizeHookColor } = require("./lib/subtitles");
+ const auth = require("./lib/auth");
+ const promo = require("./lib/promo");
+ const oauth = require("./lib/oauth");
+@@ -661,12 +661,14 @@ function readTrends(get) {
+   return [...new Set(list)].slice(0, 12);
+ }
+ 
+-// hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip) + visual template
++// hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
++// + background card style + free text colour
+ function readHook(get) {
+   return {
+     enabled: wantSubtitles(get("hook")),
+     mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
+-    template: normalizeHookTemplate(get("hookTpl")),
++    background: normalizeHookBackground(get("hookBg")),
++    color: normalizeHookColor(get("hookColor")),
+   };
+ }
+ 
+@@ -1086,12 +1088,12 @@ const server = http.createServer(async (req, res) => {
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.renameSync(filePart.path, dest);
+       const genre = readGenre(get("genre"));
+-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends, genre });
++      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends, genre });
+       const q = enqueue(dest, {
+         userId: owner && owner.id,
+         ...owner.planLimits,
+         jobId, sourceName: orig, mode, subtitles, subStyle, genre,
+-        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends,
++        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends,
+       });
+       return send(res, 202, {
+         ok: true,
+@@ -1132,7 +1134,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode, hookTpl: hookOpts.template,
++        hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color,
+         trends,
+       });
+       const q = enqueueItem({
+@@ -1142,7 +1144,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
+-          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends,
++          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends,
+         },
+       });
+       return send(res, 202, {
+@@ -1189,7 +1191,7 @@ const server = http.createServer(async (req, res) => {
+       fs.renameSync(filePart.path, dest);
+       const meta = {
+         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
+-        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookTpl: hookOpts.template, trends,
++        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends,
+         genre: readGenre(get("genre")),
+         review: true, manual, editor: true,
+       };
+@@ -1440,7 +1442,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode, hookTpl: hookOpts.template,
++        hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color,
+         trends,
+       });
+       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
+@@ -1456,7 +1458,7 @@ const server = http.createServer(async (req, res) => {
+           subtitles,
+           subStyle,
+           hook: hookOpts.enabled,
+-          hookMode: hookOpts.mode, hookTpl: hookOpts.template,
++          hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color,
+           trends,
+         },
+       });
+@@ -1555,7 +1557,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOptsUp.enabled,
+-        hookMode: hookOptsUp.mode, hookTpl: hookOptsUp.template,
++        hookMode: hookOptsUp.mode, hookBg: hookOptsUp.background, hookColor: hookOptsUp.color,
+         trends: trendsUp,
+       });
+       const q = enqueueItem({
+@@ -1565,7 +1567,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookTpl: hookOptsUp.template, trends: trendsUp,
++          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookBg: hookOptsUp.background, hookColor: hookOptsUp.color, trends: trendsUp,
+         },
+       });
+       return send(res, 202, {
