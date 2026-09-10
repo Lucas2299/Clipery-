@@ -1,0 +1,38 @@
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index e6f6bf0..e102fed 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -341,17 +341,29 @@ function pickHookText(words, extraPower) {
+   return clean ? clean.toUpperCase() : null;
+ }
+ 
+-/** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
++/** Hook titles always take 2 rows: long hooks fill row 1 to the width limit,
++ * short hooks split at the most even word boundary. One word stays one row. */
+ function hookRows(text) {
+-  if (text.length <= 18) return [text];
+   const ws = text.split(" ");
+-  let r1 = "";
++  if (ws.length < 2) return [text];
++  // Most even word boundary first — a balanced card whenever it fits.
++  let best = 1;
++  let bestDiff = Infinity;
++  for (let i = 1; i < ws.length; i++) {
++    const d = Math.abs(ws.slice(0, i).join(" ").length - ws.slice(i).join(" ").length);
++    if (d < bestDiff) { bestDiff = d; best = i; }
++  }
++  let r1 = ws.slice(0, best).join(" ");
++  let r2 = ws.slice(best).join(" ");
++  if (r1.length <= 18 && r2.length <= 18) return [r1, r2];
++  // Too wide for balance: fill row 1 to the limit, rest on row 2.
++  r1 = "";
+   for (const w of ws) {
+     const t = r1 ? r1 + " " + w : w;
+     if (t.length > 18 && r1) break;
+     r1 = t;
+   }
+-  const r2 = text.slice(r1.length).trim();
++  r2 = text.slice(r1.length).trim();
+   return r2 ? [r1, r2] : [r1];
+ }
+ 
