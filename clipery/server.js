@@ -25,7 +25,7 @@ const {
   processLinksToRankingVideo,
   downloadUrl,
 } = require("./lib/linkVideoEngine");
-const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor } = require("./lib/subtitles");
+const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor, normalizeHookPos } = require("./lib/subtitles");
 const auth = require("./lib/auth");
 const promo = require("./lib/promo");
 const oauth = require("./lib/oauth");
@@ -663,12 +663,14 @@ function readTrends(get) {
 
 // hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
 // + subtitle style + free text colour
+// + placement: top | middle
 function readHook(get) {
   return {
     enabled: wantSubtitles(get("hook")),
     mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
     style: normalizeHookStyle(get("hookStyle")),
     color: normalizeHookColor(get("hookColor")),
+    pos: normalizeHookPos(get("hookPos")),
   };
 }
 
@@ -1088,12 +1090,12 @@ const server = http.createServer(async (req, res) => {
       const dest = path.join(UPLOADS, `${jobId}${ext}`);
       fs.renameSync(filePart.path, dest);
       const genre = readGenre(get("genre"));
-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends, genre });
+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends, genre });
       const q = enqueue(dest, {
         userId: owner && owner.id,
         ...owner.planLimits,
         jobId, sourceName: orig, mode, subtitles, subStyle, genre,
-        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
+        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
       });
       return send(res, 202, {
         ok: true,
@@ -1134,7 +1136,7 @@ const server = http.createServer(async (req, res) => {
         subtitles,
         subStyle,
         hook: hookOpts.enabled,
-        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
+        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
         trends,
       });
       const q = enqueueItem({
@@ -1144,7 +1146,7 @@ const server = http.createServer(async (req, res) => {
           userId: owner && owner.id,
           ...owner.planLimits,
           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
-          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
+          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
         },
       });
       return send(res, 202, {
@@ -1191,7 +1193,7 @@ const server = http.createServer(async (req, res) => {
       fs.renameSync(filePart.path, dest);
       const meta = {
         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
-        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
+        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
         genre: readGenre(get("genre")),
         review: true, manual, editor: true,
       };
@@ -1442,7 +1444,7 @@ const server = http.createServer(async (req, res) => {
         subtitles,
         subStyle,
         hook: hookOpts.enabled,
-        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
+        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
         trends,
       });
       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
@@ -1458,7 +1460,7 @@ const server = http.createServer(async (req, res) => {
           subtitles,
           subStyle,
           hook: hookOpts.enabled,
-          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
+          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
           trends,
         },
       });
@@ -1557,7 +1559,7 @@ const server = http.createServer(async (req, res) => {
         subtitles,
         subStyle,
         hook: hookOptsUp.enabled,
-        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color,
+        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos,
         trends: trendsUp,
       });
       const q = enqueueItem({
@@ -1567,7 +1569,7 @@ const server = http.createServer(async (req, res) => {
           userId: owner && owner.id,
           ...owner.planLimits,
           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, trends: trendsUp,
+          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, trends: trendsUp,
         },
       });
       return send(res, 202, {

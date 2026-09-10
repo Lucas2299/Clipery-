@@ -72,7 +72,8 @@
     var m = $(prefix + "-hook-mode");
     var b = $(prefix + "-hook-style");
     var c = $(prefix + "-hook-color");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white" };
+    var p = $(prefix + "-hook-pos");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white", pos: p ? p.value : "top" };
   }
 
   /* Hook title style: click a card, the hidden input carries the choice. */
@@ -693,6 +694,7 @@
           fd.append("hookMode", longHook.mode);
           fd.append("hookStyle", longHook.style);
           fd.append("hookColor", longHook.color);
+          fd.append("hookPos", longHook.pos);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -713,6 +715,7 @@
               hookMode: longHook.mode,
               hookStyle: longHook.style,
               hookColor: longHook.color,
+              hookPos: longHook.pos,
             }),
           });
         }
@@ -938,6 +941,7 @@
           fd.append("hookMode", rankHook.mode);
           fd.append("hookStyle", rankHook.style);
           fd.append("hookColor", rankHook.color);
+          fd.append("hookPos", rankHook.pos);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -958,6 +962,7 @@
               hookMode: rankHook.mode,
               hookStyle: rankHook.style,
               hookColor: rankHook.color,
+              hookPos: rankHook.pos,
             }),
           });
         }

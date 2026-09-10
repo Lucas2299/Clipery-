@@ -282,14 +282,21 @@ function normalizeHookColor(v) {
   const t = String(v || "white").toLowerCase().trim();
   return SUB_COLORS.hasOwnProperty(t) ? t : "white";
 }
-/** Resolved hook look: fixed shout size, shared decoration + text colour. */
-function resolveHookLook(style, colorKey) {
-  const st = normalizeHookStyle(style);
-  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined };
+// Hook placement: top of frame (classic) or screen middle. MarginV is measured
+// from the top edge (Alignment 8), middle matches the caption middle safe zone.
+const HOOK_POSITIONS = { top: 72, middle: 303 };
+function normalizeHookPos(v) {
+  const t = String(v || "top").toLowerCase().trim();
+  return HOOK_POSITIONS.hasOwnProperty(t) ? t : "top";
 }
-function hookStyleLine(style, colorKey) {
-  const T = resolveHookLook(style, colorKey);
-  return `Style: Hook,DejaVu Sans,33,${T.color},${T.color},${T.deco},8,12,12,72,1`;
+/** Resolved hook look: fixed shout size, shared decoration + text colour. */
+function resolveHookLook(style, colorKey, pos) {
+  const st = normalizeHookStyle(style);
+  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined, marginV: HOOK_POSITIONS[normalizeHookPos(pos)] };
+}
+function hookStyleLine(style, colorKey, pos) {
+  const T = resolveHookLook(style, colorKey, pos);
+  return `Style: Hook,DejaVu Sans,33,${T.color},${T.color},${T.deco},8,12,12,${T.marginV},1`;
 }
 
 /**
@@ -368,7 +375,8 @@ function buildHook(words, clipDur, mode, trends, look) {
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
   const st = normalizeHookStyle(look && look.style);
   const col = normalizeHookColor(look && look.color);
-  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col };
+  const pos = normalizeHookPos(look && look.pos);
+  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos };
 }
 
 async function probeDuration(p) {
@@ -427,8 +435,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
-    // Hook title look: subtitle style + text colour.
-    hookStyleLine(hook && hook.style, hook && hook.color),
+    // Hook title look: subtitle style + text colour + placement.
+    hookStyleLine(hook && hook.style, hook && hook.color, hook && hook.pos),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -722,5 +730,6 @@ module.exports = {
   normalizeSubStyle,
   normalizeHookStyle,
   normalizeHookColor,
+  normalizeHookPos,
   HOOK_STYLES,
 };
