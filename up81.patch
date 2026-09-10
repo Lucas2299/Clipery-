@@ -1,0 +1,386 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index fa78b63..45ee506 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -1283,7 +1283,7 @@ async function processVideo(sourcePath, options = {}) {
+           subStyle: options.subStyle || null,
+           hook: !!options.hook,
+           hookMode: options.hookMode || "intro",
+-          hookBg: options.hookBg || "dark",
++          hookStyle: options.hookStyle || "boxdark",
+           hookColor: options.hookColor || "white",
+           trends: options.trends || [],
+           maxClips: clipBudget,
+@@ -1370,7 +1370,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+           ? {
+               clipDur: +(c.end - c.start).toFixed(2),
+               subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
+-              hook: clipHook ? { enabled: true, mode: options.hookMode, background: options.hookBg, color: options.hookColor } : null,
++              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor } : null,
+               trends: options.trends,
+               edit: c.edit || null,
+               layout: c.layout && c.layout !== "auto" ? c.layout : null,
+@@ -1581,7 +1581,7 @@ async function planManual(sourcePath, options = {}) {
+         subStyle: options.subStyle || null,
+         hook: false,
+         hookMode: "intro",
+-        hookBg: options.hookBg || "dark",
++        hookStyle: options.hookStyle || "boxdark",
+         hookColor: options.hookColor || "white",
+         trends: [],
+         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index e102fed..6cb5253 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -270,34 +270,26 @@ function trimHookTail(arr) {
+ }
+ 
+ /* ---------------- Hook title styles ---------------- */
+-// The hook title look = a background card + a free text colour (any of the
+-// nine caption colours). ASS colours are &HAABBGGRR. The card is BorderStyle 3
+-// (the card colour lives in `box`, `thick` = its padding). Light cards force
+-// a readable text colour — same idea as the caption box styles.
+-const HOOK_BACKGROUNDS = {
+-  dark:   { box: "&H78000000", thick: 5, force: null },          // translucent black strip
+-  black:  { box: "&H00000000", thick: 5, force: null },          // solid black card
+-  faint:  { box: "&H96000000", thick: 4, force: null },          // faint strip
+-  white:  { box: "&H00FFFFFF", thick: 5, force: "&H00000000" },  // solid white card, black text
+-  yellow: { box: "&H004CE7FF", thick: 5, force: "&H00000000" },  // solid yellow card, black text
+-  red:    { box: "&H003B3BFF", thick: 5, force: "&H00FFFFFF" },  // solid red card, white text
+-};
+-function normalizeHookBackground(v) {
+-  const t = String(v || "dark").toLowerCase().trim();
+-  return HOOK_BACKGROUNDS.hasOwnProperty(t) ? t : "dark";
++// Hook titles wear the SAME styles as the subtitle Styles tab: `style` picks
++// the decoration from the shared DECO table, `color` is any of the nine text
++// colours (light boxes force a readable colour, like captions do).
++const HOOK_STYLES = ["plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"];
++function normalizeHookStyle(v) {
++  const t = String(v || "boxdark").toLowerCase().trim();
++  return HOOK_STYLES.includes(t) ? t : "boxdark";
+ }
+ function normalizeHookColor(v) {
+   const t = String(v || "white").toLowerCase().trim();
+   return SUB_COLORS.hasOwnProperty(t) ? t : "white";
+ }
+-/** Resolved look: fixed shout size, card + readable text colour. */
+-function resolveHookLook(bg, colorKey) {
+-  const B = HOOK_BACKGROUNDS[normalizeHookBackground(bg)];
+-  return { size: 33, color: B.force || SUB_COLORS[normalizeHookColor(colorKey)], box: B.box, thick: B.thick, marginV: 72, rowChars: 18 };
++/** Resolved hook look: fixed shout size, shared decoration + text colour. */
++function resolveHookLook(style, colorKey) {
++  const st = normalizeHookStyle(style);
++  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined };
+ }
+-function hookStyleLine(bg, colorKey) {
+-  const T = resolveHookLook(bg, colorKey);
+-  return `Style: Hook,DejaVu Sans,${T.size},${T.color},${T.color},${T.box},&H00000000,1,0,0,0,100,100,0,0,3,${T.thick},0,8,12,12,${T.marginV},1`;
++function hookStyleLine(style, colorKey) {
++  const T = resolveHookLook(style, colorKey);
++  return `Style: Hook,DejaVu Sans,33,${T.color},${T.color},${T.deco},8,12,12,72,1`;
+ }
+ 
+ /**
+@@ -374,9 +366,9 @@ function buildHook(words, clipDur, mode, trends, look) {
+   if (!text) return null;
+   const dur = Math.max(clipDur || 0, 0.6);
+   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
+-  const bg = normalizeHookBackground(look && look.background);
++  const st = normalizeHookStyle(look && look.style);
+   const col = normalizeHookColor(look && look.color);
+-  return { text, rows: hookRows(text), start: 0.1, end, background: bg, color: col };
++  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col };
+ }
+ 
+ async function probeDuration(p) {
+@@ -435,8 +427,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     "[V4+ Styles]",
+     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
+-    // Hook title look: background card + text colour.
+-    hookStyleLine(hook && hook.background, hook && hook.color),
++    // Hook title look: subtitle style + text colour.
++    hookStyleLine(hook && hook.style, hook && hook.color),
+     "",
+     "[Events]",
+     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+@@ -446,7 +438,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+   if (hook && hook.rows && hook.rows.length) {
+     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
+     if (hookText) {
+-      const hl = resolveHookLook(hook.background, hook.color);
++      const hl = resolveHookLook(hook.style, hook.color);
+       events.push(
+         `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
+       );
+@@ -728,7 +720,7 @@ module.exports = {
+   buildHook,
+   pickHookText,
+   normalizeSubStyle,
+-  normalizeHookBackground,
++  normalizeHookStyle,
+   normalizeHookColor,
+-  HOOK_BACKGROUNDS,
++  HOOK_STYLES,
+ };
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 3e9de0a..207b18f 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -116,13 +116,6 @@
+       .sub-preview-frame.boxblack .sub-preview-cap{background:#000}
+       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
+       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
+-      .hk-cap{display:block;font-weight:800;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.02em;text-align:center;line-height:1.3;padding:0.15rem 0.2rem}
+-      .hk-dark .hk-cap{color:#fff;background:rgba(0,0,0,0.53)}
+-      .hk-black .hk-cap{color:#fff;background:#000}
+-      .hk-faint .hk-cap{color:#fff;background:rgba(0,0,0,0.41)}
+-      .hk-white .hk-cap{color:#000;background:#fff}
+-      .hk-yellow .hk-cap{color:#000;background:#FFE74C}
+-      .hk-red .hk-cap{color:#fff;background:#FF3B3B}
+       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
+     </style>
+   </head>
+@@ -339,9 +332,9 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
+-            <input type="hidden" id="long-hook-bg" value="dark" />
++            <input type="hidden" id="long-hook-style" value="boxdark" />
+             <div class="sub-cards" id="long-hook-cards">
+-              <button type="button" class="sub-card hk hk-dark sel" data-hookbg="dark"><span class="hk-cap">Hook title</span><span class="sc-name">⬛ Dark</span></button>              <button type="button" class="sub-card hk hk-black" data-hookbg="black"><span class="hk-cap">Hook title</span><span class="sc-name">🖤 Black</span></button>              <button type="button" class="sub-card hk hk-faint" data-hookbg="faint"><span class="hk-cap">Hook title</span><span class="sc-name">🌫️ Faint</span></button>              <button type="button" class="sub-card hk hk-white" data-hookbg="white"><span class="hk-cap">Hook title</span><span class="sc-name">⬜ White</span></button>              <button type="button" class="sub-card hk hk-yellow" data-hookbg="yellow"><span class="hk-cap">Hook title</span><span class="sc-name">🟨 Yellow</span></button>              <button type="button" class="sub-card hk hk-red" data-hookbg="red"><span class="hk-cap">Hook title</span><span class="sc-name">🟥 Red</span></button>
++              <button type="button" class="sub-card sc-full d-plain" data-hookstyle="plain"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Plain</span></button>              <button type="button" class="sub-card sc-full d-outline" data-hookstyle="outlined"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Outline</span></button>              <button type="button" class="sub-card sc-full d-thick" data-hookstyle="thick"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Thick</span></button>              <button type="button" class="sub-card sc-full d-shadow" data-hookstyle="shadow"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Shadow</span></button>              <button type="button" class="sub-card sc-full sc-bdim sel" data-hookstyle="boxdark"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Dim box</span></button>              <button type="button" class="sub-card sc-full sc-blight" data-hookstyle="boxlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Light box</span></button>              <button type="button" class="sub-card sc-bwhite" data-hookstyle="boxwhite"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">White box</span></button>              <button type="button" class="sub-card sc-bred" data-hookstyle="boxred"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Red box</span></button>              <button type="button" class="sub-card sc-bblack" data-hookstyle="boxblack"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Black box</span></button>
+             </div>
+             <label>Text color
+               <select id="long-hook-color">
+@@ -534,9 +527,9 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
+-            <input type="hidden" id="rank-hook-bg" value="dark" />
++            <input type="hidden" id="rank-hook-style" value="boxdark" />
+             <div class="sub-cards" id="rank-hook-cards">
+-              <button type="button" class="sub-card hk hk-dark sel" data-hookbg="dark"><span class="hk-cap">Hook title</span><span class="sc-name">⬛ Dark</span></button>              <button type="button" class="sub-card hk hk-black" data-hookbg="black"><span class="hk-cap">Hook title</span><span class="sc-name">🖤 Black</span></button>              <button type="button" class="sub-card hk hk-faint" data-hookbg="faint"><span class="hk-cap">Hook title</span><span class="sc-name">🌫️ Faint</span></button>              <button type="button" class="sub-card hk hk-white" data-hookbg="white"><span class="hk-cap">Hook title</span><span class="sc-name">⬜ White</span></button>              <button type="button" class="sub-card hk hk-yellow" data-hookbg="yellow"><span class="hk-cap">Hook title</span><span class="sc-name">🟨 Yellow</span></button>              <button type="button" class="sub-card hk hk-red" data-hookbg="red"><span class="hk-cap">Hook title</span><span class="sc-name">🟥 Red</span></button>
++              <button type="button" class="sub-card sc-full d-plain" data-hookstyle="plain"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Plain</span></button>              <button type="button" class="sub-card sc-full d-outline" data-hookstyle="outlined"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Outline</span></button>              <button type="button" class="sub-card sc-full d-thick" data-hookstyle="thick"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Thick</span></button>              <button type="button" class="sub-card sc-full d-shadow" data-hookstyle="shadow"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Shadow</span></button>              <button type="button" class="sub-card sc-full sc-bdim sel" data-hookstyle="boxdark"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Dim box</span></button>              <button type="button" class="sub-card sc-full sc-blight" data-hookstyle="boxlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Light box</span></button>              <button type="button" class="sub-card sc-bwhite" data-hookstyle="boxwhite"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">White box</span></button>              <button type="button" class="sub-card sc-bred" data-hookstyle="boxred"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Red box</span></button>              <button type="button" class="sub-card sc-bblack" data-hookstyle="boxblack"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Black box</span></button>
+             </div>
+             <label>Text color
+               <select id="rank-hook-color">
+@@ -621,7 +614,7 @@
+       document.getElementById("year").textContent = new Date().getFullYear();
+     </script>
+     <script src="/shared.js?v=4"></script>
+-    <script src="/studio.js?v=79"></script>
++    <script src="/studio.js?v=81"></script>
+     <script src="/editor.js?v=1"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index e1b3b8a..eb6ff5e 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -70,22 +70,22 @@
+   function collectHook(prefix) {
+     var t = $(prefix + "-hook");
+     var m = $(prefix + "-hook-mode");
+-    var b = $(prefix + "-hook-bg");
++    var b = $(prefix + "-hook-style");
+     var c = $(prefix + "-hook-color");
+-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", background: b ? b.value : "dark", color: c ? c.value : "white" };
++    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white" };
+   }
+ 
+-  /* Hook title background: click a card, the hidden input carries the choice. */
+-  function wireHookBgCards(prefix) {
++  /* Hook title style: click a card, the hidden input carries the choice. */
++  function wireHookStyleCards(prefix) {
+     var grid = $(prefix + "-hook-cards");
+-    var hid = $(prefix + "-hook-bg");
++    var hid = $(prefix + "-hook-style");
+     if (!grid || !hid) return;
+     var cards = grid.querySelectorAll(".sub-card");
+     for (var i = 0; i < cards.length; i++) {
+       cards[i].addEventListener("click", function (ev) {
+-        var bg = ev.currentTarget.getAttribute("data-hookbg");
+-        if (!bg) return;
+-        hid.value = bg;
++        var st = ev.currentTarget.getAttribute("data-hookstyle");
++        if (!st) return;
++        hid.value = st;
+         for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
+         ev.currentTarget.classList.add("sel");
+       });
+@@ -123,8 +123,29 @@
+   }
+   wireHookToggle("long");
+   wireHookToggle("rank");
+-  wireHookBgCards("long");
+-  wireHookBgCards("rank");
++  wireHookStyleCards("long");
++  wireHookStyleCards("rank");
++  wireHookColor("long");
++  wireHookColor("rank");
++
++  /* Hook card samples wear the chosen text colour (fixed-colour boxes excepted). */
++  function wireHookColor(prefix) {
++    var sel = $(prefix + "-hook-color");
++    var grid = $(prefix + "-hook-cards");
++    if (!sel || !grid) return;
++    var COLORS = { white: "#ffffff", yellow: "#FFE74C", pink: "#FF4D6D", orange: "#FF8A4C",
++      red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF" };
++    sel.addEventListener("change", function () {
++      var col = COLORS[sel.value] || "#ffffff";
++      var cards = grid.querySelectorAll(".sub-card");
++      for (var i = 0; i < cards.length; i++) {
++        var cls = cards[i].className;
++        var fixed = /sc-bwhite/.test(cls) ? "#17171B" : /sc-bred|sc-bblack/.test(cls) ? "#ffffff" : col;
++        var ws = cards[i].querySelectorAll(".sc-cap .w");
++        for (var j = 0; j < ws.length; j++) ws[j].style.color = fixed;
++      }
++    });
++  }
+ 
+   // The little caption preview box is gone: the style cards already show
+   // the real look, and the box only took space.
+@@ -670,7 +691,7 @@
+           fd.append("trends", longTrends);
+           fd.append("hook", longHook.enabled ? "1" : "0");
+           fd.append("hookMode", longHook.mode);
+-          fd.append("hookBg", longHook.background);
++          fd.append("hookStyle", longHook.style);
+           fd.append("hookColor", longHook.color);
+           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
+         } else {
+@@ -690,7 +711,7 @@
+               trends: longTrends,
+               hook: longHook.enabled,
+               hookMode: longHook.mode,
+-              hookBg: longHook.background,
++              hookStyle: longHook.style,
+               hookColor: longHook.color,
+             }),
+           });
+@@ -915,7 +936,7 @@
+           fd.append("trends", rankTrends);
+           fd.append("hook", rankHook.enabled ? "1" : "0");
+           fd.append("hookMode", rankHook.mode);
+-          fd.append("hookBg", rankHook.background);
++          fd.append("hookStyle", rankHook.style);
+           fd.append("hookColor", rankHook.color);
+           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
+         } else {
+@@ -935,7 +956,7 @@
+               trends: rankTrends,
+               hook: rankHook.enabled,
+               hookMode: rankHook.mode,
+-              hookBg: rankHook.background,
++              hookStyle: rankHook.style,
+               hookColor: rankHook.color,
+             }),
+           });
+diff --git a/clipery/server.js b/clipery/server.js
+index 757bdbe..e3efeaa 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -25,7 +25,7 @@ const {
+   processLinksToRankingVideo,
+   downloadUrl,
+ } = require("./lib/linkVideoEngine");
+-const { normalizeSubStyle, normalizeHookBackground, normalizeHookColor } = require("./lib/subtitles");
++const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor } = require("./lib/subtitles");
+ const auth = require("./lib/auth");
+ const promo = require("./lib/promo");
+ const oauth = require("./lib/oauth");
+@@ -662,12 +662,12 @@ function readTrends(get) {
+ }
+ 
+ // hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
+-// + background card style + free text colour
++// + subtitle style + free text colour
+ function readHook(get) {
+   return {
+     enabled: wantSubtitles(get("hook")),
+     mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
+-    background: normalizeHookBackground(get("hookBg")),
++    style: normalizeHookStyle(get("hookStyle")),
+     color: normalizeHookColor(get("hookColor")),
+   };
+ }
+@@ -1088,12 +1088,12 @@ const server = http.createServer(async (req, res) => {
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.renameSync(filePart.path, dest);
+       const genre = readGenre(get("genre"));
+-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends, genre });
++      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends, genre });
+       const q = enqueue(dest, {
+         userId: owner && owner.id,
+         ...owner.planLimits,
+         jobId, sourceName: orig, mode, subtitles, subStyle, genre,
+-        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends,
++        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
+       });
+       return send(res, 202, {
+         ok: true,
+@@ -1134,7 +1134,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color,
++        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
+         trends,
+       });
+       const q = enqueueItem({
+@@ -1144,7 +1144,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
+-          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends,
++          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
+         },
+       });
+       return send(res, 202, {
+@@ -1191,7 +1191,7 @@ const server = http.createServer(async (req, res) => {
+       fs.renameSync(filePart.path, dest);
+       const meta = {
+         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
+-        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color, trends,
++        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
+         genre: readGenre(get("genre")),
+         review: true, manual, editor: true,
+       };
+@@ -1442,7 +1442,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color,
++        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
+         trends,
+       });
+       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
+@@ -1458,7 +1458,7 @@ const server = http.createServer(async (req, res) => {
+           subtitles,
+           subStyle,
+           hook: hookOpts.enabled,
+-          hookMode: hookOpts.mode, hookBg: hookOpts.background, hookColor: hookOpts.color,
++          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
+           trends,
+         },
+       });
+@@ -1557,7 +1557,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOptsUp.enabled,
+-        hookMode: hookOptsUp.mode, hookBg: hookOptsUp.background, hookColor: hookOptsUp.color,
++        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color,
+         trends: trendsUp,
+       });
+       const q = enqueueItem({
+@@ -1567,7 +1567,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookBg: hookOptsUp.background, hookColor: hookOptsUp.color, trends: trendsUp,
++          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, trends: trendsUp,
+         },
+       });
+       return send(res, 202, {
