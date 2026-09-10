@@ -269,6 +269,28 @@ function trimHookTail(arr) {
   return arr;
 }
 
+/* ---------------- Hook title templates ---------------- */
+// The hook title look. The template owns colour, size and decoration (like
+// caption templates do) — ASS colours are &HAABBGGRR. `box: 3` draws a strip
+// behind the text (the box colour lives in `outline`), `rowChars` keeps big
+// shouty fonts inside the 384-unit frame, `inline` adds extra ASS tags.
+const HOOK_TEMPLATES = {
+  classic: { size: 33, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3, shadow: 0, marginV: 78, rowChars: 18, inline: "" },
+  beast:   { size: 38, color: "&H004CE7FF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 4.5, shadow: 0, marginV: 66, rowChars: 15, inline: "" },
+  news:    { size: 26, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 6, shadow: 0, marginV: 54, rowChars: 22, inline: "" },
+  neon:    { size: 34, color: "&H00FFFFFF", outline: "&H006D4DFF", back: "&H00000000", box: 1, thick: 2, shadow: 0, marginV: 72, rowChars: 17, inline: "\\be2" },
+  minimal: { size: 26, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 1.5, shadow: 1, marginV: 86, rowChars: 22, inline: "" },
+  fire:    { size: 36, color: "&H004C8AFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3.5, shadow: 0, marginV: 68, rowChars: 16, inline: "" },
+};
+function normalizeHookTemplate(v) {
+  const t = String(v || "classic").toLowerCase().trim();
+  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "classic";
+}
+function hookStyleLine(template) {
+  const T = HOOK_TEMPLATES[normalizeHookTemplate(template)];
+  return `Style: Hook,DejaVu Sans,${T.size},${T.color},${T.color},${T.outline},${T.back},1,0,0,0,100,100,0,0,${T.box},${T.thick},${T.shadow},8,12,12,${T.marginV},1`;
+}
+
 /**
  * Pick the punchiest phrase from the first seconds of a clip as its HOOK.
  * Heuristic: split early speech into phrases at pauses, score for power words,
@@ -311,13 +333,14 @@ function pickHookText(words, extraPower) {
 }
 
 /** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
-function hookRows(text) {
-  if (text.length <= 18) return [text];
+function hookRows(text, maxChars) {
+  const MC = Math.max(10, Number(maxChars) || 18);
+  if (text.length <= MC) return [text];
   const ws = text.split(" ");
   let r1 = "";
   for (const w of ws) {
     const t = r1 ? r1 + " " + w : w;
-    if (t.length > 18 && r1) break;
+    if (t.length > MC && r1) break;
     r1 = t;
   }
   const r2 = text.slice(r1.length).trim();
@@ -325,13 +348,14 @@ function hookRows(text) {
 }
 
 /** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
-function buildHook(words, clipDur, mode, trends) {
+function buildHook(words, clipDur, mode, trends, template) {
   const extraPower = Array.isArray(trends) && trends.length ? new Set(trends) : null;
   const text = pickHookText(words, extraPower);
   if (!text) return null;
+  const tpl = normalizeHookTemplate(template);
   const dur = Math.max(clipDur || 0, 0.6);
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
-  return { text, rows: hookRows(text), start: 0.1, end };
+  return { text, rows: hookRows(text, HOOK_TEMPLATES[tpl].rowChars), start: 0.1, end, template: tpl };
 }
 
 async function probeDuration(p) {
@@ -390,8 +414,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
-    // Hook title: big bold white with a strong outline, top of frame
-    "Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1",
+    // Hook title look comes from its template (classic = the original white shout).
+    hookStyleLine(hook && hook.template),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -401,9 +425,9 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   if (hook && hook.rows && hook.rows.length) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
-      const col = SUB_COLORS[s.color];
+      const ht = HOOK_TEMPLATES[normalizeHookTemplate(hook.template)];
       events.push(
-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${col}}${hookText}`
+        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${ht.color}${ht.inline}}${hookText}`
       );
     }
   }
@@ -564,7 +588,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
   let hook = null;
   if (wantHook && words.length) {
     const dur = opts.clipDur || (await probeDuration(videoPath));
-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook && opts.hook.template);
   }
 
   if (!pages.length && !hook) {
@@ -648,7 +672,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
 
   let hook = null;
   if (wantHook) {
-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook && opts.hook.template);
   }
 
   if (!pages.length && !hook) return null;
@@ -683,4 +707,6 @@ module.exports = {
   buildHook,
   pickHookText,
   normalizeSubStyle,
+  normalizeHookTemplate,
+  HOOK_TEMPLATES,
 };

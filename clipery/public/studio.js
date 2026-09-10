@@ -70,7 +70,25 @@
   function collectHook(prefix) {
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro" };
+    var h = $(prefix + "-hook-tpl");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", template: h ? h.value : "classic" };
+  }
+
+  /* Hook title templates: click a card, the hidden input carries the choice. */
+  function wireHookCards(prefix) {
+    var grid = $(prefix + "-hook-cards");
+    var hid = $(prefix + "-hook-tpl");
+    if (!grid || !hid) return;
+    var cards = grid.querySelectorAll(".sub-card");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].addEventListener("click", function (ev) {
+        var tpl = ev.currentTarget.getAttribute("data-hooktpl");
+        if (!tpl) return;
+        hid.value = tpl;
+        for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
+        ev.currentTarget.classList.add("sel");
+      });
+    }
   }
 
   // Hook title and subtitles are either/or: both at once fight for the
@@ -104,6 +122,8 @@
   }
   wireHookToggle("long");
   wireHookToggle("rank");
+  wireHookCards("long");
+  wireHookCards("rank");
 
   // The little caption preview box is gone: the style cards already show
   // the real look, and the box only took space.
@@ -649,6 +669,7 @@
           fd.append("trends", longTrends);
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
+          fd.append("hookTpl", longHook.template);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -667,6 +688,7 @@
               trends: longTrends,
               hook: longHook.enabled,
               hookMode: longHook.mode,
+              hookTpl: longHook.template,
             }),
           });
         }
@@ -890,6 +912,7 @@
           fd.append("trends", rankTrends);
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
+          fd.append("hookTpl", rankHook.template);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -908,6 +931,7 @@
               trends: rankTrends,
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
+              hookTpl: rankHook.template,
             }),
           });
         }
