@@ -1,0 +1,49 @@
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index 9027552..46bd6aa 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -275,12 +275,14 @@ function trimHookTail(arr) {
+ // behind the text (the box colour lives in `outline`), `rowChars` keeps big
+ // shouty fonts inside the 384-unit frame, `inline` adds extra ASS tags.
+ const HOOK_TEMPLATES = {
+-  classic: { size: 33, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3, shadow: 0, marginV: 78, rowChars: 18, inline: "" },
+-  beast:   { size: 38, color: "&H004CE7FF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 4.5, shadow: 0, marginV: 66, rowChars: 15, inline: "" },
++  // Every hook is a title card: a background strip behind the text (box: 3,
++  // the strip colour lives in `outline`, `thick` = its padding).
++  classic: { size: 33, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 78, rowChars: 18, inline: "" },
++  beast:   { size: 38, color: "&H00000000", outline: "&H004CE7FF", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 66, rowChars: 15, inline: "" },
+   news:    { size: 26, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 6, shadow: 0, marginV: 54, rowChars: 22, inline: "" },
+-  neon:    { size: 34, color: "&H00FFFFFF", outline: "&H006D4DFF", back: "&H00000000", box: 1, thick: 2, shadow: 0, marginV: 72, rowChars: 17, inline: "\\be2" },
+-  minimal: { size: 26, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 1.5, shadow: 1, marginV: 86, rowChars: 22, inline: "" },
+-  fire:    { size: 36, color: "&H004C8AFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3.5, shadow: 0, marginV: 68, rowChars: 16, inline: "" },
++  neon:    { size: 34, color: "&H006D4DFF", outline: "&H40000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 72, rowChars: 17, inline: "\\be2" },
++  minimal: { size: 26, color: "&H00FFFFFF", outline: "&H96000000", back: "&H00000000", box: 3, thick: 4, shadow: 0, marginV: 86, rowChars: 22, inline: "" },
++  fire:    { size: 36, color: "&H004C8AFF", outline: "&H00000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 68, rowChars: 16, inline: "" },
+ };
+ function normalizeHookTemplate(v) {
+   const t = String(v || "classic").toLowerCase().trim();
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index da274b7..a84e74c 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -116,13 +116,13 @@
+       .sub-preview-frame.boxblack .sub-preview-cap{background:#000}
+       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
+       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
+-      .hk-cap{display:block;font-weight:800;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.02em;text-align:center;line-height:1.3}
+-      .hk-classic .hk-cap{color:#fff;text-shadow:-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000}
+-      .hk-beast .hk-cap{color:#FFE74C;font-size:0.72rem;text-shadow:-2px 0 0 #000,2px 0 0 #000,0 -2px 0 #000,0 2px 0 #000}
+-      .hk-news .hk-cap{color:#fff;background:rgba(0,0,0,0.65);padding:0.15rem 0.3rem;font-size:0.55rem}
+-      .hk-neon .hk-cap{color:#fff;text-shadow:0 0 6px #FF4D6D,0 0 2px #FF4D6D,-1px 0 0 #FF4D6D,1px 0 0 #FF4D6D}
+-      .hk-minimal .hk-cap{color:#fff;font-size:0.55rem;font-weight:600;text-transform:none;text-shadow:0 1px 2px rgba(0,0,0,0.6)}
+-      .hk-fire .hk-cap{color:#FF8A4C;font-size:0.68rem;text-shadow:-1px 0 0 #000,1px 0 0 #000,0 -1px 0 #000,0 1px 0 #000}
++      .hk-cap{display:block;font-weight:800;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.02em;text-align:center;line-height:1.3;padding:0.15rem 0.2rem}
++      .hk-classic .hk-cap{color:#fff;background:rgba(0,0,0,0.53)}
++      .hk-beast .hk-cap{color:#000;background:#FFE74C;font-size:0.72rem}
++      .hk-news .hk-cap{color:#fff;background:rgba(0,0,0,0.53);font-size:0.55rem}
++      .hk-neon .hk-cap{color:#FF4D6D;background:rgba(0,0,0,0.75);text-shadow:0 0 6px #FF4D6D,0 0 2px #FF4D6D}
++      .hk-minimal .hk-cap{color:#fff;background:rgba(0,0,0,0.41);font-size:0.55rem;font-weight:600;text-transform:none}
++      .hk-fire .hk-cap{color:#FF8A4C;background:#000;font-size:0.68rem}
+       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
+     </style>
+   </head>
