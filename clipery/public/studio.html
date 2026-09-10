@@ -117,12 +117,12 @@
       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
       .hk-cap{display:block;font-weight:800;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.02em;text-align:center;line-height:1.3;padding:0.15rem 0.2rem}
-      .hk-classic .hk-cap{color:#fff;background:rgba(0,0,0,0.53)}
-      .hk-beast .hk-cap{color:#000;background:#FFE74C;font-size:0.72rem}
-      .hk-news .hk-cap{color:#fff;background:rgba(0,0,0,0.53);font-size:0.55rem}
-      .hk-neon .hk-cap{color:#FF4D6D;background:rgba(0,0,0,0.75);text-shadow:0 0 6px #FF4D6D,0 0 2px #FF4D6D}
-      .hk-minimal .hk-cap{color:#fff;background:rgba(0,0,0,0.41);font-size:0.55rem;font-weight:600;text-transform:none}
-      .hk-fire .hk-cap{color:#FF8A4C;background:#000;font-size:0.68rem}
+      .hk-dark .hk-cap{color:#fff;background:rgba(0,0,0,0.53)}
+      .hk-black .hk-cap{color:#fff;background:#000}
+      .hk-faint .hk-cap{color:#fff;background:rgba(0,0,0,0.41)}
+      .hk-white .hk-cap{color:#000;background:#fff}
+      .hk-yellow .hk-cap{color:#000;background:#FFE74C}
+      .hk-red .hk-cap{color:#fff;background:#FF3B3B}
       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
     </style>
   </head>
@@ -339,10 +339,23 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
-            <input type="hidden" id="long-hook-tpl" value="classic" />
+            <input type="hidden" id="long-hook-bg" value="dark" />
             <div class="sub-cards" id="long-hook-cards">
-              <button type="button" class="sub-card hk hk-classic sel" data-hooktpl="classic"><span class="hk-cap">Hook title</span><span class="sc-name">⭐ Classic</span></button>              <button type="button" class="sub-card hk hk-beast" data-hooktpl="beast"><span class="hk-cap">Hook title</span><span class="sc-name">💥 Beast</span></button>              <button type="button" class="sub-card hk hk-news" data-hooktpl="news"><span class="hk-cap">Hook title</span><span class="sc-name">📰 News</span></button>              <button type="button" class="sub-card hk hk-neon" data-hooktpl="neon"><span class="hk-cap">Hook title</span><span class="sc-name">💡 Neon</span></button>              <button type="button" class="sub-card hk hk-minimal" data-hooktpl="minimal"><span class="hk-cap">Hook title</span><span class="sc-name">🤍 Minimal</span></button>              <button type="button" class="sub-card hk hk-fire" data-hooktpl="fire"><span class="hk-cap">Hook title</span><span class="sc-name">🔥 Fire</span></button>
+              <button type="button" class="sub-card hk hk-dark sel" data-hookbg="dark"><span class="hk-cap">Hook title</span><span class="sc-name">⬛ Dark</span></button>              <button type="button" class="sub-card hk hk-black" data-hookbg="black"><span class="hk-cap">Hook title</span><span class="sc-name">🖤 Black</span></button>              <button type="button" class="sub-card hk hk-faint" data-hookbg="faint"><span class="hk-cap">Hook title</span><span class="sc-name">🌫️ Faint</span></button>              <button type="button" class="sub-card hk hk-white" data-hookbg="white"><span class="hk-cap">Hook title</span><span class="sc-name">⬜ White</span></button>              <button type="button" class="sub-card hk hk-yellow" data-hookbg="yellow"><span class="hk-cap">Hook title</span><span class="sc-name">🟨 Yellow</span></button>              <button type="button" class="sub-card hk hk-red" data-hookbg="red"><span class="hk-cap">Hook title</span><span class="sc-name">🟥 Red</span></button>
             </div>
+            <label>Text color
+              <select id="long-hook-color">
+                <option value="white" selected>White</option>
+                <option value="yellow">Yellow</option>
+                <option value="pink">Clipery pink</option>
+                <option value="orange">Orange</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="cyan">Cyan</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+              </select>
+            </label>
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
               <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
@@ -521,10 +534,23 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
-            <input type="hidden" id="rank-hook-tpl" value="classic" />
+            <input type="hidden" id="rank-hook-bg" value="dark" />
             <div class="sub-cards" id="rank-hook-cards">
-              <button type="button" class="sub-card hk hk-classic sel" data-hooktpl="classic"><span class="hk-cap">Hook title</span><span class="sc-name">⭐ Classic</span></button>              <button type="button" class="sub-card hk hk-beast" data-hooktpl="beast"><span class="hk-cap">Hook title</span><span class="sc-name">💥 Beast</span></button>              <button type="button" class="sub-card hk hk-news" data-hooktpl="news"><span class="hk-cap">Hook title</span><span class="sc-name">📰 News</span></button>              <button type="button" class="sub-card hk hk-neon" data-hooktpl="neon"><span class="hk-cap">Hook title</span><span class="sc-name">💡 Neon</span></button>              <button type="button" class="sub-card hk hk-minimal" data-hooktpl="minimal"><span class="hk-cap">Hook title</span><span class="sc-name">🤍 Minimal</span></button>              <button type="button" class="sub-card hk hk-fire" data-hooktpl="fire"><span class="hk-cap">Hook title</span><span class="sc-name">🔥 Fire</span></button>
+              <button type="button" class="sub-card hk hk-dark sel" data-hookbg="dark"><span class="hk-cap">Hook title</span><span class="sc-name">⬛ Dark</span></button>              <button type="button" class="sub-card hk hk-black" data-hookbg="black"><span class="hk-cap">Hook title</span><span class="sc-name">🖤 Black</span></button>              <button type="button" class="sub-card hk hk-faint" data-hookbg="faint"><span class="hk-cap">Hook title</span><span class="sc-name">🌫️ Faint</span></button>              <button type="button" class="sub-card hk hk-white" data-hookbg="white"><span class="hk-cap">Hook title</span><span class="sc-name">⬜ White</span></button>              <button type="button" class="sub-card hk hk-yellow" data-hookbg="yellow"><span class="hk-cap">Hook title</span><span class="sc-name">🟨 Yellow</span></button>              <button type="button" class="sub-card hk hk-red" data-hookbg="red"><span class="hk-cap">Hook title</span><span class="sc-name">🟥 Red</span></button>
             </div>
+            <label>Text color
+              <select id="rank-hook-color">
+                <option value="white" selected>White</option>
+                <option value="yellow">Yellow</option>
+                <option value="pink">Clipery pink</option>
+                <option value="orange">Orange</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="cyan">Cyan</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+              </select>
+            </label>
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
               <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
@@ -595,7 +621,7 @@
       document.getElementById("year").textContent = new Date().getFullYear();
     </script>
     <script src="/shared.js?v=4"></script>
-    <script src="/studio.js?v=77"></script>
+    <script src="/studio.js?v=79"></script>
     <script src="/editor.js?v=1"></script>
   </body>
 </html>

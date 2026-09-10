@@ -70,21 +70,22 @@
   function collectHook(prefix) {
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
-    var h = $(prefix + "-hook-tpl");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", template: h ? h.value : "classic" };
+    var b = $(prefix + "-hook-bg");
+    var c = $(prefix + "-hook-color");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", background: b ? b.value : "dark", color: c ? c.value : "white" };
   }
 
-  /* Hook title templates: click a card, the hidden input carries the choice. */
-  function wireHookCards(prefix) {
+  /* Hook title background: click a card, the hidden input carries the choice. */
+  function wireHookBgCards(prefix) {
     var grid = $(prefix + "-hook-cards");
-    var hid = $(prefix + "-hook-tpl");
+    var hid = $(prefix + "-hook-bg");
     if (!grid || !hid) return;
     var cards = grid.querySelectorAll(".sub-card");
     for (var i = 0; i < cards.length; i++) {
       cards[i].addEventListener("click", function (ev) {
-        var tpl = ev.currentTarget.getAttribute("data-hooktpl");
-        if (!tpl) return;
-        hid.value = tpl;
+        var bg = ev.currentTarget.getAttribute("data-hookbg");
+        if (!bg) return;
+        hid.value = bg;
         for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
         ev.currentTarget.classList.add("sel");
       });
@@ -122,8 +123,8 @@
   }
   wireHookToggle("long");
   wireHookToggle("rank");
-  wireHookCards("long");
-  wireHookCards("rank");
+  wireHookBgCards("long");
+  wireHookBgCards("rank");
 
   // The little caption preview box is gone: the style cards already show
   // the real look, and the box only took space.
@@ -669,7 +670,8 @@
           fd.append("trends", longTrends);
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
-          fd.append("hookTpl", longHook.template);
+          fd.append("hookBg", longHook.background);
+          fd.append("hookColor", longHook.color);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -688,7 +690,8 @@
               trends: longTrends,
               hook: longHook.enabled,
               hookMode: longHook.mode,
-              hookTpl: longHook.template,
+              hookBg: longHook.background,
+              hookColor: longHook.color,
             }),
           });
         }
@@ -912,7 +915,8 @@
           fd.append("trends", rankTrends);
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
-          fd.append("hookTpl", rankHook.template);
+          fd.append("hookBg", rankHook.background);
+          fd.append("hookColor", rankHook.color);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -931,7 +935,8 @@
               trends: rankTrends,
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
-              hookTpl: rankHook.template,
+              hookBg: rankHook.background,
+              hookColor: rankHook.color,
             }),
           });
         }
