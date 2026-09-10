@@ -270,34 +270,26 @@ function trimHookTail(arr) {
 }
 
 /* ---------------- Hook title styles ---------------- */
-// The hook title look = a background card + a free text colour (any of the
-// nine caption colours). ASS colours are &HAABBGGRR. The card is BorderStyle 3
-// (the card colour lives in `box`, `thick` = its padding). Light cards force
-// a readable text colour — same idea as the caption box styles.
-const HOOK_BACKGROUNDS = {
-  dark:   { box: "&H78000000", thick: 5, force: null },          // translucent black strip
-  black:  { box: "&H00000000", thick: 5, force: null },          // solid black card
-  faint:  { box: "&H96000000", thick: 4, force: null },          // faint strip
-  white:  { box: "&H00FFFFFF", thick: 5, force: "&H00000000" },  // solid white card, black text
-  yellow: { box: "&H004CE7FF", thick: 5, force: "&H00000000" },  // solid yellow card, black text
-  red:    { box: "&H003B3BFF", thick: 5, force: "&H00FFFFFF" },  // solid red card, white text
-};
-function normalizeHookBackground(v) {
-  const t = String(v || "dark").toLowerCase().trim();
-  return HOOK_BACKGROUNDS.hasOwnProperty(t) ? t : "dark";
+// Hook titles wear the SAME styles as the subtitle Styles tab: `style` picks
+// the decoration from the shared DECO table, `color` is any of the nine text
+// colours (light boxes force a readable colour, like captions do).
+const HOOK_STYLES = ["plain", "outlined", "thick", "shadow", "boxdark", "boxlight", "boxwhite", "boxred", "boxblack"];
+function normalizeHookStyle(v) {
+  const t = String(v || "boxdark").toLowerCase().trim();
+  return HOOK_STYLES.includes(t) ? t : "boxdark";
 }
 function normalizeHookColor(v) {
   const t = String(v || "white").toLowerCase().trim();
   return SUB_COLORS.hasOwnProperty(t) ? t : "white";
 }
-/** Resolved look: fixed shout size, card + readable text colour. */
-function resolveHookLook(bg, colorKey) {
-  const B = HOOK_BACKGROUNDS[normalizeHookBackground(bg)];
-  return { size: 33, color: B.force || SUB_COLORS[normalizeHookColor(colorKey)], box: B.box, thick: B.thick, marginV: 72, rowChars: 18 };
+/** Resolved hook look: fixed shout size, shared decoration + text colour. */
+function resolveHookLook(style, colorKey) {
+  const st = normalizeHookStyle(style);
+  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined };
 }
-function hookStyleLine(bg, colorKey) {
-  const T = resolveHookLook(bg, colorKey);
-  return `Style: Hook,DejaVu Sans,${T.size},${T.color},${T.color},${T.box},&H00000000,1,0,0,0,100,100,0,0,3,${T.thick},0,8,12,12,${T.marginV},1`;
+function hookStyleLine(style, colorKey) {
+  const T = resolveHookLook(style, colorKey);
+  return `Style: Hook,DejaVu Sans,33,${T.color},${T.color},${T.deco},8,12,12,72,1`;
 }
 
 /**
@@ -374,9 +366,9 @@ function buildHook(words, clipDur, mode, trends, look) {
   if (!text) return null;
   const dur = Math.max(clipDur || 0, 0.6);
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
-  const bg = normalizeHookBackground(look && look.background);
+  const st = normalizeHookStyle(look && look.style);
   const col = normalizeHookColor(look && look.color);
-  return { text, rows: hookRows(text), start: 0.1, end, background: bg, color: col };
+  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col };
 }
 
 async function probeDuration(p) {
@@ -435,8 +427,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
-    // Hook title look: background card + text colour.
-    hookStyleLine(hook && hook.background, hook && hook.color),
+    // Hook title look: subtitle style + text colour.
+    hookStyleLine(hook && hook.style, hook && hook.color),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -446,7 +438,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   if (hook && hook.rows && hook.rows.length) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
-      const hl = resolveHookLook(hook.background, hook.color);
+      const hl = resolveHookLook(hook.style, hook.color);
       events.push(
         `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
       );
@@ -728,7 +720,7 @@ module.exports = {
   buildHook,
   pickHookText,
   normalizeSubStyle,
-  normalizeHookBackground,
+  normalizeHookStyle,
   normalizeHookColor,
-  HOOK_BACKGROUNDS,
+  HOOK_STYLES,
 };

@@ -70,22 +70,22 @@
   function collectHook(prefix) {
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
-    var b = $(prefix + "-hook-bg");
+    var b = $(prefix + "-hook-style");
     var c = $(prefix + "-hook-color");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", background: b ? b.value : "dark", color: c ? c.value : "white" };
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white" };
   }
 
-  /* Hook title background: click a card, the hidden input carries the choice. */
-  function wireHookBgCards(prefix) {
+  /* Hook title style: click a card, the hidden input carries the choice. */
+  function wireHookStyleCards(prefix) {
     var grid = $(prefix + "-hook-cards");
-    var hid = $(prefix + "-hook-bg");
+    var hid = $(prefix + "-hook-style");
     if (!grid || !hid) return;
     var cards = grid.querySelectorAll(".sub-card");
     for (var i = 0; i < cards.length; i++) {
       cards[i].addEventListener("click", function (ev) {
-        var bg = ev.currentTarget.getAttribute("data-hookbg");
-        if (!bg) return;
-        hid.value = bg;
+        var st = ev.currentTarget.getAttribute("data-hookstyle");
+        if (!st) return;
+        hid.value = st;
         for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
         ev.currentTarget.classList.add("sel");
       });
@@ -123,8 +123,29 @@
   }
   wireHookToggle("long");
   wireHookToggle("rank");
-  wireHookBgCards("long");
-  wireHookBgCards("rank");
+  wireHookStyleCards("long");
+  wireHookStyleCards("rank");
+  wireHookColor("long");
+  wireHookColor("rank");
+
+  /* Hook card samples wear the chosen text colour (fixed-colour boxes excepted). */
+  function wireHookColor(prefix) {
+    var sel = $(prefix + "-hook-color");
+    var grid = $(prefix + "-hook-cards");
+    if (!sel || !grid) return;
+    var COLORS = { white: "#ffffff", yellow: "#FFE74C", pink: "#FF4D6D", orange: "#FF8A4C",
+      red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF" };
+    sel.addEventListener("change", function () {
+      var col = COLORS[sel.value] || "#ffffff";
+      var cards = grid.querySelectorAll(".sub-card");
+      for (var i = 0; i < cards.length; i++) {
+        var cls = cards[i].className;
+        var fixed = /sc-bwhite/.test(cls) ? "#17171B" : /sc-bred|sc-bblack/.test(cls) ? "#ffffff" : col;
+        var ws = cards[i].querySelectorAll(".sc-cap .w");
+        for (var j = 0; j < ws.length; j++) ws[j].style.color = fixed;
+      }
+    });
+  }
 
   // The little caption preview box is gone: the style cards already show
   // the real look, and the box only took space.
@@ -670,7 +691,7 @@
           fd.append("trends", longTrends);
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
-          fd.append("hookBg", longHook.background);
+          fd.append("hookStyle", longHook.style);
           fd.append("hookColor", longHook.color);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
@@ -690,7 +711,7 @@
               trends: longTrends,
               hook: longHook.enabled,
               hookMode: longHook.mode,
-              hookBg: longHook.background,
+              hookStyle: longHook.style,
               hookColor: longHook.color,
             }),
           });
@@ -915,7 +936,7 @@
           fd.append("trends", rankTrends);
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
-          fd.append("hookBg", rankHook.background);
+          fd.append("hookStyle", rankHook.style);
           fd.append("hookColor", rankHook.color);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
@@ -935,7 +956,7 @@
               trends: rankTrends,
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
-              hookBg: rankHook.background,
+              hookStyle: rankHook.style,
               hookColor: rankHook.color,
             }),
           });
