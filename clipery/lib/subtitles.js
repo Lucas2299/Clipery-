@@ -275,12 +275,14 @@ function trimHookTail(arr) {
 // behind the text (the box colour lives in `outline`), `rowChars` keeps big
 // shouty fonts inside the 384-unit frame, `inline` adds extra ASS tags.
 const HOOK_TEMPLATES = {
-  classic: { size: 33, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3, shadow: 0, marginV: 78, rowChars: 18, inline: "" },
-  beast:   { size: 38, color: "&H004CE7FF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 4.5, shadow: 0, marginV: 66, rowChars: 15, inline: "" },
+  // Every hook is a title card: a background strip behind the text (box: 3,
+  // the strip colour lives in `outline`, `thick` = its padding).
+  classic: { size: 33, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 78, rowChars: 18, inline: "" },
+  beast:   { size: 38, color: "&H00000000", outline: "&H004CE7FF", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 66, rowChars: 15, inline: "" },
   news:    { size: 26, color: "&H00FFFFFF", outline: "&H78000000", back: "&H00000000", box: 3, thick: 6, shadow: 0, marginV: 54, rowChars: 22, inline: "" },
-  neon:    { size: 34, color: "&H00FFFFFF", outline: "&H006D4DFF", back: "&H00000000", box: 1, thick: 2, shadow: 0, marginV: 72, rowChars: 17, inline: "\\be2" },
-  minimal: { size: 26, color: "&H00FFFFFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 1.5, shadow: 1, marginV: 86, rowChars: 22, inline: "" },
-  fire:    { size: 36, color: "&H004C8AFF", outline: "&H00000000", back: "&H00000000", box: 1, thick: 3.5, shadow: 0, marginV: 68, rowChars: 16, inline: "" },
+  neon:    { size: 34, color: "&H006D4DFF", outline: "&H40000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 72, rowChars: 17, inline: "\\be2" },
+  minimal: { size: 26, color: "&H00FFFFFF", outline: "&H96000000", back: "&H00000000", box: 3, thick: 4, shadow: 0, marginV: 86, rowChars: 22, inline: "" },
+  fire:    { size: 36, color: "&H004C8AFF", outline: "&H00000000", back: "&H00000000", box: 3, thick: 5, shadow: 0, marginV: 68, rowChars: 16, inline: "" },
 };
 function normalizeHookTemplate(v) {
   const t = String(v || "classic").toLowerCase().trim();
