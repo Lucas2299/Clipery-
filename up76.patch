@@ -1,0 +1,263 @@
+diff --git a/clipery/lib/auth.js b/clipery/lib/auth.js
+index cd4de44..e649645 100644
+--- a/clipery/lib/auth.js
++++ b/clipery/lib/auth.js
+@@ -255,10 +255,11 @@ const PLANS = {
+   // maxMinutes - how long each source video may be
+   // maxClips   - how many clips we cut out of ONE source video
+   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
+-  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true, maxHeight: 720, maxUploadMB: 1024 },
+-  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4, maxHeight: 720, maxUploadMB: 1024 },
+-  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8, maxHeight: 1080, maxUploadMB: 3072 },
+-  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10, maxHeight: 1080, maxUploadMB: 8192 },
++  // watermark - Free clips carry the Clipery bar; paid plans export clean.
++  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true, maxHeight: 720, maxUploadMB: 1024, watermark: true },
++  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4, maxHeight: 720, maxUploadMB: 1024, watermark: false },
++  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8, maxHeight: 1080, maxUploadMB: 3072, watermark: false },
++  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10, maxHeight: 1080, maxUploadMB: 8192, watermark: false },
+ };
+ // Old plan ids from earlier versions keep working for existing accounts.
+ const PLAN_ALIASES = { plus: "pro", unlimited: "studio" };
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 973b5c4..67091a2 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -572,7 +572,8 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
+   });
+   console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : genre !== "auto" ? ` [${genre}]` : ""}`);
+ 
+-  const extras = [
++  // Watermark bar: Free plan only. Paid plans (Starter/Pro/Studio) export clean.
++  const extras = (subOpts && subOpts.noWatermark) ? [] : [
+     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
+     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
+   ];
+@@ -1284,6 +1285,7 @@ async function processVideo(sourcePath, options = {}) {
+           hookMode: options.hookMode || "intro",
+           trends: options.trends || [],
+           maxClips: clipBudget,
++          watermark: options.watermark !== false,
+         },
+       };
+       job.plan = top.map((c, i) => planEntry({ ...c, captions: !!options.subtitles }, i));
+@@ -1351,6 +1353,8 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+       const clipCaptions = c.captions != null ? !!c.captions : !!options.subtitles;
+       const clipHook = !clipCaptions && !!options.hook;
+       const wantExtras = clipCaptions || clipHook || (c.layout && c.layout !== "auto");
++      // Paid plans render without the Clipery bar (default stays watermarked).
++      const noWatermark = options.watermark === false;
+       const rendered = await renderClip(
+         sourcePath,
+         outFile,
+@@ -1368,8 +1372,11 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+               trends: options.trends,
+               edit: c.edit || null,
+               layout: c.layout && c.layout !== "auto" ? c.layout : null,
++              noWatermark,
+             }
+-          : null
++          : noWatermark
++            ? { noWatermark: true }
++            : null
+       );
+       if (c.edit && rendered.edits) {
+         c.edit.applied = rendered.edits;
+@@ -1574,6 +1581,7 @@ async function planManual(sourcePath, options = {}) {
+         hookMode: "intro",
+         trends: [],
+         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
++        watermark: options.watermark !== false,
+       },
+     };
+     job.plan = [];
+diff --git a/clipery/public/account.html b/clipery/public/account.html
+index b86e18f..7000071 100644
+--- a/clipery/public/account.html
++++ b/clipery/public/account.html
+@@ -87,7 +87,7 @@
+       </div>
+     </footer>
+ 
+-    <script src="/shared.js?v=2"></script>
++    <script src="/shared.js?v=4"></script>
+     <script src="/account.js?v=1"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/account.js b/clipery/public/account.js
+index 62bec16..2f61573 100644
+--- a/clipery/public/account.js
++++ b/clipery/public/account.js
+@@ -22,7 +22,8 @@
+     $("acct-plan").textContent = u.planLabel || "Free";
+     $("acct-plan-detail").textContent =
+       (u.videosTotal == null ? "Unlimited videos" : u.lifetime ? u.videosTotal + " free test video" : u.videosTotal + " videos a month") +
+-      " - up to " + u.maxMinutes + " min each - " + u.maxClipsPerVideo + " clips per video";
++      " - up to " + u.maxMinutes + " min each - " + u.maxClipsPerVideo + " clips per video" +
++      (u.watermark === false ? " - no watermark" : " - Clipery watermark on clips");
+     if (u.videosTotal == null) {
+       $("acct-left").textContent = "Unlimited";
+       $("acct-fill").style.width = "100%";
+diff --git a/clipery/public/index.html b/clipery/public/index.html
+index 6a92bb2..a8b553e 100644
+--- a/clipery/public/index.html
++++ b/clipery/public/index.html
+@@ -421,6 +421,7 @@
+               <li>Up to 4 AI clips per video</li>
+               <li>Viral score &amp; ranking</li>
+               <li>Captions, 9:16 exports, library</li>
++              <li>No watermark on clips</li>
+             </ul>
+             <a class="btn btn-ghost btn-block" href="/register" data-auth="register">Get Starter</a>
+           </div>
+@@ -437,6 +438,7 @@
+               <li>Rank video (up to 5 sources)</li>
+               <li>Priority AI queue</li>
+               <li>Compilation exports</li>
++              <li>No watermark on clips</li>
+             </ul>
+             <a class="btn btn-primary btn-block" href="/register" data-auth="register">Get Pro</a>
+           </div>
+@@ -452,6 +454,7 @@
+               <li>Everything in Pro</li>
+               <li>Deep ranking analytics</li>
+               <li>Fastest processing lane</li>
++              <li>No watermark on clips</li>
+             </ul>
+             <a class="btn btn-ghost btn-block" href="/register" data-auth="register">Get Studio</a>
+           </div>
+diff --git a/clipery/public/job.html b/clipery/public/job.html
+index ca1794b..0ae0a4e 100644
+--- a/clipery/public/job.html
++++ b/clipery/public/job.html
+@@ -62,7 +62,7 @@
+       </div>
+     </footer>
+ 
+-    <script src="/shared.js?v=2"></script>
++    <script src="/shared.js?v=4"></script>
+     <script src="/job.js"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/library.html b/clipery/public/library.html
+index d17ddae..4e1568e 100644
+--- a/clipery/public/library.html
++++ b/clipery/public/library.html
+@@ -52,7 +52,7 @@
+       </div>
+     </footer>
+ 
+-    <script src="/shared.js?v=2"></script>
++    <script src="/shared.js?v=4"></script>
+     <script src="/library.js"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/pricing.html b/clipery/public/pricing.html
+index 15d052a..dc5945c 100644
+--- a/clipery/public/pricing.html
++++ b/clipery/public/pricing.html
+@@ -29,7 +29,7 @@
+         <div class="eyebrow">Pricing</div>
+         <h1>Start free. Scale when you blow up.</h1>
+         <p style="margin-inline: auto">Plans sized for every creator - from free testing to serious volume.</p>
+-        <p class="deal-note" style="margin-inline: auto">Launch offer: your first month is 50% off on every plan. New accounts also get one free test video (20 min, 4 clips).</p>
++        <p class="deal-note" style="margin-inline: auto">Launch offer: your first month is 50% off on every plan. New accounts also get one free test video (20 min, 4 clips, with watermark).</p>
+         <p class="muted" id="plan-current" hidden style="margin-inline: auto"></p>
+       </div>
+ 
+@@ -46,6 +46,7 @@
+             <li>Up to 4 AI clips per video</li>
+             <li>Viral score &amp; ranking</li>
+             <li>Captions, 9:16 exports, library</li>
++              <li>No watermark on clips</li>
+           </ul>
+           <a class="btn btn-ghost btn-block" href="/register" data-auth="register">Get Starter</a>
+         </div>
+@@ -62,6 +63,7 @@
+             <li>Rank video (up to 5 sources)</li>
+             <li>Priority AI queue</li>
+             <li>Compilation exports</li>
++              <li>No watermark on clips</li>
+           </ul>
+           <a class="btn btn-primary btn-block" href="/register" data-auth="register">Get Pro</a>
+         </div>
+@@ -77,6 +79,7 @@
+             <li>Everything in Pro</li>
+             <li>Deep ranking analytics</li>
+             <li>Fastest processing lane</li>
++              <li>No watermark on clips</li>
+           </ul>
+           <a class="btn btn-ghost btn-block" href="/register" data-auth="register">Get Studio</a>
+         </div>
+diff --git a/clipery/public/promo.html b/clipery/public/promo.html
+index de8c346..81f167a 100644
+--- a/clipery/public/promo.html
++++ b/clipery/public/promo.html
+@@ -79,7 +79,7 @@
+       </div>
+     </footer>
+ 
+-    <script src="/shared.js?v=2"></script>
++    <script src="/shared.js?v=4"></script>
+     <script src="/promo.js?v=3"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/rank.html b/clipery/public/rank.html
+index 7997ec7..e2643f5 100644
+--- a/clipery/public/rank.html
++++ b/clipery/public/rank.html
+@@ -128,7 +128,7 @@ https://www.youtube.com/watch?v=zzzzz"
+       </div>
+     </footer>
+ 
+-    <script src="/shared.js?v=2"></script>
++    <script src="/shared.js?v=4"></script>
+     <script src="/rank.js"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/shared.js b/clipery/public/shared.js
+index 79cc8fc..ece9653 100644
+--- a/clipery/public/shared.js
++++ b/clipery/public/shared.js
+@@ -331,7 +331,8 @@
+         (left === null ? "unlimited videos" : user.lifetime ? left + " free test video left" : left + " video" + (left === 1 ? "" : "s") + " left this month") +
+         " &middot; up to " + user.maxMinutes + " min per video" +
+         " &middot; " + user.maxClipsPerVideo + " clips per video" +
+-        (user.maxHeight ? " &middot; " + user.maxHeight + "p" : "");
++        (user.maxHeight ? " &middot; " + user.maxHeight + "p" : "") +
++        (user.watermark === false ? " &middot; no watermark" : " &middot; Clipery watermark");
+     }
+     host.parentNode.insertBefore(note, host.nextSibling);
+   }
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 2147d5b..8435867 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -579,7 +579,7 @@
+       }
+       document.getElementById("year").textContent = new Date().getFullYear();
+     </script>
+-    <script src="/shared.js?v=3"></script>
++    <script src="/shared.js?v=4"></script>
+     <script src="/studio.js?v=75"></script>
+     <script src="/editor.js?v=1"></script>
+   </body>
+diff --git a/clipery/server.js b/clipery/server.js
+index 5e65807..3864013 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -390,6 +390,7 @@ function chargeVideo(req, res) {
+     maxClips: auth.planOf(me).maxClips,
+     maxHeight: auth.planOf(me).maxHeight || 720,
+     maxUploadMB: auth.planOf(me).maxUploadMB || 1024,
++    watermark: auth.planOf(me).watermark !== false,
+   };
+   return me;
+ }
+@@ -863,6 +864,7 @@ const server = http.createServer(async (req, res) => {
+           maxClipsPerVideo: auth.planOf(user).maxClips,
+           maxHeight: auth.planOf(user).maxHeight || 720,
+           maxUploadMB: auth.planOf(user).maxUploadMB || 1024,
++          watermark: auth.planOf(user).watermark !== false,
+         },
+       });
+     }

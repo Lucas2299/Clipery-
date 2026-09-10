@@ -580,8 +580,9 @@
     longFile.addEventListener("change", function () {
       var f = longFile.files && longFile.files[0];
       if (!f) return;
-      if (f.size > 100 * 1024 * 1024) {
-        setMsg(longMsg, "File too large (max 100MB).", true);
+      var capMB = (window.__me && window.__me.maxUploadMB) || 8192;
+      if (f.size > capMB * 1024 * 1024) {
+        setMsg(longMsg, "File too large for your plan (max " + (capMB >= 1024 ? Math.round(capMB / 1024) + " GB" : capMB + " MB") + ").", true);
         return;
       }
       fileObj = f;

@@ -572,7 +572,8 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
   });
   console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : genre !== "auto" ? ` [${genre}]` : ""}`);
 
-  const extras = [
+  // Watermark bar: Free plan only. Paid plans (Starter/Pro/Studio) export clean.
+  const extras = (subOpts && subOpts.noWatermark) ? [] : [
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
   ];
@@ -1284,6 +1285,7 @@ async function processVideo(sourcePath, options = {}) {
           hookMode: options.hookMode || "intro",
           trends: options.trends || [],
           maxClips: clipBudget,
+          watermark: options.watermark !== false,
         },
       };
       job.plan = top.map((c, i) => planEntry({ ...c, captions: !!options.subtitles }, i));
@@ -1351,6 +1353,8 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
       const clipCaptions = c.captions != null ? !!c.captions : !!options.subtitles;
       const clipHook = !clipCaptions && !!options.hook;
       const wantExtras = clipCaptions || clipHook || (c.layout && c.layout !== "auto");
+      // Paid plans render without the Clipery bar (default stays watermarked).
+      const noWatermark = options.watermark === false;
       const rendered = await renderClip(
         sourcePath,
         outFile,
@@ -1368,8 +1372,11 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
               trends: options.trends,
               edit: c.edit || null,
               layout: c.layout && c.layout !== "auto" ? c.layout : null,
+              noWatermark,
             }
-          : null
+          : noWatermark
+            ? { noWatermark: true }
+            : null
       );
       if (c.edit && rendered.edits) {
         c.edit.applied = rendered.edits;
@@ -1574,6 +1581,7 @@ async function planManual(sourcePath, options = {}) {
         hookMode: "intro",
         trends: [],
         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+        watermark: options.watermark !== false,
       },
     };
     job.plan = [];

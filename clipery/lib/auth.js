@@ -255,10 +255,11 @@ const PLANS = {
   // maxMinutes - how long each source video may be
   // maxClips   - how many clips we cut out of ONE source video
   // Free is a one-time test: 1 video, ever (no monthly reset), 4 clips.
-  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true },
-  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4 },
-  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8 },
-  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10 },
+  // watermark - Free clips carry the Clipery bar; paid plans export clean.
+  free: { id: "free", label: "Free", videos: 1, maxMinutes: 20, maxClips: 4, lifetime: true, maxHeight: 720, maxUploadMB: 1024, watermark: true },
+  starter: { id: "starter", label: "Starter", videos: 10, maxMinutes: 20, maxClips: 4, maxHeight: 720, maxUploadMB: 1024, watermark: false },
+  pro: { id: "pro", label: "Pro", videos: 50, maxMinutes: 60, maxClips: 8, maxHeight: 1080, maxUploadMB: 3072, watermark: false },
+  studio: { id: "studio", label: "Studio", videos: Infinity, maxMinutes: 240, maxClips: 10, maxHeight: 1080, maxUploadMB: 8192, watermark: false },
 };
 // Old plan ids from earlier versions keep working for existing accounts.
 const PLAN_ALIASES = { plus: "pro", unlimited: "studio" };

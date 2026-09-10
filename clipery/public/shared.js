@@ -331,7 +331,8 @@
         (left === null ? "unlimited videos" : user.lifetime ? left + " free test video left" : left + " video" + (left === 1 ? "" : "s") + " left this month") +
         " &middot; up to " + user.maxMinutes + " min per video" +
         " &middot; " + user.maxClipsPerVideo + " clips per video" +
-        (user.maxHeight ? " &middot; " + user.maxHeight + "p" : "");
+        (user.maxHeight ? " &middot; " + user.maxHeight + "p" : "") +
+        (user.watermark === false ? " &middot; no watermark" : " &middot; Clipery watermark");
     }
     host.parentNode.insertBefore(note, host.nextSibling);
   }

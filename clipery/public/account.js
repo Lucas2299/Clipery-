@@ -22,7 +22,8 @@
     $("acct-plan").textContent = u.planLabel || "Free";
     $("acct-plan-detail").textContent =
       (u.videosTotal == null ? "Unlimited videos" : u.lifetime ? u.videosTotal + " free test video" : u.videosTotal + " videos a month") +
-      " - up to " + u.maxMinutes + " min each - " + u.maxClipsPerVideo + " clips per video";
+      " - up to " + u.maxMinutes + " min each - " + u.maxClipsPerVideo + " clips per video" +
+      (u.watermark === false ? " - no watermark" : " - Clipery watermark on clips");
     if (u.videosTotal == null) {
       $("acct-left").textContent = "Unlimited";
       $("acct-fill").style.width = "100%";
