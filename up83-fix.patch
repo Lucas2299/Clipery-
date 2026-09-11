@@ -1,0 +1,56 @@
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 6fa70d9..aa52b45 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -332,12 +332,6 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
+-            <label>Placement
+-              <select id="long-hook-pos">
+-                <option value="top" selected>Top</option>
+-                <option value="middle">Middle</option>
+-              </select>
+-            </label>
+             <input type="hidden" id="long-hook-style" value="boxdark" />
+             <div class="sub-cards sc-styles" id="long-hook-cards">
+               <button type="button" class="sub-card sc-full d-plain" data-hookstyle="plain"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Plain</span></button>              <button type="button" class="sub-card sc-full d-outline" data-hookstyle="outlined"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Outline</span></button>              <button type="button" class="sub-card sc-full d-thick" data-hookstyle="thick"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Thick</span></button>              <button type="button" class="sub-card sc-full d-shadow" data-hookstyle="shadow"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Shadow</span></button>              <button type="button" class="sub-card sc-full sc-bdim sel" data-hookstyle="boxdark"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dim box</span></button>              <button type="button" class="sub-card sc-full sc-blight" data-hookstyle="boxlight"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Light box</span></button>              <button type="button" class="sub-card sc-bwhite" data-hookstyle="boxwhite"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">White box</span></button>              <button type="button" class="sub-card sc-bred" data-hookstyle="boxred"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Red box</span></button>              <button type="button" class="sub-card sc-bblack" data-hookstyle="boxblack"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Black box</span></button>
+@@ -355,6 +349,12 @@
+                 <option value="purple">Purple</option>
+               </select>
+             </label>
++            <label>Placement
++              <select id="long-hook-pos">
++                <option value="top" selected>Top</option>
++                <option value="middle">Middle</option>
++              </select>
++            </label>
+             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+               <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
+             </label>
+@@ -533,12 +533,6 @@
+                 <option value="full">Whole clip</option>
+               </select>
+             </label>
+-            <label>Placement
+-              <select id="rank-hook-pos">
+-                <option value="top" selected>Top</option>
+-                <option value="middle">Middle</option>
+-              </select>
+-            </label>
+             <input type="hidden" id="rank-hook-style" value="boxdark" />
+             <div class="sub-cards sc-styles" id="rank-hook-cards">
+               <button type="button" class="sub-card sc-full d-plain" data-hookstyle="plain"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Plain</span></button>              <button type="button" class="sub-card sc-full d-outline" data-hookstyle="outlined"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Outline</span></button>              <button type="button" class="sub-card sc-full d-thick" data-hookstyle="thick"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Thick</span></button>              <button type="button" class="sub-card sc-full d-shadow" data-hookstyle="shadow"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Shadow</span></button>              <button type="button" class="sub-card sc-full sc-bdim sel" data-hookstyle="boxdark"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dim box</span></button>              <button type="button" class="sub-card sc-full sc-blight" data-hookstyle="boxlight"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Light box</span></button>              <button type="button" class="sub-card sc-bwhite" data-hookstyle="boxwhite"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">White box</span></button>              <button type="button" class="sub-card sc-bred" data-hookstyle="boxred"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Red box</span></button>              <button type="button" class="sub-card sc-bblack" data-hookstyle="boxblack"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Black box</span></button>
+@@ -556,6 +550,12 @@
+                 <option value="purple">Purple</option>
+               </select>
+             </label>
++            <label>Placement
++              <select id="rank-hook-pos">
++                <option value="top" selected>Top</option>
++                <option value="middle">Middle</option>
++              </select>
++            </label>
+             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+               <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
+             </label>
