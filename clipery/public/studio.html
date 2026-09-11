@@ -119,12 +119,18 @@
       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
     
     .frame-cards { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.6rem; }
-    .frame-card { padding:0.45rem 0.7rem; border-radius:8px; cursor:pointer; background:rgba(255,255,255,0.06);
-      border:2px solid rgba(255,255,255,0.1); font-size:0.82rem; text-align:center; transition:border-color 0.15s; }
-    .frame-card.sel { border-color:var(--pink); background:rgba(255,255,255,0.12); }
+    .frame-card { width:62px; padding:0.3rem 0.2rem 0.25rem; border-radius:8px; cursor:pointer;
+      border:2px solid rgba(255,255,255,0.1); text-align:center; transition:border-color 0.15s;
+      background:rgba(255,255,255,0.04); position:relative; overflow:hidden; }
+    .frame-card.sel { border-color:var(--pink); }
     .frame-card:hover { border-color:rgba(255,255,255,0.3); }
-    .frame-card .fc-icon { font-size:1.1rem; display:block; margin-bottom:0.15rem; }
-    .frame-card .fc-name { font-size:0.72rem; opacity:0.8; }
+    .frame-card .sc-cap { display:block; font-size:0.62rem; font-weight:800; letter-spacing:0.04em; padding:0.2rem 0; line-height:1.1; }
+    .frame-card .fc-name { display:block; font-size:0.58rem; opacity:0.7; margin-top:0.1rem; }
+    .f-default { background:rgba(255,255,255,0.06); }
+    .f-header { background:linear-gradient(180deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.82) 55%, transparent 55%); }
+    .f-pill { background:rgba(0,0,0,0.55); border-radius:20px; }
+    .f-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
+    .f-bottom { background:linear-gradient(180deg, transparent 0%, transparent 50%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.55) 100%); }
 </style>
   </head>
   <body class="studio-app">
@@ -341,11 +347,11 @@
               </select>
             </label>
             <div class="frame-cards" id="long-frame-cards">
-              <button type="button" class="frame-card" data-hookframe=""><span class="fc-icon">⬜</span><span class="fc-name">Default</span></button>
-              <button type="button" class="frame-card" data-hookframe="header"><span class="fc-icon">📰</span><span class="fc-name">Header</span></button>
-              <button type="button" class="frame-card" data-hookframe="pill"><span class="fc-icon">💊</span><span class="fc-name">Pill</span></button>
-              <button type="button" class="frame-card" data-hookframe="overlay"><span class="fc-icon">👁️</span><span class="fc-name">Overlay</span></button>
-              <button type="button" class="frame-card" data-hookframe="bottom"><span class="fc-icon">📋</span><span class="fc-name">Bottom</span></button>
+              <button type="button" class="frame-card f-default" data-hookframe=""><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Default</span></button>
+              <button type="button" class="frame-card f-header" data-hookframe="header"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Header</span></button>
+              <button type="button" class="frame-card f-pill" data-hookframe="pill"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Pill</span></button>
+              <button type="button" class="frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Overlay</span></button>
+              <button type="button" class="frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Bottom</span></button>
             </div>
             <input type="hidden" id="long-hook-frame" value="" />
             <input type="hidden" id="long-hook-style" value="boxdark" />
@@ -544,11 +550,11 @@
               </select>
             </label>
             <div class="frame-cards" id="rank-frame-cards">
-              <button type="button" class="frame-card" data-hookframe=""><span class="fc-icon">⬜</span><span class="fc-name">Default</span></button>
-              <button type="button" class="frame-card" data-hookframe="header"><span class="fc-icon">📰</span><span class="fc-name">Header</span></button>
-              <button type="button" class="frame-card" data-hookframe="pill"><span class="fc-icon">💊</span><span class="fc-name">Pill</span></button>
-              <button type="button" class="frame-card" data-hookframe="overlay"><span class="fc-icon">👁️</span><span class="fc-name">Overlay</span></button>
-              <button type="button" class="frame-card" data-hookframe="bottom"><span class="fc-icon">📋</span><span class="fc-name">Bottom</span></button>
+              <button type="button" class="frame-card f-default" data-hookframe=""><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Default</span></button>
+              <button type="button" class="frame-card f-header" data-hookframe="header"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Header</span></button>
+              <button type="button" class="frame-card f-pill" data-hookframe="pill"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Pill</span></button>
+              <button type="button" class="frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Overlay</span></button>
+              <button type="button" class="frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Bottom</span></button>
             </div>
             <input type="hidden" id="rank-hook-frame" value="" />
             <input type="hidden" id="rank-hook-style" value="boxdark" />
