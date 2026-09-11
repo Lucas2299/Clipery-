@@ -72,8 +72,8 @@
     var m = $(prefix + "-hook-mode");
     var b = $(prefix + "-hook-style");
     var c = $(prefix + "-hook-color");
-    var p = $(prefix + "-hook-pos");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white", pos: p ? p.value : "top" };
+    var p = $(prefix + "-hook-frame");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white", frame: p ? p.value : "" };
   }
 
   /* Hook title style: click a card, the hidden input carries the choice. */
@@ -126,6 +126,23 @@
   wireHookToggle("rank");
   wireHookStyleCards("long");
   wireHookStyleCards("rank");
+  // Frame cards: click sets hidden input
+  function wireFrameCards(prefix) {
+    var grid = $(prefix + "-frame-cards");
+    var hid = $(prefix + "-hook-frame");
+    if (!grid || !hid) return;
+    var cards = grid.querySelectorAll(".frame-card");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].addEventListener("click", function (ev) {
+        var st = ev.currentTarget.getAttribute("data-hookframe");
+        hid.value = st || "";
+        for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
+        ev.currentTarget.classList.add("sel");
+      });
+    }
+  }
+  wireFrameCards("long");
+  wireFrameCards("rank");
   wireHookColor("long");
   wireHookColor("rank");
 
@@ -694,7 +711,7 @@
           fd.append("hookMode", longHook.mode);
           fd.append("hookStyle", longHook.style);
           fd.append("hookColor", longHook.color);
-          fd.append("hookPos", longHook.pos);
+          fd.append("hookFrame", longHook.frame);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -715,7 +732,7 @@
               hookMode: longHook.mode,
               hookStyle: longHook.style,
               hookColor: longHook.color,
-              hookPos: longHook.pos,
+              hookFrame: longHook.frame,
             }),
           });
         }
@@ -941,7 +958,7 @@
           fd.append("hookMode", rankHook.mode);
           fd.append("hookStyle", rankHook.style);
           fd.append("hookColor", rankHook.color);
-          fd.append("hookPos", rankHook.pos);
+          fd.append("hookFrame", rankHook.frame);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -962,7 +979,7 @@
               hookMode: rankHook.mode,
               hookStyle: rankHook.style,
               hookColor: rankHook.color,
-              hookPos: rankHook.pos,
+              hookFrame: rankHook.frame,
             }),
           });
         }

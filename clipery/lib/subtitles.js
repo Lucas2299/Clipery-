@@ -289,14 +289,47 @@ function normalizeHookPos(v) {
   const t = String(v || "top").toLowerCase().trim();
   return HOOK_POSITIONS.hasOwnProperty(t) ? t : "top";
 }
-/** Resolved hook look: fixed shout size, shared decoration + text colour. */
-function resolveHookLook(style, colorKey, pos) {
-  const st = normalizeHookStyle(style);
-  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined, marginV: HOOK_POSITIONS[normalizeHookPos(pos)] };
+// Hook frame layouts: control container shape, position, and text effects.
+const HOOK_FRAMES = {
+  header:   { an: 8, mv: 50,  frame: "bar" },
+  pill:     { an: 5, mv: 160, frame: "pill" },
+  overlay:  { an: 8, mv: 120, frame: null },
+  bottom:   { an: 2, mv: 60,  frame: "pill" },
+};
+function normalizeHookFrame(v) {
+  const t = String(v || "").toLowerCase().trim();
+  return HOOK_FRAMES.hasOwnProperty(t) ? t : "";
 }
-function hookStyleLine(style, colorKey, pos) {
-  const T = resolveHookLook(style, colorKey, pos);
-  return `Style: Hook,DejaVu Sans,33,${T.color},${T.color},${T.deco},8,12,12,${T.marginV},1`;
+/** Resolved hook look: fixed shout size, shared decoration + text colour. */
+function resolveHookLook(style, colorKey, pos, frame) {
+  const st = normalizeHookStyle(style);
+  const lk = { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined, marginV: HOOK_POSITIONS[normalizeHookPos(pos)] };
+  resolveHookFrame(lk, frame);
+  return lk;
+}
+function resolveHookFrame(lk, frame) {
+  const f = normalizeHookFrame(frame);
+  if (!f) return;
+  const F = HOOK_FRAMES[f];
+  lk.marginV = F.mv;
+  lk.an = F.an;
+  if (F.frame === "bar") {
+    lk.textFx = "{\\fad(500,300)\\2a&H80&}";
+    lk.fs = 30;
+    lk.bg = "&H000000FF";
+  } else if (F.frame === "pill") {
+    lk.textFx = "{\\fad(300,200)}";
+    lk.fs = 24;
+  } else {
+    lk.textFx = "{\\fad(200,150)\\4c&H000000&\\4a&H80&\\bord3\\shad4}";
+    lk.fs = 26;
+  }
+}
+function hookStyleLine(style, colorKey, pos, frame) {
+  const T = resolveHookLook(style, colorKey, pos, frame);
+  const fs = T.fs || 33;
+  const an = T.an || 8;
+  return `Style: Hook,DejaVu Sans,${fs},${T.color},${T.color},${T.deco},${an},12,12,${T.marginV},1`;
 }
 
 /**
@@ -376,7 +409,8 @@ function buildHook(words, clipDur, mode, trends, look) {
   const st = normalizeHookStyle(look && look.style);
   const col = normalizeHookColor(look && look.color);
   const pos = normalizeHookPos(look && look.pos);
-  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos };
+  const frame = normalizeHookFrame(look && look.frame);
+  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, frame };
 }
 
 async function probeDuration(p) {
@@ -436,7 +470,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
     // Hook title look: subtitle style + text colour + placement.
-    hookStyleLine(hook && hook.style, hook && hook.color, hook && hook.pos),
+    hookStyleLine(hook && hook.style, hook && hook.color, hook && hook.pos, hook && hook.frame),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -446,9 +480,12 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   if (hook && hook.rows && hook.rows.length) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
-      const hl = resolveHookLook(hook.style, hook.color);
+      const hl = resolveHookLook(hook.style, hook.color, hook.pos, hook.frame);
+      if (hl.bg) {
+        events.push(`Dialogue: 0,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\bord0\\shad0\\1c${hl.bg}}${hookText}`);
+      }
       events.push(
-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
+        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,${hl.textFx || ""}{\\fs${hl.fs || 33}\\1c${hl.color}}${hookText}`
       );
     }
   }
@@ -731,5 +768,6 @@ module.exports = {
   normalizeHookStyle,
   normalizeHookColor,
   normalizeHookPos,
+  normalizeHookFrame,
   HOOK_STYLES,
 };
