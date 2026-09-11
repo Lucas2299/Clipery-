@@ -1,19 +1,105 @@
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 45ee506..9db6b27 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -1285,6 +1285,7 @@ async function processVideo(sourcePath, options = {}) {
+           hookMode: options.hookMode || "intro",
+           hookStyle: options.hookStyle || "boxdark",
+           hookColor: options.hookColor || "white",
++          hookPos: options.hookPos || "top",
+           trends: options.trends || [],
+           maxClips: clipBudget,
+           watermark: options.watermark !== false,
+@@ -1370,7 +1371,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+           ? {
+               clipDur: +(c.end - c.start).toFixed(2),
+               subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
+-              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor } : null,
++              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor, pos: options.hookPos } : null,
+               trends: options.trends,
+               edit: c.edit || null,
+               layout: c.layout && c.layout !== "auto" ? c.layout : null,
+@@ -1583,6 +1584,7 @@ async function planManual(sourcePath, options = {}) {
+         hookMode: "intro",
+         hookStyle: options.hookStyle || "boxdark",
+         hookColor: options.hookColor || "white",
++        hookPos: options.hookPos || "top",
+         trends: [],
+         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+         watermark: options.watermark !== false,
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index 6cb5253..0f16d1c 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -282,14 +282,21 @@ function normalizeHookColor(v) {
+   const t = String(v || "white").toLowerCase().trim();
+   return SUB_COLORS.hasOwnProperty(t) ? t : "white";
+ }
++// Hook placement: top of frame (classic) or screen middle. MarginV is measured
++// from the top edge (Alignment 8), middle matches the caption middle safe zone.
++const HOOK_POSITIONS = { top: 72, middle: 303 };
++function normalizeHookPos(v) {
++  const t = String(v || "top").toLowerCase().trim();
++  return HOOK_POSITIONS.hasOwnProperty(t) ? t : "top";
++}
+ /** Resolved hook look: fixed shout size, shared decoration + text colour. */
+-function resolveHookLook(style, colorKey) {
++function resolveHookLook(style, colorKey, pos) {
+   const st = normalizeHookStyle(style);
+-  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined };
++  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined, marginV: HOOK_POSITIONS[normalizeHookPos(pos)] };
+ }
+-function hookStyleLine(style, colorKey) {
+-  const T = resolveHookLook(style, colorKey);
+-  return `Style: Hook,DejaVu Sans,33,${T.color},${T.color},${T.deco},8,12,12,72,1`;
++function hookStyleLine(style, colorKey, pos) {
++  const T = resolveHookLook(style, colorKey, pos);
++  return `Style: Hook,DejaVu Sans,33,${T.color},${T.color},${T.deco},8,12,12,${T.marginV},1`;
+ }
+ 
+ /**
+@@ -368,7 +375,8 @@ function buildHook(words, clipDur, mode, trends, look) {
+   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
+   const st = normalizeHookStyle(look && look.style);
+   const col = normalizeHookColor(look && look.color);
+-  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col };
++  const pos = normalizeHookPos(look && look.pos);
++  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos };
+ }
+ 
+ async function probeDuration(p) {
+@@ -427,8 +435,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     "[V4+ Styles]",
+     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
+     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
+-    // Hook title look: subtitle style + text colour.
+-    hookStyleLine(hook && hook.style, hook && hook.color),
++    // Hook title look: subtitle style + text colour + placement.
++    hookStyleLine(hook && hook.style, hook && hook.color, hook && hook.pos),
+     "",
+     "[Events]",
+     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
+@@ -722,5 +730,6 @@ module.exports = {
+   normalizeSubStyle,
+   normalizeHookStyle,
+   normalizeHookColor,
++  normalizeHookPos,
+   HOOK_STYLES,
+ };
 diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 6fa70d9..5e895e8 100644
+index e54854e..5e895e8 100644
 --- a/clipery/public/studio.html
 +++ b/clipery/public/studio.html
-@@ -332,10 +332,6 @@
+@@ -331,6 +331,8 @@
+                 <option value="intro" selected>First seconds</option>
                  <option value="full">Whole clip</option>
                </select>
-             </label>
--            <label>Placement
--              <select id="long-hook-pos">
--                <option value="top" selected>Top</option>
--                <option value="middle">Middle</option>
-               </select>
++            </label>
++              </select>
              </label>
              <input type="hidden" id="long-hook-style" value="boxdark" />
-@@ -355,6 +351,12 @@
+             <div class="sub-cards sc-styles" id="long-hook-cards">
+@@ -349,6 +351,12 @@
                  <option value="purple">Purple</option>
                </select>
              </label>
@@ -26,18 +112,16 @@ index 6fa70d9..5e895e8 100644
              <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
                <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
              </label>
-@@ -533,10 +535,6 @@
+@@ -526,6 +534,8 @@
+                 <option value="intro" selected>First seconds</option>
                  <option value="full">Whole clip</option>
                </select>
-             </label>
--            <label>Placement
--              <select id="rank-hook-pos">
--                <option value="top" selected>Top</option>
--                <option value="middle">Middle</option>
-               </select>
++            </label>
++              </select>
              </label>
              <input type="hidden" id="rank-hook-style" value="boxdark" />
-@@ -556,6 +554,12 @@
+             <div class="sub-cards sc-styles" id="rank-hook-cards">
+@@ -544,6 +554,12 @@
                  <option value="purple">Purple</option>
                </select>
              </label>
@@ -50,3 +134,164 @@ index 6fa70d9..5e895e8 100644
              <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
                <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
              </label>
+@@ -614,7 +630,7 @@
+       document.getElementById("year").textContent = new Date().getFullYear();
+     </script>
+     <script src="/shared.js?v=4"></script>
+-    <script src="/studio.js?v=81"></script>
++    <script src="/studio.js?v=83"></script>
+     <script src="/editor.js?v=1"></script>
+   </body>
+ </html>
+diff --git a/clipery/public/studio.js b/clipery/public/studio.js
+index eb6ff5e..dea889e 100644
+--- a/clipery/public/studio.js
++++ b/clipery/public/studio.js
+@@ -72,7 +72,8 @@
+     var m = $(prefix + "-hook-mode");
+     var b = $(prefix + "-hook-style");
+     var c = $(prefix + "-hook-color");
+-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white" };
++    var p = $(prefix + "-hook-pos");
++    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white", pos: p ? p.value : "top" };
+   }
+ 
+   /* Hook title style: click a card, the hidden input carries the choice. */
+@@ -693,6 +694,7 @@
+           fd.append("hookMode", longHook.mode);
+           fd.append("hookStyle", longHook.style);
+           fd.append("hookColor", longHook.color);
++          fd.append("hookPos", longHook.pos);
+           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/clip/from-url", {
+@@ -713,6 +715,7 @@
+               hookMode: longHook.mode,
+               hookStyle: longHook.style,
+               hookColor: longHook.color,
++              hookPos: longHook.pos,
+             }),
+           });
+         }
+@@ -938,6 +941,7 @@
+           fd.append("hookMode", rankHook.mode);
+           fd.append("hookStyle", rankHook.style);
+           fd.append("hookColor", rankHook.color);
++          fd.append("hookPos", rankHook.pos);
+           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
+         } else {
+           res = await fetch("/api/rank/video/links", {
+@@ -958,6 +962,7 @@
+               hookMode: rankHook.mode,
+               hookStyle: rankHook.style,
+               hookColor: rankHook.color,
++              hookPos: rankHook.pos,
+             }),
+           });
+         }
+diff --git a/clipery/server.js b/clipery/server.js
+index e3efeaa..78118c6 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -25,7 +25,7 @@ const {
+   processLinksToRankingVideo,
+   downloadUrl,
+ } = require("./lib/linkVideoEngine");
+-const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor } = require("./lib/subtitles");
++const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor, normalizeHookPos } = require("./lib/subtitles");
+ const auth = require("./lib/auth");
+ const promo = require("./lib/promo");
+ const oauth = require("./lib/oauth");
+@@ -663,12 +663,14 @@ function readTrends(get) {
+ 
+ // hook title option: enabled toggle + "intro" (first seconds) | "full" (whole clip)
+ // + subtitle style + free text colour
++// + placement: top | middle
+ function readHook(get) {
+   return {
+     enabled: wantSubtitles(get("hook")),
+     mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
+     style: normalizeHookStyle(get("hookStyle")),
+     color: normalizeHookColor(get("hookColor")),
++    pos: normalizeHookPos(get("hookPos")),
+   };
+ }
+ 
+@@ -1088,12 +1090,12 @@ const server = http.createServer(async (req, res) => {
+       const dest = path.join(UPLOADS, `${jobId}${ext}`);
+       fs.renameSync(filePart.path, dest);
+       const genre = readGenre(get("genre"));
+-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends, genre });
++      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends, genre });
+       const q = enqueue(dest, {
+         userId: owner && owner.id,
+         ...owner.planLimits,
+         jobId, sourceName: orig, mode, subtitles, subStyle, genre,
+-        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
++        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
+       });
+       return send(res, 202, {
+         ok: true,
+@@ -1134,7 +1136,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
++        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
+         trends,
+       });
+       const q = enqueueItem({
+@@ -1144,7 +1146,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
+-          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
++          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
+         },
+       });
+       return send(res, 202, {
+@@ -1191,7 +1193,7 @@ const server = http.createServer(async (req, res) => {
+       fs.renameSync(filePart.path, dest);
+       const meta = {
+         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
+-        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, trends,
++        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
+         genre: readGenre(get("genre")),
+         review: true, manual, editor: true,
+       };
+@@ -1442,7 +1444,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOpts.enabled,
+-        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
++        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
+         trends,
+       });
+       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
+@@ -1458,7 +1460,7 @@ const server = http.createServer(async (req, res) => {
+           subtitles,
+           subStyle,
+           hook: hookOpts.enabled,
+-          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color,
++          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
+           trends,
+         },
+       });
+@@ -1557,7 +1559,7 @@ const server = http.createServer(async (req, res) => {
+         subtitles,
+         subStyle,
+         hook: hookOptsUp.enabled,
+-        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color,
++        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos,
+         trends: trendsUp,
+       });
+       const q = enqueueItem({
+@@ -1567,7 +1569,7 @@ const server = http.createServer(async (req, res) => {
+           userId: owner && owner.id,
+           ...owner.planLimits,
+           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
+-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, trends: trendsUp,
++          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, trends: trendsUp,
+         },
+       });
+       return send(res, 202, {
