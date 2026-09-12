@@ -1,58 +1,30 @@
 diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 585f45d..5d16c53 100644
+index 5d16c53..9b18690 100644
 --- a/clipery/public/studio.html
 +++ b/clipery/public/studio.html
-@@ -118,17 +118,9 @@
+@@ -118,7 +118,6 @@
        .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
        .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
 
--    .frame-cards { display:flex; gap:0.4rem; flex-wrap:wrap; margin-bottom:0.6rem; }
--    .frame-card { width:62px; padding:0.3rem 0.2rem 0.25rem; border-radius:8px; cursor:pointer;
--      border:2px solid rgba(255,255,255,0.1); text-align:center; transition:border-color 0.15s;
--      background:rgba(255,255,255,0.04); position:relative; overflow:hidden; }
--    .frame-card.sel { border-color:var(--pink); }
--    .frame-card:hover { border-color:rgba(255,255,255,0.3); }
--    .frame-card .sc-cap { display:block; font-size:0.62rem; font-weight:800; letter-spacing:0.04em; line-height:1.1; width:100%; border-radius:6px; padding:0.3rem 0.15rem; }
--    .frame-card .fc-name { display:block; font-size:0.58rem; opacity:0.7; margin-top:0.15rem; }
-+    .frame-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:0.45rem; margin:0 0 0.35rem; }
+-    .frame-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(92px,1fr)); gap:0.45rem; margin:0 0 0.35rem; }
      .frame-card.f-default .sc-cap { background:rgba(0,0,0,0.7); }
--    .frame-card.f-header { position:relative; }
--    .frame-card.f-header .sc-cap { background:linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 100%); }
-+    .frame-card.f-header .sc-cap { background:linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 100%); }
+     .frame-card.f-header .sc-cap { background:linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 100%); }
      .frame-card.f-pill .sc-cap { background:rgba(0,0,0,0.55); border-radius:20px; }
-     .frame-card.f-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
-     .frame-card.f-bottom .sc-cap { background:rgba(0,0,0,0.7); }
-@@ -348,11 +340,11 @@
+@@ -339,7 +338,7 @@
+                 <option value="full">Whole clip</option>
                </select>
              </label>
-             <div class="frame-cards sc-styles" id="long-frame-cards">
--              <button type="button" class="frame-card f-default" data-hookframe=""><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Default</span></button>
--              <button type="button" class="frame-card f-header" data-hookframe="header"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Header</span></button>
--              <button type="button" class="frame-card f-pill" data-hookframe="pill"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Pill</span></button>
--              <button type="button" class="frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Overlay</span></button>
--              <button type="button" class="frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Bottom</span></button>
-+              <button type="button" class="sub-card frame-card f-default sel" data-hookframe=""><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Default</span></button>
-+              <button type="button" class="sub-card frame-card f-header" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
-+              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
-+              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
-+              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
-             </div>
-             <input type="hidden" id="long-hook-frame" value="" />
-             <label>Text color
-@@ -547,11 +539,11 @@
+-            <div class="frame-cards sc-styles" id="long-frame-cards">
++            <div class="sub-cards sc-styles frame-cards" id="long-frame-cards">
+               <button type="button" class="sub-card frame-card f-default sel" data-hookframe=""><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Default</span></button>
+               <button type="button" class="sub-card frame-card f-header" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+               <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
+@@ -538,7 +537,7 @@
+                 <option value="full">Whole clip</option>
                </select>
              </label>
-             <div class="frame-cards sc-styles" id="rank-frame-cards">
--              <button type="button" class="frame-card f-default" data-hookframe=""><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Default</span></button>
--              <button type="button" class="frame-card f-header" data-hookframe="header"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Header</span></button>
--              <button type="button" class="frame-card f-pill" data-hookframe="pill"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Pill</span></button>
--              <button type="button" class="frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Overlay</span></button>
--              <button type="button" class="frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Bottom</span></button>
-+              <button type="button" class="sub-card frame-card f-default sel" data-hookframe=""><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Default</span></button>
-+              <button type="button" class="sub-card frame-card f-header" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
-+              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
-+              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
-+              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
-             </div>
-             <input type="hidden" id="rank-hook-frame" value="" />
-             <label>Text color
+-            <div class="frame-cards sc-styles" id="rank-frame-cards">
++            <div class="sub-cards sc-styles frame-cards" id="rank-frame-cards">
+               <button type="button" class="sub-card frame-card f-default sel" data-hookframe=""><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Default</span></button>
+               <button type="button" class="sub-card frame-card f-header" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+               <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
