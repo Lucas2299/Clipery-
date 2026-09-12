@@ -291,10 +291,11 @@ function normalizeHookPos(v) {
 }
 // Hook frame layouts: control container shape, position, and text effects.
 const HOOK_FRAMES = {
-  header:   { an: 8, mv: 50,  frame: "bar" },
-  pill:     { an: 5, mv: 160, frame: "pill" },
-  overlay:  { an: 8, mv: 120, frame: null },
-  bottom:   { an: 2, mv: 60,  frame: "pill" },
+  headline:  { an: 5, mv: 180, frame: "box",  font: "Impact",         col: "&H00FFFFFF", box: "&H000000FF", bord: 1, bordCol: "&H00FFFFFF", case: "caps" },
+  badge:     { an: 5, mv: 180, frame: "box",  font: "Montserrat",     col: "&H00000000", box: "&H00FFFFFF", bord: 0, rad: 20, shad: 3 },
+  minimal:   { an: 8, mv: 120, frame: null,   font: "Inter",          col: "&H00FFFFFF", box: "&H80000000", bord: 0, shad: 0, case: "lower" },
+  highlight: { an: 2, mv: 60,  frame: null,   font: "Arial",          col: "&H00000000", hl: "&H0000FFFF", shad: 0 },
+  retro:     { an: 5, mv: 180, frame: "box",  font: "Courier New",    col: "&H003C3C3C", box: "&H00DCDCDC", bord: 3, bordCol: "&H00000000", offX: 3, offY: 3 },
 };
 function normalizeHookFrame(v) {
   const t = String(v || "").toLowerCase().trim();
@@ -313,23 +314,30 @@ function resolveHookFrame(lk, frame) {
   const F = HOOK_FRAMES[f];
   lk.marginV = F.mv;
   lk.an = F.an;
-  if (F.frame === "bar") {
-    lk.textFx = "{\\fad(500,300)\\2a&H80&}";
-    lk.fs = 30;
-    lk.bg = "&H000000FF";
-  } else if (F.frame === "pill") {
-    lk.textFx = "{\\fad(300,200)}";
-    lk.fs = 24;
-  } else {
-    lk.textFx = "{\\fad(200,150)\\4c&H000000&\\4a&H80&\\bord3\\shad4}";
-    lk.fs = 26;
-  }
+  lk.fs = 28;
+  if (F.col)  lk.color = F.col;
+  if (F.font) lk.font = F.font;
+  if (F.case) lk.textCase = F.case;
+  // text effects
+  const fx = ["\\fad(200,150)"];
+  if (F.box)  { fx.push("\\3a&HFF&"); lk.bg = F.box; lk.bord = F.bord || 0; }
+  if (F.bordCol) { lk.bordCol = F.bordCol; }
+  if (F.shad) fx.push("\\shad" + F.shad);
+  else         fx.push("\\shad0");
+  if (F.rad)  lk.pill = true;
+  if (F.offX) { lk.offX = F.offX; lk.offY = F.offY; }
+  if (F.hl)   lk.hl = F.hl;
+  lk.textFx = "{" + fx.join("") + "}";
 }
 function hookStyleLine(style, colorKey, pos, frame) {
   const T = resolveHookLook(style, colorKey, pos, frame);
   const fs = T.fs || 33;
   const an = T.an || 8;
-  return `Style: Hook,DejaVu Sans,${fs},${T.color},${T.color},${T.deco},${an},12,12,${T.marginV},1`;
+  const font = T.font || "DejaVu Sans";
+  const bord = T.bord != null ? T.bord : 3;
+  const bordCol = T.bordCol || T.color;
+  const oc = T.deco.split(",")[0]; // outline colour from deco
+  return `Style: Hook,${font},${fs},${T.color},${T.color},${bordCol},&H00000000,1,0,0,0,100,100,0,0,1,${bord},0,${an},12,12,${T.marginV},1`;
 }
 
 /**
@@ -481,11 +489,25 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
       const hl = resolveHookLook(hook.style, hook.color, hook.pos, hook.frame);
+      const tStart = assTime(hook.start), tEnd = assTime(hook.end);
+      // background bar/box event (when frame has bg)
       if (hl.bg) {
-        events.push(`Dialogue: 0,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\bord0\\shad0\\1c${hl.bg}}${hookText}`);
+        const bgFx = `{\\bord${hl.bord || 0}\\shad0\\1c${hl.bg}${hl.bordCol ? "\\3c" + hl.bordCol : ""}${hl.offX ? "\\xbord" + (hl.bord + hl.offX) + "\\ybord" + (hl.bord + hl.offY) : ""}}`;
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,${bgFx}${hookText}`);
       }
+      // highlighter: per-word yellow/green background rectangles
+      if (hl.hl) {
+        const words = hookText.split(/\\N| /);
+        words.forEach((w, i) => {
+          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\p1\\bord0\\shad0\\1c${hl.hl}\\pos(384,684)\\an${hl.an}}${w}`);
+        });
+      }
+      // text event
+      const textFx = hl.textFx || "";
+      const caseTag = hl.textCase === "lower" ? "\\fe2" : hl.textCase === "caps" ? "\\fe1" : "";
+      const fontTag = hl.font ? `\\fn${hl.font}` : "";
       events.push(
-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,${hl.textFx || ""}{\\fs${hl.fs || 33}\\1c${hl.color}}${hookText}`
+        `Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,${textFx}${fontTag}{\\fs${hl.fs || 33}\\1c${hl.color}}${caseTag}${hookText}`
       );
     }
   }
