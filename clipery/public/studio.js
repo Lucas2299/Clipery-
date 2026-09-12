@@ -70,28 +70,11 @@
   function collectHook(prefix) {
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
-    var b = $(prefix + "-hook-style");
     var c = $(prefix + "-hook-color");
     var p = $(prefix + "-hook-frame");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white", frame: p ? p.value : "" };
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "" };
   }
 
-  /* Hook title style: click a card, the hidden input carries the choice. */
-  function wireHookStyleCards(prefix) {
-    var grid = $(prefix + "-hook-cards");
-    var hid = $(prefix + "-hook-style");
-    if (!grid || !hid) return;
-    var cards = grid.querySelectorAll(".sub-card");
-    for (var i = 0; i < cards.length; i++) {
-      cards[i].addEventListener("click", function (ev) {
-        var st = ev.currentTarget.getAttribute("data-hookstyle");
-        if (!st) return;
-        hid.value = st;
-        for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
-        ev.currentTarget.classList.add("sel");
-      });
-    }
-  }
 
   // Hook title and subtitles are either/or: both at once fight for the
   // same screen. Turning one on switches the other off.
@@ -124,8 +107,7 @@
   }
   wireHookToggle("long");
   wireHookToggle("rank");
-  wireHookStyleCards("long");
-  wireHookStyleCards("rank");
+
   // Frame cards: click sets hidden input
   function wireFrameCards(prefix) {
     var grid = $(prefix + "-frame-cards");
