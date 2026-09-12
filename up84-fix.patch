@@ -1,88 +1,26 @@
 diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 489aae5..02187f2 100644
+index 02187f2..585f45d 100644
 --- a/clipery/public/studio.html
 +++ b/clipery/public/studio.html
-@@ -346,7 +346,7 @@
-                 <option value="full">Whole clip</option>
-               </select>
-             </label>
--            <div class="frame-cards" id="long-frame-cards">
-+            <div class="frame-cards sc-styles" id="long-frame-cards">
-               <button type="button" class="frame-card f-default" data-hookframe=""><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Default</span></button>
-               <button type="button" class="frame-card f-header" data-hookframe="header"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Header</span></button>
-               <button type="button" class="frame-card f-pill" data-hookframe="pill"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Pill</span></button>
-@@ -354,10 +354,6 @@
-               <button type="button" class="frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Bottom</span></button>
-             </div>
-             <input type="hidden" id="long-hook-frame" value="" />
--            <input type="hidden" id="long-hook-style" value="boxdark" />
--            <div class="sub-cards sc-styles" id="long-hook-cards">
--              <button type="button" class="sub-card sc-full d-plain" data-hookstyle="plain"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Plain</span></button>              <button type="button" class="sub-card sc-full d-outline" data-hookstyle="outlined"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Outline</span></button>              <button type="button" class="sub-card sc-full d-thick" data-hookstyle="thick"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Thick</span></button>              <button type="button" class="sub-card sc-full d-shadow" data-hookstyle="shadow"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Shadow</span></button>              <button type="button" class="sub-card sc-full sc-bdim sel" data-hookstyle="boxdark"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dim box</span></button>              <button type="button" class="sub-card sc-full sc-blight" data-hookstyle="boxlight"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Light box</span></button>              <button type="button" class="sub-card sc-bwhite" data-hookstyle="boxwhite"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">White box</span></button>              <button type="button" class="sub-card sc-bred" data-hookstyle="boxred"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Red box</span></button>              <button type="button" class="sub-card sc-bblack" data-hookstyle="boxblack"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Black box</span></button>
--            </div>
-             <label>Text color
-               <select id="long-hook-color">
-                 <option value="white" selected>White</option>
-@@ -549,7 +545,7 @@
-                 <option value="full">Whole clip</option>
-               </select>
-             </label>
--            <div class="frame-cards" id="rank-frame-cards">
-+            <div class="frame-cards sc-styles" id="rank-frame-cards">
-               <button type="button" class="frame-card f-default" data-hookframe=""><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Default</span></button>
-               <button type="button" class="frame-card f-header" data-hookframe="header"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Header</span></button>
-               <button type="button" class="frame-card f-pill" data-hookframe="pill"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Pill</span></button>
-@@ -557,10 +553,6 @@
-               <button type="button" class="frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap">HOOK<br>TITLE</span><span class="fc-name">Bottom</span></button>
-             </div>
-             <input type="hidden" id="rank-hook-frame" value="" />
--            <input type="hidden" id="rank-hook-style" value="boxdark" />
--            <div class="sub-cards sc-styles" id="rank-hook-cards">
--              <button type="button" class="sub-card sc-full d-plain" data-hookstyle="plain"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Plain</span></button>              <button type="button" class="sub-card sc-full d-outline" data-hookstyle="outlined"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Outline</span></button>              <button type="button" class="sub-card sc-full d-thick" data-hookstyle="thick"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Thick</span></button>              <button type="button" class="sub-card sc-full d-shadow" data-hookstyle="shadow"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Shadow</span></button>              <button type="button" class="sub-card sc-full sc-bdim sel" data-hookstyle="boxdark"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dim box</span></button>              <button type="button" class="sub-card sc-full sc-blight" data-hookstyle="boxlight"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Light box</span></button>              <button type="button" class="sub-card sc-bwhite" data-hookstyle="boxwhite"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">White box</span></button>              <button type="button" class="sub-card sc-bred" data-hookstyle="boxred"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Red box</span></button>              <button type="button" class="sub-card sc-bblack" data-hookstyle="boxblack"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Black box</span></button>
--            </div>
-             <label>Text color
-               <select id="rank-hook-color">
-                 <option value="white" selected>White</option>
-diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index c779eb9..a13e13c 100644
---- a/clipery/public/studio.js
-+++ b/clipery/public/studio.js
-@@ -70,28 +70,11 @@
-   function collectHook(prefix) {
-     var t = $(prefix + "-hook");
-     var m = $(prefix + "-hook-mode");
--    var b = $(prefix + "-hook-style");
-     var c = $(prefix + "-hook-color");
-     var p = $(prefix + "-hook-frame");
--    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: b ? b.value : "boxdark", color: c ? c.value : "white", frame: p ? p.value : "" };
-+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "" };
-   }
-
--  /* Hook title style: click a card, the hidden input carries the choice. */
--  function wireHookStyleCards(prefix) {
--    var grid = $(prefix + "-hook-cards");
--    var hid = $(prefix + "-hook-style");
--    if (!grid || !hid) return;
--    var cards = grid.querySelectorAll(".sub-card");
--    for (var i = 0; i < cards.length; i++) {
--      cards[i].addEventListener("click", function (ev) {
--        var st = ev.currentTarget.getAttribute("data-hookstyle");
--        if (!st) return;
--        hid.value = st;
--        for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
--        ev.currentTarget.classList.add("sel");
--      });
--    }
--  }
-
-   // Hook title and subtitles are either/or: both at once fight for the
-   // same screen. Turning one on switches the other off.
-@@ -124,8 +107,7 @@
-   }
-   wireHookToggle("long");
-   wireHookToggle("rank");
--  wireHookStyleCards("long");
--  wireHookStyleCards("rank");
-+
-   // Frame cards: click sets hidden input
-   function wireFrameCards(prefix) {
-     var grid = $(prefix + "-frame-cards");
+@@ -124,13 +124,14 @@
+       background:rgba(255,255,255,0.04); position:relative; overflow:hidden; }
+     .frame-card.sel { border-color:var(--pink); }
+     .frame-card:hover { border-color:rgba(255,255,255,0.3); }
+-    .frame-card .sc-cap { display:block; font-size:0.62rem; font-weight:800; letter-spacing:0.04em; padding:0.2rem 0; line-height:1.1; }
+-    .frame-card .fc-name { display:block; font-size:0.58rem; opacity:0.7; margin-top:0.1rem; }
+-    .f-default { background:rgba(255,255,255,0.06); }
+-    .f-header { background:linear-gradient(180deg, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.82) 55%, transparent 55%); }
+-    .f-pill { background:rgba(0,0,0,0.55); border-radius:20px; }
+-    .f-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
+-    .f-bottom { background:linear-gradient(180deg, transparent 0%, transparent 50%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.55) 100%); }
++    .frame-card .sc-cap { display:block; font-size:0.62rem; font-weight:800; letter-spacing:0.04em; line-height:1.1; width:100%; border-radius:6px; padding:0.3rem 0.15rem; }
++    .frame-card .fc-name { display:block; font-size:0.58rem; opacity:0.7; margin-top:0.15rem; }
++    .frame-card.f-default .sc-cap { background:rgba(0,0,0,0.7); }
++    .frame-card.f-header { position:relative; }
++    .frame-card.f-header .sc-cap { background:linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 100%); }
++    .frame-card.f-pill .sc-cap { background:rgba(0,0,0,0.55); border-radius:20px; }
++    .frame-card.f-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
++    .frame-card.f-bottom .sc-cap { background:rgba(0,0,0,0.7); }
+ </style>
+   </head>
+   <body class="studio-app">
