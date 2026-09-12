@@ -427,14 +427,14 @@ function buildHook(words, clipDur, mode, trends, look) {
   const text = pickHookText(words, extraPower);
   if (!text) return null;
   const dur = Math.max(clipDur || 0, 0.6);
-  const hookDur = (look && look.duration) ? Math.max(1, Math.min(10, Number(look.duration) || 3)) : 3;
+  const hookDur = 5;
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
   const st = normalizeHookStyle(look && look.style);
   const col = normalizeHookColor(look && look.color);
   const pos = normalizeHookPos(look && look.pos);
   const frame = normalizeHookFrame(look && look.frame);
   const bgColor = (look && look.bgColor) || "";
-  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, frame, bgColor, duration: hookDur };
+  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, frame, bgColor };
 }
 
 async function probeDuration(p) {
