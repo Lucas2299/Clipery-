@@ -73,7 +73,8 @@
     var c = $(prefix + "-hook-color");
     var p = $(prefix + "-hook-frame");
     var b = $(prefix + "-hook-bg");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "" };
+    var ps = $(prefix + "-hook-pos");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top" };
   }
 
 
@@ -126,6 +127,38 @@
   }
   wireFrameCards("long");
   wireFrameCards("rank");
+  // Live color preview on frame cards
+  var COLOR_MAP = {white:"#fff",yellow:"#FFE74C",pink:"#FF4D6D",orange:"#FF8A4C",red:"#FF3B3B",green:"#30D158",cyan:"#3CD4F5",blue:"#0A84FF",purple:"#A86BFF",black:"#000"};
+  function wireHookPreview(prefix) {
+    var grid = $(prefix + "-frame-cards");
+    var colorSel = $(prefix + "-hook-color");
+    var bgSel = $(prefix + "-hook-bg");
+    if (!grid) return;
+    function updatePreview() {
+      var cards = grid.querySelectorAll(".frame-card");
+      var textCol = colorSel ? COLOR_MAP[colorSel.value] || "#fff" : "#fff";
+      var bgVal = bgSel ? bgSel.value : "";
+      var bgCol = bgVal ? COLOR_MAP[bgVal] : "";
+      for (var i = 0; i < cards.length; i++) {
+        var cap = cards[i].querySelector(".sc-cap");
+        if (!cap) continue;
+        var f = cards[i].getAttribute("data-hookframe");
+        // special frames keep their base style
+        if (f === "badge") { cap.style.color = "#111"; cap.style.background = bgCol || "#fff"; }
+        else if (f === "retro") { cap.style.color = "#3C3C3C"; cap.style.background = bgCol || "#DCDCDC"; }
+        else if (f === "highlight") {
+          var words = cap.querySelectorAll(".w");
+          for (var w = 0; w < words.length; w++) { words[w].style.background = bgCol || "#FFE74C"; words[w].style.color = "#111"; }
+          cap.style.color = "#111";
+        }
+        else { cap.style.color = textCol; if (bgCol) cap.style.background = bgCol; }
+      }
+    }
+    if (colorSel) colorSel.addEventListener("change", updatePreview);
+    if (bgSel) bgSel.addEventListener("change", updatePreview);
+  }
+  wireHookPreview("long");
+  wireHookPreview("rank");
   wireHookColor("long");
   wireHookColor("rank");
 
@@ -696,6 +729,7 @@
           fd.append("hookColor", longHook.color);
           fd.append("hookFrame", longHook.frame);
           fd.append("hookBg", longHook.bg);
+          fd.append("hookPos", longHook.pos);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -718,6 +752,7 @@
               hookColor: longHook.color,
               hookFrame: longHook.frame,
               hookBg: longHook.bg,
+              hookPos: longHook.pos,
             }),
           });
         }
@@ -945,6 +980,7 @@
           fd.append("hookColor", rankHook.color);
           fd.append("hookFrame", rankHook.frame);
           fd.append("hookBg", rankHook.bg);
+          fd.append("hookPos", rankHook.pos);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -967,6 +1003,7 @@
               hookColor: rankHook.color,
               hookFrame: rankHook.frame,
               hookBg: rankHook.bg,
+              hookPos: rankHook.pos,
             }),
           });
         }
