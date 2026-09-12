@@ -1,0 +1,147 @@
+diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
+index 62859a2..47cfb41 100644
+--- a/clipery/lib/subtitles.js
++++ b/clipery/lib/subtitles.js
+@@ -291,10 +291,11 @@ function normalizeHookPos(v) {
+ }
+ // Hook frame layouts: control container shape, position, and text effects.
+ const HOOK_FRAMES = {
+-  header:   { an: 8, mv: 50,  frame: "bar" },
+-  pill:     { an: 5, mv: 160, frame: "pill" },
+-  overlay:  { an: 8, mv: 120, frame: null },
+-  bottom:   { an: 2, mv: 60,  frame: "pill" },
++  headline:  { an: 5, mv: 180, frame: "box",  font: "Impact",         col: "&H00FFFFFF", box: "&H000000FF", bord: 1, bordCol: "&H00FFFFFF", case: "caps" },
++  badge:     { an: 5, mv: 180, frame: "box",  font: "Montserrat",     col: "&H00000000", box: "&H00FFFFFF", bord: 0, rad: 20, shad: 3 },
++  minimal:   { an: 8, mv: 120, frame: null,   font: "Inter",          col: "&H00FFFFFF", box: "&H80000000", bord: 0, shad: 0, case: "lower" },
++  highlight: { an: 2, mv: 60,  frame: null,   font: "Arial",          col: "&H00000000", hl: "&H0000FFFF", shad: 0 },
++  retro:     { an: 5, mv: 180, frame: "box",  font: "Courier New",    col: "&H003C3C3C", box: "&H00DCDCDC", bord: 3, bordCol: "&H00000000", offX: 3, offY: 3 },
+ };
+ function normalizeHookFrame(v) {
+   const t = String(v || "").toLowerCase().trim();
+@@ -313,23 +314,30 @@ function resolveHookFrame(lk, frame) {
+   const F = HOOK_FRAMES[f];
+   lk.marginV = F.mv;
+   lk.an = F.an;
+-  if (F.frame === "bar") {
+-    lk.textFx = "{\\fad(500,300)\\2a&H80&}";
+-    lk.fs = 30;
+-    lk.bg = "&H000000FF";
+-  } else if (F.frame === "pill") {
+-    lk.textFx = "{\\fad(300,200)}";
+-    lk.fs = 24;
+-  } else {
+-    lk.textFx = "{\\fad(200,150)\\4c&H000000&\\4a&H80&\\bord3\\shad4}";
+-    lk.fs = 26;
+-  }
++  lk.fs = 28;
++  if (F.col)  lk.color = F.col;
++  if (F.font) lk.font = F.font;
++  if (F.case) lk.textCase = F.case;
++  // text effects
++  const fx = ["\\fad(200,150)"];
++  if (F.box)  { fx.push("\\3a&HFF&"); lk.bg = F.box; lk.bord = F.bord || 0; }
++  if (F.bordCol) { lk.bordCol = F.bordCol; }
++  if (F.shad) fx.push("\\shad" + F.shad);
++  else         fx.push("\\shad0");
++  if (F.rad)  lk.pill = true;
++  if (F.offX) { lk.offX = F.offX; lk.offY = F.offY; }
++  if (F.hl)   lk.hl = F.hl;
++  lk.textFx = "{" + fx.join("") + "}";
+ }
+ function hookStyleLine(style, colorKey, pos, frame) {
+   const T = resolveHookLook(style, colorKey, pos, frame);
+   const fs = T.fs || 33;
+   const an = T.an || 8;
+-  return `Style: Hook,DejaVu Sans,${fs},${T.color},${T.color},${T.deco},${an},12,12,${T.marginV},1`;
++  const font = T.font || "DejaVu Sans";
++  const bord = T.bord != null ? T.bord : 3;
++  const bordCol = T.bordCol || T.color;
++  const oc = T.deco.split(",")[0]; // outline colour from deco
++  return `Style: Hook,${font},${fs},${T.color},${T.color},${bordCol},&H00000000,1,0,0,0,100,100,0,0,1,${bord},0,${an},12,12,${T.marginV},1`;
+ }
+
+ /**
+@@ -481,11 +489,25 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
+     if (hookText) {
+       const hl = resolveHookLook(hook.style, hook.color, hook.pos, hook.frame);
++      const tStart = assTime(hook.start), tEnd = assTime(hook.end);
++      // background bar/box event (when frame has bg)
+       if (hl.bg) {
+-        events.push(`Dialogue: 0,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\bord0\\shad0\\1c${hl.bg}}${hookText}`);
++        const bgFx = `{\\bord${hl.bord || 0}\\shad0\\1c${hl.bg}${hl.bordCol ? "\\3c" + hl.bordCol : ""}${hl.offX ? "\\xbord" + (hl.bord + hl.offX) + "\\ybord" + (hl.bord + hl.offY) : ""}}`;
++        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,${bgFx}${hookText}`);
++      }
++      // highlighter: per-word yellow/green background rectangles
++      if (hl.hl) {
++        const words = hookText.split(/\\N| /);
++        words.forEach((w, i) => {
++          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\p1\\bord0\\shad0\\1c${hl.hl}\\pos(384,684)\\an${hl.an}}${w}`);
++        });
+       }
++      // text event
++      const textFx = hl.textFx || "";
++      const caseTag = hl.textCase === "lower" ? "\\fe2" : hl.textCase === "caps" ? "\\fe1" : "";
++      const fontTag = hl.font ? `\\fn${hl.font}` : "";
+       events.push(
+-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,${hl.textFx || ""}{\\fs${hl.fs || 33}\\1c${hl.color}}${hookText}`
++        `Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,${textFx}${fontTag}{\\fs${hl.fs || 33}\\1c${hl.color}}${caseTag}${hookText}`
+       );
+     }
+   }
+diff --git a/clipery/public/studio.html b/clipery/public/studio.html
+index 9b18690..68759cf 100644
+--- a/clipery/public/studio.html
++++ b/clipery/public/studio.html
+@@ -118,11 +118,12 @@
+       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
+       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
+
+-    .frame-card.f-default .sc-cap { background:rgba(0,0,0,0.7); }
+-    .frame-card.f-header .sc-cap { background:linear-gradient(180deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.7) 100%); }
+-    .frame-card.f-pill .sc-cap { background:rgba(0,0,0,0.55); border-radius:20px; }
+-    .frame-card.f-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
+-    .frame-card.f-bottom .sc-cap { background:rgba(0,0,0,0.7); }
++    .frame-card.f-headline .sc-cap { background:#FF3B3B; color:#fff; font-family:Impact,sans-serif; text-transform:uppercase; letter-spacing:0.06em; }
++    .frame-card.f-badge .sc-cap { background:#fff; color:#111; border-radius:20px; font-family:Montserrat,Arial,sans-serif; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
++    .frame-card.f-minimal .sc-cap { background:rgba(0,0,0,0.5); text-transform:lowercase; font-family:Inter,Roboto,sans-serif; font-weight:500; letter-spacing:0.03em; }
++    .frame-card.f-highlight .sc-cap { background:transparent; }
++    .frame-card.f-highlight .sc-cap .w { background:#FFE74C; color:#111; padding:0 2px; border-radius:2px; }
++    .frame-card.f-retro .sc-cap { background:#DCDCDC; color:#3C3C3C; font-family:"Courier New",monospace; box-shadow:3px 3px 0 #000; }
+ </style>
+   </head>
+   <body class="studio-app">
+@@ -339,11 +340,11 @@
+               </select>
+             </label>
+             <div class="sub-cards sc-styles frame-cards" id="long-frame-cards">
+-              <button type="button" class="sub-card frame-card f-default sel" data-hookframe=""><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Default</span></button>
+-              <button type="button" class="sub-card frame-card f-header" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+-              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
+-              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
+-              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
++              <button type="button" class="sub-card frame-card f-headline sel" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline News</span></button>
++              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Social Badge</span></button>
++              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal Label</span></button>
++              <button type="button" class="sub-card frame-card f-highlight" data-hookframe="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
++              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro Border</span></button>
+             </div>
+             <input type="hidden" id="long-hook-frame" value="" />
+             <label>Text color
+@@ -538,11 +539,11 @@
+               </select>
+             </label>
+             <div class="sub-cards sc-styles frame-cards" id="rank-frame-cards">
+-              <button type="button" class="sub-card frame-card f-default sel" data-hookframe=""><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Default</span></button>
+-              <button type="button" class="sub-card frame-card f-header" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+-              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
+-              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
+-              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
++              <button type="button" class="sub-card frame-card f-headline sel" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline News</span></button>
++              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Social Badge</span></button>
++              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal Label</span></button>
++              <button type="button" class="sub-card frame-card f-highlight" data-hookframe="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
++              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro Border</span></button>
+             </div>
+             <input type="hidden" id="rank-hook-frame" value="" />
+             <label>Text color
