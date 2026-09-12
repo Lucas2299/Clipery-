@@ -290,7 +290,7 @@ function normalizeHookPos(v) {
   return HOOK_POSITIONS.hasOwnProperty(t) ? t : "top";
 }
 // Hook frame layouts: control container shape, position, and text effects.
-const HOOK_FRAMES = {
+const HOOK_TEMPLATES = {
   header:    { an: 8, mv: 50,  frame: "bar",   font: "DejaVu Sans",   bg: true },
   pill:      { an: 5, mv: 160, frame: "pill",  font: "DejaVu Sans",   rad: 20 },
   overlay:   { an: 8, mv: 120, frame: null,    font: "DejaVu Sans",   shad: 4, bord: 3 },
@@ -301,21 +301,21 @@ const HOOK_FRAMES = {
   highlight: { an: 2, mv: 60,  frame: null,    font: "Arial",         hl: true, shad: 0 },
   retro:     { an: 5, mv: 180, frame: "box",   font: "Courier New",   bord: 3, offX: 3, offY: 3 },
 };
-function normalizeHookFrame(v) {
+function normalizeHookTemplate(v) {
   const t = String(v || "").toLowerCase().trim();
-  return HOOK_FRAMES.hasOwnProperty(t) ? t : "";
+  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "";
 }
 /** Resolved hook look: fixed shout size, shared decoration + text colour. */
 function resolveHookLook(style, colorKey, pos, frame, bgColor) {
   const st = normalizeHookStyle(style);
   const lk = { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined, marginV: HOOK_POSITIONS[normalizeHookPos(pos)] };
-  resolveHookFrame(lk, frame, bgColor);
+  resolveHookTemplate(lk, frame, bgColor);
   return lk;
 }
-function resolveHookFrame(lk, frame, bgColor) {
-  const f = normalizeHookFrame(frame);
+function resolveHookTemplate(lk, frame, bgColor) {
+  const f = normalizeHookTemplate(frame);
   if (!f) return;
-  const F = HOOK_FRAMES[f];
+  const F = HOOK_TEMPLATES[f];
   lk.marginV = F.mv;
   lk.an = F.an;
   lk.fs = 28;
@@ -432,7 +432,7 @@ function buildHook(words, clipDur, mode, trends, look) {
   const st = normalizeHookStyle(look && look.style);
   const col = normalizeHookColor(look && look.color);
   const pos = normalizeHookPos(look && look.pos);
-  const frame = normalizeHookFrame(look && look.frame);
+  const frame = normalizeHookTemplate(look && look.template);
   const bgColor = (look && look.bgColor) || "";
   return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, frame, bgColor };
 }
@@ -494,7 +494,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
     // Hook title look: subtitle style + text colour + placement.
-    hookStyleLine(hook && hook.style, hook && hook.color, hook && hook.pos, hook && hook.frame, hook && hook.bgColor),
+    hookStyleLine(hook && hook.style, hook && hook.color, hook && hook.pos, hook && hook.template, hook && hook.bgColor),
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -504,7 +504,7 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   if (hook && hook.rows && hook.rows.length) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
-      const hl = resolveHookLook(hook.style, hook.color, hook.pos, hook.frame, hook.bgColor);
+      const hl = resolveHookLook(hook.style, hook.color, hook.pos, hook.template, hook.bgColor);
       const tStart = assTime(hook.start), tEnd = assTime(hook.end);
       // background bar/box event (when frame has bg)
       if (hl.bg) {
@@ -806,6 +806,6 @@ module.exports = {
   normalizeHookStyle,
   normalizeHookColor,
   normalizeHookPos,
-  normalizeHookFrame,
+  normalizeHookTemplate,
   HOOK_STYLES,
 };

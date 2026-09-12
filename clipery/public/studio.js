@@ -71,7 +71,7 @@
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
     var c = $(prefix + "-hook-color");
-    var p = $(prefix + "-hook-frame");
+    var p = $(prefix + "-hook-template");
     var b = $(prefix + "-hook-bg");
     var ps = $(prefix + "-hook-pos");
     return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top" };
@@ -111,38 +111,38 @@
   wireHookToggle("rank");
 
   // Frame cards: click sets hidden input
-  function wireFrameCards(prefix) {
-    var grid = $(prefix + "-frame-cards");
-    var hid = $(prefix + "-hook-frame");
+  function wireTemplateCards(prefix) {
+    var grid = $(prefix + "-template-cards");
+    var hid = $(prefix + "-hook-template");
     if (!grid || !hid) return;
-    var cards = grid.querySelectorAll(".frame-card");
+    var cards = grid.querySelectorAll(".template-card");
     for (var i = 0; i < cards.length; i++) {
       cards[i].addEventListener("click", function (ev) {
-        var st = ev.currentTarget.getAttribute("data-hookframe");
+        var st = ev.currentTarget.getAttribute("data-hooktemplate");
         hid.value = st || "";
         for (var j = 0; j < cards.length; j++) cards[j].classList.remove("sel");
         ev.currentTarget.classList.add("sel");
       });
     }
   }
-  wireFrameCards("long");
-  wireFrameCards("rank");
+  wireTemplateCards("long");
+  wireTemplateCards("rank");
   // Live color preview on frame cards
   var COLOR_MAP = {white:"#fff",yellow:"#FFE74C",pink:"#FF4D6D",orange:"#FF8A4C",red:"#FF3B3B",green:"#30D158",cyan:"#3CD4F5",blue:"#0A84FF",purple:"#A86BFF",black:"#000"};
   function wireHookPreview(prefix) {
-    var grid = $(prefix + "-frame-cards");
+    var grid = $(prefix + "-template-cards");
     var colorSel = $(prefix + "-hook-color");
     var bgSel = $(prefix + "-hook-bg");
     if (!grid) return;
     function updatePreview() {
-      var cards = grid.querySelectorAll(".frame-card");
+      var cards = grid.querySelectorAll(".template-card");
       var textCol = colorSel ? COLOR_MAP[colorSel.value] || "#fff" : "#fff";
       var bgVal = bgSel ? bgSel.value : "";
       var bgCol = bgVal ? COLOR_MAP[bgVal] : "";
       for (var i = 0; i < cards.length; i++) {
         var cap = cards[i].querySelector(".sc-cap");
         if (!cap) continue;
-        var f = cards[i].getAttribute("data-hookframe");
+        var f = cards[i].getAttribute("data-hooktemplate");
         // special frames keep their base style
         if (f === "badge") { cap.style.color = "#111"; cap.style.background = bgCol || "#fff"; }
         else if (f === "retro") { cap.style.color = "#3C3C3C"; cap.style.background = bgCol || "#DCDCDC"; }
@@ -727,7 +727,7 @@
           fd.append("hookMode", longHook.mode);
           fd.append("hookStyle", longHook.style);
           fd.append("hookColor", longHook.color);
-          fd.append("hookFrame", longHook.frame);
+          fd.append("hookTemplate", longHook.template);
           fd.append("hookBg", longHook.bg);
           fd.append("hookPos", longHook.pos);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
@@ -750,7 +750,7 @@
               hookMode: longHook.mode,
               hookStyle: longHook.style,
               hookColor: longHook.color,
-              hookFrame: longHook.frame,
+              hookTemplate: longHook.template,
               hookBg: longHook.bg,
               hookPos: longHook.pos,
             }),
@@ -978,7 +978,7 @@
           fd.append("hookMode", rankHook.mode);
           fd.append("hookStyle", rankHook.style);
           fd.append("hookColor", rankHook.color);
-          fd.append("hookFrame", rankHook.frame);
+          fd.append("hookTemplate", rankHook.template);
           fd.append("hookBg", rankHook.bg);
           fd.append("hookPos", rankHook.pos);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
@@ -1001,7 +1001,7 @@
               hookMode: rankHook.mode,
               hookStyle: rankHook.style,
               hookColor: rankHook.color,
-              hookFrame: rankHook.frame,
+              hookTemplate: rankHook.template,
               hookBg: rankHook.bg,
               hookPos: rankHook.pos,
             }),

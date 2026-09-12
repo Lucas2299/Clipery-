@@ -118,18 +118,18 @@
       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
     
-    .frame-card.f-header .sc-cap { background:rgba(0,0,0,0.75); }
-    .frame-card.f-pill .sc-cap { background:rgba(0,0,0,0.55); border-radius:20px; }
-    .frame-card.f-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
-    .frame-card.f-bottom .sc-cap { background:rgba(0,0,0,0.7); }
-    .frame-card.f-headline .sc-cap { background:#FF3B3B; font-family:Impact,sans-serif; text-transform:uppercase; letter-spacing:0.06em; border:1px solid #fff; }
-    .frame-card.f-badge .sc-cap { background:#fff; color:#111 !important; border-radius:20px; font-family:Montserrat,Arial,sans-serif; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
-    .frame-card.f-badge .sc-cap .w { color:#111 !important; }
-    .frame-card.f-minimal .sc-cap { background:rgba(0,0,0,0.5); text-transform:lowercase; font-family:Inter,Roboto,sans-serif; font-weight:500; }
-    .frame-card.f-highlight .sc-cap { background:transparent; }
-    .frame-card.f-highlight .sc-cap .w { background:#FFE74C; color:#111 !important; padding:0 2px; border-radius:2px; }
-    .frame-card.f-retro .sc-cap { background:#DCDCDC; color:#3C3C3C !important; font-family:"Courier New",monospace; box-shadow:3px 3px 0 #000; }
-    .frame-card.f-retro .sc-cap .w { color:#3C3C3C !important; }
+    .template-card.t-header .sc-cap { background:rgba(0,0,0,0.75); }
+    .template-card.t-pill .sc-cap { background:rgba(0,0,0,0.55); border-radius:20px; }
+    .template-card.t-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
+    .template-card.t-bottom .sc-cap { background:rgba(0,0,0,0.7); }
+    .template-card.t-headline .sc-cap { background:#FF3B3B; font-family:Impact,sans-serif; text-transform:uppercase; letter-spacing:0.06em; border:1px solid #fff; }
+    .template-card.t-badge .sc-cap { background:#fff; color:#111 !important; border-radius:20px; font-family:Montserrat,Arial,sans-serif; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+    .template-card.t-badge .sc-cap .w { color:#111 !important; }
+    .template-card.t-minimal .sc-cap { background:rgba(0,0,0,0.5); text-transform:lowercase; font-family:Inter,Roboto,sans-serif; font-weight:500; }
+    .template-card.t-highlight .sc-cap { background:transparent; }
+    .template-card.t-highlight .sc-cap .w { background:#FFE74C; color:#111 !important; padding:0 2px; border-radius:2px; }
+    .template-card.t-retro .sc-cap { background:#DCDCDC; color:#3C3C3C !important; font-family:"Courier New",monospace; box-shadow:3px 3px 0 #000; }
+    .template-card.t-retro .sc-cap .w { color:#3C3C3C !important; }
 </style>
   </head>
   <body class="studio-app">
@@ -345,18 +345,18 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
-            <div class="sub-cards sc-styles frame-cards" id="long-frame-cards">
-              <button type="button" class="sub-card frame-card f-header sel" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
-              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
-              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
-              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
-              <button type="button" class="sub-card frame-card f-headline" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
-              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
-              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
-              <button type="button" class="sub-card frame-card f-highlight" data-hookframe="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
-              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
+            <div class="sub-cards sc-styles template-cards" id="long-template-cards">
+              <button type="button" class="sub-card template-card f-header sel" data-hooktemplate="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+              <button type="button" class="sub-card template-card f-pill" data-hooktemplate="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
+              <button type="button" class="sub-card template-card f-overlay" data-hooktemplate="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
+              <button type="button" class="sub-card template-card f-bottom" data-hooktemplate="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
+              <button type="button" class="sub-card template-card f-headline" data-hooktemplate="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
+              <button type="button" class="sub-card template-card f-badge" data-hooktemplate="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
+              <button type="button" class="sub-card template-card f-minimal" data-hooktemplate="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
+              <button type="button" class="sub-card template-card f-highlight" data-hooktemplate="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
+              <button type="button" class="sub-card template-card f-retro" data-hooktemplate="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
             </div>
-            <input type="hidden" id="long-hook-frame" value="" />
+            <input type="hidden" id="long-hook-template" value="" />
             <label>Text color
               <select id="long-hook-color">
                 <option value="white" selected>White</option>
@@ -571,18 +571,18 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
-            <div class="sub-cards sc-styles frame-cards" id="rank-frame-cards">
-              <button type="button" class="sub-card frame-card f-header sel" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
-              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
-              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
-              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
-              <button type="button" class="sub-card frame-card f-headline" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
-              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
-              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
-              <button type="button" class="sub-card frame-card f-highlight" data-hookframe="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
-              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
+            <div class="sub-cards sc-styles template-cards" id="rank-template-cards">
+              <button type="button" class="sub-card template-card f-header sel" data-hooktemplate="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+              <button type="button" class="sub-card template-card f-pill" data-hooktemplate="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
+              <button type="button" class="sub-card template-card f-overlay" data-hooktemplate="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
+              <button type="button" class="sub-card template-card f-bottom" data-hooktemplate="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
+              <button type="button" class="sub-card template-card f-headline" data-hooktemplate="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
+              <button type="button" class="sub-card template-card f-badge" data-hooktemplate="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
+              <button type="button" class="sub-card template-card f-minimal" data-hooktemplate="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
+              <button type="button" class="sub-card template-card f-highlight" data-hooktemplate="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
+              <button type="button" class="sub-card template-card f-retro" data-hooktemplate="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
             </div>
-            <input type="hidden" id="rank-hook-frame" value="" />
+            <input type="hidden" id="rank-hook-template" value="" />
             <label>Text color
               <select id="rank-hook-color">
                 <option value="white" selected>White</option>
