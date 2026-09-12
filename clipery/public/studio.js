@@ -72,7 +72,8 @@
     var m = $(prefix + "-hook-mode");
     var c = $(prefix + "-hook-color");
     var p = $(prefix + "-hook-frame");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "" };
+    var b = $(prefix + "-hook-bg");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "" };
   }
 
 
@@ -694,6 +695,7 @@
           fd.append("hookStyle", longHook.style);
           fd.append("hookColor", longHook.color);
           fd.append("hookFrame", longHook.frame);
+          fd.append("hookBg", longHook.bg);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -715,6 +717,7 @@
               hookStyle: longHook.style,
               hookColor: longHook.color,
               hookFrame: longHook.frame,
+              hookBg: longHook.bg,
             }),
           });
         }
@@ -941,6 +944,7 @@
           fd.append("hookStyle", rankHook.style);
           fd.append("hookColor", rankHook.color);
           fd.append("hookFrame", rankHook.frame);
+          fd.append("hookBg", rankHook.bg);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -962,6 +966,7 @@
               hookStyle: rankHook.style,
               hookColor: rankHook.color,
               hookFrame: rankHook.frame,
+              hookBg: rankHook.bg,
             }),
           });
         }

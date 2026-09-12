@@ -118,12 +118,18 @@
       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
     
-    .frame-card.f-headline .sc-cap { background:#FF3B3B; color:#fff; font-family:Impact,sans-serif; text-transform:uppercase; letter-spacing:0.06em; }
-    .frame-card.f-badge .sc-cap { background:#fff; color:#111; border-radius:20px; font-family:Montserrat,Arial,sans-serif; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
-    .frame-card.f-minimal .sc-cap { background:rgba(0,0,0,0.5); text-transform:lowercase; font-family:Inter,Roboto,sans-serif; font-weight:500; letter-spacing:0.03em; }
+    .frame-card.f-header .sc-cap { background:rgba(0,0,0,0.75); }
+    .frame-card.f-pill .sc-cap { background:rgba(0,0,0,0.55); border-radius:20px; }
+    .frame-card.f-overlay .sc-cap { text-shadow:0 1px 4px rgba(0,0,0,0.9), 0 0 2px rgba(0,0,0,1); }
+    .frame-card.f-bottom .sc-cap { background:rgba(0,0,0,0.7); }
+    .frame-card.f-headline .sc-cap { background:#FF3B3B; font-family:Impact,sans-serif; text-transform:uppercase; letter-spacing:0.06em; border:1px solid #fff; }
+    .frame-card.f-badge .sc-cap { background:#fff; color:#111 !important; border-radius:20px; font-family:Montserrat,Arial,sans-serif; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,0.3); }
+    .frame-card.f-badge .sc-cap .w { color:#111 !important; }
+    .frame-card.f-minimal .sc-cap { background:rgba(0,0,0,0.5); text-transform:lowercase; font-family:Inter,Roboto,sans-serif; font-weight:500; }
     .frame-card.f-highlight .sc-cap { background:transparent; }
-    .frame-card.f-highlight .sc-cap .w { background:#FFE74C; color:#111; padding:0 2px; border-radius:2px; }
-    .frame-card.f-retro .sc-cap { background:#DCDCDC; color:#3C3C3C; font-family:"Courier New",monospace; box-shadow:3px 3px 0 #000; }
+    .frame-card.f-highlight .sc-cap .w { background:#FFE74C; color:#111 !important; padding:0 2px; border-radius:2px; }
+    .frame-card.f-retro .sc-cap { background:#DCDCDC; color:#3C3C3C !important; font-family:"Courier New",monospace; box-shadow:3px 3px 0 #000; }
+    .frame-card.f-retro .sc-cap .w { color:#3C3C3C !important; }
 </style>
   </head>
   <body class="studio-app">
@@ -340,11 +346,15 @@
               </select>
             </label>
             <div class="sub-cards sc-styles frame-cards" id="long-frame-cards">
-              <button type="button" class="sub-card frame-card f-headline sel" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline News</span></button>
-              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Social Badge</span></button>
-              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal Label</span></button>
+              <button type="button" class="sub-card frame-card f-header sel" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
+              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
+              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
+              <button type="button" class="sub-card frame-card f-headline" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
+              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
+              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
               <button type="button" class="sub-card frame-card f-highlight" data-hookframe="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
-              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro Border</span></button>
+              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
             </div>
             <input type="hidden" id="long-hook-frame" value="" />
             <label>Text color
@@ -358,6 +368,21 @@
                 <option value="cyan">Cyan</option>
                 <option value="blue">Blue</option>
                 <option value="purple">Purple</option>
+              </select>
+            </label>
+            <label>Background
+              <select id="long-hook-bg">
+                <option value="" selected>Auto</option>
+                <option value="white">White</option>
+                <option value="yellow">Yellow</option>
+                <option value="pink">Clipery pink</option>
+                <option value="orange">Orange</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="cyan">Cyan</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+                <option value="black">Black</option>
               </select>
             </label>
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
@@ -539,11 +564,15 @@
               </select>
             </label>
             <div class="sub-cards sc-styles frame-cards" id="rank-frame-cards">
-              <button type="button" class="sub-card frame-card f-headline sel" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline News</span></button>
-              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Social Badge</span></button>
-              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal Label</span></button>
+              <button type="button" class="sub-card frame-card f-header sel" data-hookframe="header"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Header</span></button>
+              <button type="button" class="sub-card frame-card f-pill" data-hookframe="pill"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Pill</span></button>
+              <button type="button" class="sub-card frame-card f-overlay" data-hookframe="overlay"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Overlay</span></button>
+              <button type="button" class="sub-card frame-card f-bottom" data-hookframe="bottom"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Bottom</span></button>
+              <button type="button" class="sub-card frame-card f-headline" data-hookframe="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
+              <button type="button" class="sub-card frame-card f-badge" data-hookframe="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
+              <button type="button" class="sub-card frame-card f-minimal" data-hookframe="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
               <button type="button" class="sub-card frame-card f-highlight" data-hookframe="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
-              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro Border</span></button>
+              <button type="button" class="sub-card frame-card f-retro" data-hookframe="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
             </div>
             <input type="hidden" id="rank-hook-frame" value="" />
             <label>Text color
@@ -557,6 +586,21 @@
                 <option value="cyan">Cyan</option>
                 <option value="blue">Blue</option>
                 <option value="purple">Purple</option>
+              </select>
+            </label>
+            <label>Background
+              <select id="rank-hook-bg">
+                <option value="" selected>Auto</option>
+                <option value="white">White</option>
+                <option value="yellow">Yellow</option>
+                <option value="pink">Clipery pink</option>
+                <option value="orange">Orange</option>
+                <option value="red">Red</option>
+                <option value="green">Green</option>
+                <option value="cyan">Cyan</option>
+                <option value="blue">Blue</option>
+                <option value="purple">Purple</option>
+                <option value="black">Black</option>
               </select>
             </label>
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
