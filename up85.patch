@@ -1,224 +1,28 @@
 diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
-index 3921407..a5f7421 100644
+index a5f7421..8eb16a0 100644
 --- a/clipery/lib/clipEngine.js
 +++ b/clipery/lib/clipEngine.js
-@@ -1288,8 +1288,6 @@ async function processVideo(sourcePath, options = {}) {
+@@ -1286,9 +1286,8 @@ async function processVideo(sourcePath, options = {}) {
+           hookStyle: options.hookStyle || "boxdark",
+           hookColor: options.hookColor || "white",
            hookPos: options.hookPos || "top",
-         hookFrame: options.hookFrame || "",
-         hookBg: options.hookBg || "",
--        hookDuration: options.hookDuration || 0,
--          hookDuration: options.hookDuration || 0,
+-        hookFrame: options.hookFrame || "",
+-        hookBg: options.hookBg || "",
            hookFrame: options.hookFrame || "",
++          hookBg: options.hookBg || "",
            trends: options.trends || [],
            maxClips: clipBudget,
-@@ -1376,7 +1374,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
-           ? {
-               clipDur: +(c.end - c.start).toFixed(2),
-               subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
--              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor, pos: options.hookPos, frame: options.hookFrame, bgColor: options.hookBg, duration: options.hookDuration } : null,
-+              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor, pos: options.hookPos, frame: options.hookFrame, bgColor: options.hookBg } : null,
-               trends: options.trends,
-               edit: c.edit || null,
-               layout: c.layout && c.layout !== "auto" ? c.layout : null,
-@@ -1592,8 +1590,6 @@ async function planManual(sourcePath, options = {}) {
-         hookPos: options.hookPos || "top",
-         hookFrame: options.hookFrame || "",
-         hookBg: options.hookBg || "",
--        hookDuration: options.hookDuration || 0,
--          hookDuration: options.hookDuration || 0,
-         trends: [],
-         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
-         watermark: options.watermark !== false,
+           watermark: options.watermark !== false,
 diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index 71cbb64..4bd7315 100644
+index 4bd7315..10fa881 100644
 --- a/clipery/lib/subtitles.js
 +++ b/clipery/lib/subtitles.js
-@@ -427,14 +427,14 @@ function buildHook(words, clipDur, mode, trends, look) {
-   const text = pickHookText(words, extraPower);
-   if (!text) return null;
-   const dur = Math.max(clipDur || 0, 0.6);
--  const hookDur = (look && look.duration) ? Math.max(1, Math.min(10, Number(look.duration) || 3)) : 3;
-+  const hookDur = 5;
-   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
-   const st = normalizeHookStyle(look && look.style);
-   const col = normalizeHookColor(look && look.color);
-   const pos = normalizeHookPos(look && look.pos);
-   const frame = normalizeHookFrame(look && look.frame);
-   const bgColor = (look && look.bgColor) || "";
--  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, frame, bgColor, duration: hookDur };
-+  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, frame, bgColor };
- }
-
- async function probeDuration(p) {
-diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 7e9e1d9..ddbcfba 100644
---- a/clipery/public/studio.html
-+++ b/clipery/public/studio.html
-@@ -393,15 +393,6 @@
-                 <option value="bottom">Bottom</option>
-               </select>
-             </label>
--            <label>Duration
--              <select id="long-hook-duration">
--                <option value="2">2 sec</option>
--                <option value="3" selected>3 sec</option>
--                <option value="5">5 sec</option>
--                <option value="8">8 sec</option>
--                <option value="10">10 sec</option>
--              </select>
--            </label>
-             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
-               <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
-             </label>
-@@ -628,15 +619,6 @@
-                 <option value="bottom">Bottom</option>
-               </select>
-             </label>
--            <label>Duration
--              <select id="rank-hook-duration">
--                <option value="2">2 sec</option>
--                <option value="3" selected>3 sec</option>
--                <option value="5">5 sec</option>
--                <option value="8">8 sec</option>
--                <option value="10">10 sec</option>
--              </select>
--            </label>
-             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
-               <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
-             </label>
-diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index 60d2d35..3a4f452 100644
---- a/clipery/public/studio.js
-+++ b/clipery/public/studio.js
-@@ -74,8 +74,7 @@
-     var p = $(prefix + "-hook-frame");
-     var b = $(prefix + "-hook-bg");
-     var ps = $(prefix + "-hook-pos");
--    var dur = $(prefix + "-hook-duration");
--    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top", duration: dur ? Number(dur.value) || 3 : 3 };
-+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top" };
+@@ -324,7 +324,7 @@ function resolveHookFrame(lk, frame, bgColor) {
+   // user bg color → ASS box behind text
+   const bg = SUB_COLORS.hasOwnProperty(bgColor) ? SUB_COLORS[bgColor] : null;
+   if (bg) {
+-    lk.bg = "&H00" + bg.slice(4,6) + bg.slice(2,4) + bg.slice(0,2); // BGR swap
++    lk.bg = bg; // SUB_COLORS already stores ASS BGR
    }
-
-
-@@ -731,7 +730,6 @@
-           fd.append("hookFrame", longHook.frame);
-           fd.append("hookBg", longHook.bg);
-           fd.append("hookPos", longHook.pos);
--          fd.append("hookDuration", longHook.duration);
-           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
-         } else {
-           res = await fetch("/api/clip/from-url", {
-@@ -755,7 +753,6 @@
-               hookFrame: longHook.frame,
-               hookBg: longHook.bg,
-               hookPos: longHook.pos,
--              hookDuration: longHook.duration,
-             }),
-           });
-         }
-@@ -984,7 +981,6 @@
-           fd.append("hookFrame", rankHook.frame);
-           fd.append("hookBg", rankHook.bg);
-           fd.append("hookPos", rankHook.pos);
--          fd.append("hookDuration", rankHook.duration);
-           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
-         } else {
-           res = await fetch("/api/rank/video/links", {
-@@ -1008,7 +1004,6 @@
-               hookFrame: rankHook.frame,
-               hookBg: rankHook.bg,
-               hookPos: rankHook.pos,
--              hookDuration: rankHook.duration,
-             }),
-           });
-         }
-diff --git a/clipery/server.js b/clipery/server.js
-index 7e9bc81..b5e42ca 100644
---- a/clipery/server.js
-+++ b/clipery/server.js
-@@ -673,7 +673,6 @@ function readHook(get) {
-     pos: normalizeHookPos(get("hookPos")),
-     frame: normalizeHookFrame(get("hookFrame")),
-     bg: String(get("hookBg") || "").toLowerCase().trim(),
--    duration: Number(get("hookDuration")) || 0,
-   };
- }
-
-@@ -1093,12 +1092,12 @@ const server = http.createServer(async (req, res) => {
-       const dest = path.join(UPLOADS, `${jobId}${ext}`);
-       fs.renameSync(filePart.path, dest);
-       const genre = readGenre(get("genre"));
--      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, hookDuration: hookOpts.duration || 0, trends, genre });
-+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, trends, genre });
-       const q = enqueue(dest, {
-         userId: owner && owner.id,
-         ...owner.planLimits,
-         jobId, sourceName: orig, mode, subtitles, subStyle, genre,
--        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, hookDuration: hookOpts.duration || 0, trends,
-+        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, trends,
-       });
-       return send(res, 202, {
-         ok: true,
-@@ -1139,7 +1138,7 @@ const server = http.createServer(async (req, res) => {
-         subtitles,
-         subStyle,
-         hook: hookOpts.enabled,
--        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, hookDuration: hookOpts.duration || 0,
-+        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg,
-         trends,
-       });
-       const q = enqueueItem({
-@@ -1149,7 +1148,7 @@ const server = http.createServer(async (req, res) => {
-           userId: owner && owner.id,
-           ...owner.planLimits,
-           jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
--          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, hookDuration: hookOpts.duration || 0, trends,
-+          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, trends,
-         },
-       });
-       return send(res, 202, {
-@@ -1196,7 +1195,7 @@ const server = http.createServer(async (req, res) => {
-       fs.renameSync(filePart.path, dest);
-       const meta = {
-         userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
--        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, hookDuration: hookOpts.duration || 0, trends,
-+        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, trends,
-         genre: readGenre(get("genre")),
-         review: true, manual, editor: true,
-       };
-@@ -1447,7 +1446,7 @@ const server = http.createServer(async (req, res) => {
-         subtitles,
-         subStyle,
-         hook: hookOpts.enabled,
--        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, hookDuration: hookOpts.duration || 0,
-+        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg,
-         trends,
-       });
-       const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
-@@ -1463,7 +1462,7 @@ const server = http.createServer(async (req, res) => {
-           subtitles,
-           subStyle,
-           hook: hookOpts.enabled,
--          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg, hookDuration: hookOpts.duration || 0,
-+          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookFrame: hookOpts.frame, hookBg: hookOpts.bg,
-           trends,
-         },
-       });
-@@ -1562,7 +1561,7 @@ const server = http.createServer(async (req, res) => {
-         subtitles,
-         subStyle,
-         hook: hookOptsUp.enabled,
--        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, hookFrame: hookOptsUp.frame, hookBg: hookOptsUp.bg, hookDuration: hookOptsUp.duration || 0,
-+        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, hookFrame: hookOptsUp.frame, hookBg: hookOptsUp.bg,
-         trends: trendsUp,
-       });
-       const q = enqueueItem({
-@@ -1572,7 +1571,7 @@ const server = http.createServer(async (req, res) => {
-           userId: owner && owner.id,
-           ...owner.planLimits,
-           jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
--          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, hookFrame: hookOptsUp.frame, hookBg: hookOptsUp.bg, hookDuration: hookOptsUp.duration || 0, trends: trendsUp,
-+          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, hookFrame: hookOptsUp.frame, hookBg: hookOptsUp.bg, trends: trendsUp,
-         },
-       });
-       return send(res, 202, {
+   const fx = ["\\fad(200,150)"];
+   if (F.frame === "bar") {

@@ -324,7 +324,7 @@ function resolveHookFrame(lk, frame, bgColor) {
   // user bg color → ASS box behind text
   const bg = SUB_COLORS.hasOwnProperty(bgColor) ? SUB_COLORS[bgColor] : null;
   if (bg) {
-    lk.bg = "&H00" + bg.slice(4,6) + bg.slice(2,4) + bg.slice(0,2); // BGR swap
+    lk.bg = bg; // SUB_COLORS already stores ASS BGR
   }
   const fx = ["\\fad(200,150)"];
   if (F.frame === "bar") {
