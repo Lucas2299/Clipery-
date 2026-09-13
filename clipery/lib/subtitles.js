@@ -296,6 +296,7 @@ const HOOK_TEMPLATES = {
   news:      { font: "Impact",     case: "caps",   box: "red",      textCol: "white", bord: 0, shad: 0 },
   pill:      { font: "Montserrat", case: "title",  box: "white",    textCol: "black", bord: 0, shad: 3 },
   highlight: { font: "Arial",      case: null,     box: "green",    textCol: "black", bord: 0, shad: 0 },
+  shadow:    { font: "Arial Black", case: null,     box: "none",     textCol: "white", bord: 0, shad: 4 },
 };
 function normalizeHookTemplate(v) {
   const t = String(v || "").toLowerCase().trim();
@@ -484,8 +485,11 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
         }
       } else {
         // Box background + text overlay
-        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${tpl.bord}\\shad${tpl.shad}\\1c${bg}\\pos(192,${mv})}${hookText}`);
-        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,${mv})\\1c${tcol}}${caseTag}${hookText}`);
+        if (tpl.box !== "none") {
+          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${tpl.bord}\\shad${tpl.shad}\\1c${bg}\\pos(192,${mv})}${hookText}`);
+        }
+        const shadTag = tpl.box === "none" && tpl.shad > 0 ? `\\shad${tpl.shad}\\4c&H00000000\\4a&H00&` : "\\shad0";
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0${shadTag}\\pos(192,${mv})\\1c${tcol}}${caseTag}${hookText}`);
       }
     }
   }
