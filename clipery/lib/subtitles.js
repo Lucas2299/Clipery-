@@ -295,7 +295,7 @@ function normalizeHookPos(v) {
 const HOOK_TEMPLATES = {
   news:      { font: "Impact",     case: "caps",   box: "red",      textCol: "white", bord: 0, shad: 0 },
   pill:      { font: "Montserrat", case: "title",  box: "white",    textCol: "black", bord: 0, shad: 3 },
-  highlight: { font: "Arial",      case: null,     box: "green",    textCol: "black", bord: 0, shad: 0 },
+  highlight: { font: "Arial",      case: null,     box: "green",    textCol: "green", bord: 12, shad: 0 },
   shadow:    { font: "Arial Black", case: null,     box: "none",     textCol: "white", bord: 0, shad: 4 },
 };
 function normalizeHookTemplate(v) {
@@ -465,31 +465,22 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
       const tStart = assTime(hook.start), tEnd = assTime(hook.end);
       const font = tpl.font;
       const fs = 28;
-      const an = 8; // top center
-      const mv = 50;
       const tcol = SUB_COLORS[tpl.textCol];
       const bg = SUB_COLORS[tpl.box];
       const caseTag = tpl.case === "caps" ? "\\fe1" : "";
-      const words = hookText.split("\\\\N");
-      if (hook.template === "highlight") {
-        // Per-word green highlight rectangles
+      const plain = hookText.replace(/\\\\N/g, " ");
+      if (hook.template === "shadow") {
+        // White text + deep blurry black drop shadow (no box)
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad4\\4c&H00000000\\pos(192,50)\\1c${tcol}}${plain}`);
+      } else if (hook.template === "highlight") {
+        // Black text + green thick outline acts as highlight bar behind text
         const hlCol = SUB_COLORS.green;
-        const plain = hookText.replace(/\\\\N/g, " ");
-        const wordList = plain.split(" ");
-        let x = 192 - Math.min(wordList.length * 14, 170);
-        for (const w of wordList) {
-          const wLen = w.length * 10 + 8;
-          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\bord0\\shad0\\1c${hlCol}\\pos(${x},${mv})\\p1}m -${wLen} -12 l ${wLen} -12 ${wLen} 12 -${wLen} 12{\\p0}`);
-          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(${x},${mv})\\1c${tcol}}${w}`);
-          x += wLen * 2 + 6;
-        }
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord12\\shad0\\pos(192,50)\\1c${hlCol}\\3c${hlCol}\\1a&H00&\\3a&H40&} ${plain} `);
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,50)\\1c${tcol}}${plain}`);
       } else {
-        // Box background + text overlay
-        if (tpl.box !== "none") {
-          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${tpl.bord}\\shad${tpl.shad}\\1c${bg}\\pos(192,${mv})}${hookText}`);
-        }
-        const shadTag = tpl.box === "none" && tpl.shad > 0 ? `\\shad${tpl.shad}\\4c&H00000000\\4a&H00&` : "\\shad0";
-        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0${shadTag}\\pos(192,${mv})\\1c${tcol}}${caseTag}${hookText}`);
+        // news/pill: box layer + text layer on top
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad${tpl.shad}\\pos(192,50)\\1c${bg}} ${plain} `);
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,50)\\1c${tcol}}${caseTag}${plain}`);
       }
     }
   }
