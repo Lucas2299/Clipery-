@@ -1,344 +1,280 @@
 diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
-index ee7a390..9db6b27 100644
+index 9db6b27..98c6424 100644
 --- a/clipery/lib/clipEngine.js
 +++ b/clipery/lib/clipEngine.js
-@@ -1286,7 +1286,6 @@ async function processVideo(sourcePath, options = {}) {
-           hookStyle: options.hookStyle || "boxdark",
-           hookColor: options.hookColor || "white",
-           hookPos: options.hookPos || "top",
--          hookTemplate: options.hookTemplate || "",
-           trends: options.trends || [],
-           maxClips: clipBudget,
-           watermark: options.watermark !== false,
-@@ -1372,7 +1371,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
+@@ -1371,7 +1371,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
            ? {
                clipDur: +(c.end - c.start).toFixed(2),
                subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
--              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor, pos: options.hookPos, template: options.hookTemplate } : null,
-+              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor, pos: options.hookPos } : null,
+-              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor, pos: options.hookPos } : null,
++              hook: clipHook ? { enabled: true, mode: options.hookMode, template: options.hookTemplate } : null,
                trends: options.trends,
                edit: c.edit || null,
                layout: c.layout && c.layout !== "auto" ? c.layout : null,
-@@ -1586,7 +1585,6 @@ async function planManual(sourcePath, options = {}) {
-         hookStyle: options.hookStyle || "boxdark",
-         hookColor: options.hookColor || "white",
-         hookPos: options.hookPos || "top",
--        hookTemplate: options.hookTemplate || "",
-         trends: [],
-         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
-         watermark: options.watermark !== false,
 diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index e1e0d73..cf21980 100644
+index cf21980..e831ab3 100644
 --- a/clipery/lib/subtitles.js
 +++ b/clipery/lib/subtitles.js
-@@ -285,20 +285,6 @@ function normalizeHookColor(v) {
-   const t = String(v || "white").toLowerCase().trim();
-   return SUB_COLORS.hasOwnProperty(t) ? t : "white";
+@@ -292,6 +292,16 @@ function normalizeHookPos(v) {
+   const t = String(v || "top").toLowerCase().trim();
+   return HOOK_POSITIONS.hasOwnProperty(t) ? t : "top";
  }
--// Hook title templates: preset visual styles for hook titles.
--const HOOK_TEMPLATES = {
--  headline:  { font: "Impact",        case: "caps",   box: "red",   textCol: "white", bordCol: "white", bord: 1, shad: 0 },
--  badge:     { font: "Montserrat",    case: "title",  box: "white", textCol: "black", bord: 0, shad: 3 },
--  minimal:   { font: "Inter",         case: "lower",  box: null,    textCol: "white", bord: 0, shad: 0 },
--  highlight: { font: "Arial",         case: null,     box: "hl",    textCol: "black", bord: 0, shad: 0 },
--  retro:     { font: "Courier New",   case: null,     box: "grey",  textCol: "charcoal", bord: 4, bordCol: "black", shad: 0 },
--  dual:      { font: "Impact",        case: "caps",   box: "dual",  textCol: "white", bord: 0, shad: 0 },
--};
--function normalizeHookTemplate(v) {
--  const t = String(v || "").toLowerCase().trim();
--  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "";
--}
--
- // Hook placement: top of frame (classic) or screen middle. MarginV is measured
- // from the top edge (Alignment 8), middle matches the caption middle safe zone.
- const HOOK_POSITIONS = { top: 72, middle: 303 };
-@@ -392,12 +378,10 @@ function buildHook(words, clipDur, mode, trends, look) {
++const HOOK_TEMPLATES = {
++  news:      { font: "Impact",     case: "caps",   box: "red",      textCol: "white", bord: 0, shad: 0 },
++  pill:      { font: "Montserrat", case: "title",  box: "white",    textCol: "black", bord: 0, shad: 3 },
++  highlight: { font: "Arial",      case: null,     box: "green",    textCol: "black", bord: 0, shad: 0 },
++};
++function normalizeHookTemplate(v) {
++  const t = String(v || "").toLowerCase().trim();
++  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "news";
++}
++
+ // Hook frame layouts: control container shape, position, and text effects.
+ /** Resolved hook look: fixed shout size, shared decoration + text colour. */
+ function resolveHookLook(style, colorKey, pos) {
+@@ -378,10 +388,9 @@ function buildHook(words, clipDur, mode, trends, look) {
    const dur = Math.max(clipDur || 0, 0.6);
    const hookDur = 5;
    const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
--  const tpl = normalizeHookTemplate(look && look.template);
--  // When a template is set, use "plain" style so DECO doesn't override template colors
--  const st = tpl ? "plain" : normalizeHookStyle(look && look.style);
-+  const st = normalizeHookStyle(look && look.style);
-   const col = normalizeHookColor(look && look.color);
+-  const st = normalizeHookStyle(look && look.style);
+-  const col = normalizeHookColor(look && look.color);
++  const tpl = normalizeHookTemplate(look && look.template);
    const pos = normalizeHookPos(look && look.pos);
--  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos, template: tpl };
-+  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos };
+-  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos };
++  return { text, rows: hookRows(text), start: 0, end, template: tpl, pos };
  }
 
  async function probeDuration(p) {
-@@ -468,40 +452,9 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+@@ -451,10 +460,33 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
+   if (hook && hook.rows && hook.rows.length) {
      const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
      if (hookText) {
-       const hl = resolveHookLook(hook.style, hook.color, hook.pos);
--      const tpl = hook.template && HOOK_TEMPLATES[hook.template] ? HOOK_TEMPLATES[hook.template] : null;
--      const tStart = assTime(hook.start), tEnd = assTime(hook.end);
--      if (tpl) {
--        const font = tpl.font || "DejaVu Sans";
--        const fs = 28;
--        const an = 5;
--        const tcol = SUB_COLORS[tpl.textCol] || SUB_COLORS.white;
--        const caseTag = tpl.case === "caps" ? "\\fe1" : tpl.case === "lower" ? "\\fe2" : "";
--        if (tpl.box === "dual") {
--          const topBg = SUB_COLORS.red;
--          const botBg = SUB_COLORS.yellow;
--          const topCol = SUB_COLORS.white;
--          const botCol = SUB_COLORS.black;
--          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\bord0\\shad0\\pos(192,56)\\1c${topBg}}${hookText}`);
--          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,56)\\1c${topCol}}\\fe1${hookText}`);
--          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an2\\bord0\\shad0\\pos(192,628)\\1c${botBg}}${hookText}`);
--          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an2\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,628)\\1c${botCol}}\\fe1${hookText}`);
--        } else if (tpl.box === "hl") {
--          const hlCol = SUB_COLORS.yellow;
--          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord0\\shad0\\1c${hlCol}\\3a&H60&\\pos(192,60)\\p1}m -100 -15 l 100 -15 100 15 -100 15{\\p0}`);
--          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,60)\\1c${tcol}}${caseTag}${hookText}`);
--        } else {
--          const bg = tpl.box ? SUB_COLORS[tpl.box] || SUB_COLORS.red : null;
--          const bord = tpl.bord != null ? tpl.bord : 0;
--          const shad = tpl.shad != null ? tpl.shad : 0;
--          const bordCol = tpl.bordCol ? SUB_COLORS[tpl.bordCol] || SUB_COLORS.black : tcol;
--          if (bg) {
--            events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${bord}\\shad${shad}\\3c${bordCol}\\1c${bg}\\pos(192,60)}${hookText}`);
--          }
--          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord${bord}\\shad${shad}\\3c${bordCol}\\pos(192,60)\\1c${tcol}}${caseTag}${hookText}`);
--        }
--      } else {
--        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`);
--      }
-+      events.push(
-+        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
-+      );
+-      const hl = resolveHookLook(hook.style, hook.color, hook.pos);
+-      events.push(
+-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
+-      );
++      const tpl = HOOK_TEMPLATES[hook.template] || HOOK_TEMPLATES.news;
++      const tStart = assTime(hook.start), tEnd = assTime(hook.end);
++      const font = tpl.font;
++      const fs = 28;
++      const an = 8; // top center
++      const mv = 50;
++      const tcol = SUB_COLORS[tpl.textCol];
++      const bg = SUB_COLORS[tpl.box];
++      const caseTag = tpl.case === "caps" ? "\\fe1" : "";
++      const words = hookText.split("\\\\N");
++      if (hook.template === "highlight") {
++        // Per-word green highlight rectangles
++        const hlCol = SUB_COLORS.green;
++        const plain = hookText.replace(/\\\\N/g, " ");
++        const wordList = plain.split(" ");
++        let x = 192 - Math.min(wordList.length * 14, 170);
++        for (const w of wordList) {
++          const wLen = w.length * 10 + 8;
++          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\bord0\\shad0\\1c${hlCol}\\pos(${x},${mv})\\p1}m -${wLen} -12 l ${wLen} -12 ${wLen} 12 -${wLen} 12{\\p0}`);
++          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(${x},${mv})\\1c${tcol}}${w}`);
++          x += wLen * 2 + 6;
++        }
++      } else {
++        // Box background + text overlay
++        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${tpl.bord}\\shad${tpl.shad}\\1c${bg}\\pos(192,${mv})}${hookText}`);
++        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,${mv})\\1c${tcol}}${caseTag}${hookText}`);
++      }
      }
    }
    const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
-@@ -783,6 +736,5 @@ module.exports = {
-   normalizeHookStyle,
-   normalizeHookColor,
-   normalizeHookPos,
--  normalizeHookTemplate,
-   HOOK_STYLES,
+@@ -733,8 +765,6 @@ module.exports = {
+   buildHook,
+   pickHookText,
+   normalizeSubStyle,
+-  normalizeHookStyle,
+-  normalizeHookColor,
+-  normalizeHookPos,
+-  HOOK_STYLES,
++  normalizeHookTemplate,
++  HOOK_TEMPLATES,
  };
 diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 9731db0..24dc949 100644
+index 24dc949..7af5f91 100644
 --- a/clipery/public/studio.html
 +++ b/clipery/public/studio.html
-@@ -118,17 +118,6 @@
-       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
-       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
-
--    .template-cards{display:flex;gap:0.45rem;flex-wrap:wrap;margin:0 0 0.35rem}
--    .template-cards .sub-card{min-width:92px;flex:0 0 auto}
--    .template-cards .sub-card.t-headline .sc-cap{background:#FF3B3B;font-family:Impact,sans-serif;text-transform:uppercase;border:1px solid #fff}
--    .template-cards .sub-card.t-badge .sc-cap{background:#fff;color:#111!important;border-radius:20px;font-family:Montserrat,Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
--    .template-cards .sub-card.t-badge .sc-cap .w{color:#111!important}
--    .template-cards .sub-card.t-minimal .sc-cap{background:rgba(0,0,0,0.5);text-transform:lowercase;font-family:Inter,Roboto,sans-serif}
--    .template-cards .sub-card.t-highlight .sc-cap{background:transparent}
--    .template-cards .sub-card.t-highlight .sc-cap .w{background:#FFE74C;color:#111!important;padding:0 2px;border-radius:2px}
--    .template-cards .sub-card.t-retro .sc-cap{background:#DCDCDC;color:#3C3C3C!important;font-family:"Courier New",monospace;box-shadow:3px 3px 0 #000}
--    .template-cards .sub-card.t-retro .sc-cap .w{color:#3C3C3C!important}
--    .template-cards .sub-card.t-dual .sc-cap{background:linear-gradient(180deg,#FF3B3B 0%,#FF3B3B 50%,#FFE74C 50%,#FFE74C 100%)}
- </style>
-   </head>
-   <body class="studio-app">
-@@ -344,16 +333,6 @@
-                 <option value="full">Whole clip</option>
+@@ -334,6 +334,12 @@
                </select>
              </label>
--            <label>Template</label>
--            <div class="template-cards sc-styles" id="long-template-cards">
--              <button type="button" class="sub-card t-headline" data-hooktemplate="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
--              <button type="button" class="sub-card t-badge" data-hooktemplate="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
--              <button type="button" class="sub-card t-minimal" data-hooktemplate="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
--              <button type="button" class="sub-card t-highlight" data-hooktemplate="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
--              <button type="button" class="sub-card t-retro" data-hooktemplate="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
--              <button type="button" class="sub-card t-dual" data-hooktemplate="dual"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dual Tone</span></button>
--            </div>
--            <input type="hidden" id="long-hook-template" value="" />
 
++            <div class="sub-cards sc-styles" id="long-hook-cards" style="flex-basis:100%">
++              <button type="button" class="sub-card sc-bred sel" data-hooktemplate="news"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Breaking News</span></button>
++              <button type="button" class="sub-card sc-bwhite" data-hooktemplate="pill"><span class="sc-cap" style="color:#111"><span class="w" style="color:#111">Hook</span><br><span class="w" style="color:#111">Title</span></span><span class="sc-name">Social Pill</span></button>
++              <button type="button" class="sub-card" data-hooktemplate="highlight" style="background:rgba(57,255,20,0.15)"><span class="sc-cap"><span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">HOOK</span> <span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">TITLE</span></span><span class="sc-name">Highlighter</span></button>
++            </div>
++            <input type="hidden" id="long-hook-template" value="news" />
              <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
                <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
-@@ -533,16 +512,6 @@
-                 <option value="full">Whole clip</option>
+             </label>
+@@ -513,6 +519,12 @@
                </select>
              </label>
--            <label>Template</label>
--            <div class="template-cards sc-styles" id="rank-template-cards">
--              <button type="button" class="sub-card t-headline" data-hooktemplate="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
--              <button type="button" class="sub-card t-badge" data-hooktemplate="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
--              <button type="button" class="sub-card t-minimal" data-hooktemplate="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
--              <button type="button" class="sub-card t-highlight" data-hooktemplate="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
--              <button type="button" class="sub-card t-retro" data-hooktemplate="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
--              <button type="button" class="sub-card t-dual" data-hooktemplate="dual"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dual Tone</span></button>
--            </div>
--            <input type="hidden" id="rank-hook-template" value="" />
 
++            <div class="sub-cards sc-styles" id="rank-hook-cards" style="flex-basis:100%">
++              <button type="button" class="sub-card sc-bred sel" data-hooktemplate="news"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Breaking News</span></button>
++              <button type="button" class="sub-card sc-bwhite" data-hooktemplate="pill"><span class="sc-cap" style="color:#111"><span class="w" style="color:#111">Hook</span><br><span class="w" style="color:#111">Title</span></span><span class="sc-name">Social Pill</span></button>
++              <button type="button" class="sub-card" data-hooktemplate="highlight" style="background:rgba(57,255,20,0.15)"><span class="sc-cap"><span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">HOOK</span> <span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">TITLE</span></span><span class="sc-name">Highlighter</span></button>
++            </div>
++            <input type="hidden" id="rank-hook-template" value="news" />
              <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
                <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
+             </label>
 diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index f327b78..1605089 100644
+index 1605089..b6650bb 100644
 --- a/clipery/public/studio.js
 +++ b/clipery/public/studio.js
-@@ -70,8 +70,7 @@
+@@ -70,7 +70,8 @@
    function collectHook(prefix) {
      var t = $(prefix + "-hook");
      var m = $(prefix + "-hook-mode");
--    var p = $(prefix + "-hook-template");
--    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", template: p ? p.value : "" };
-+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark" };
+-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark" };
++    var p = $(prefix + "-hook-template");
++    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", template: p ? p.value : "news" };
    }
 
 
-@@ -109,22 +108,6 @@
+@@ -105,6 +106,21 @@
+   }
+   wireHookToggle("long");
+   wireHookToggle("rank");
++  function wireHookTemplateCards(prefix) {
++    var grid = $(prefix + "-hook-cards");
++    var hid = $(prefix + "-hook-template");
++    if (!grid || !hid) return;
++    grid.addEventListener("click", function(e) {
++      var btn = e.target.closest("[data-hooktemplate]");
++      if (!btn) return;
++      var cards = grid.querySelectorAll(".sub-card");
++      for (var i = 0; i < cards.length; i++) cards[i].classList.remove("sel");
++      btn.classList.add("sel");
++      hid.value = btn.getAttribute("data-hooktemplate") || "news";
++    });
++  }
++  wireHookTemplateCards("long");
++  wireHookTemplateCards("rank");
 
    // Live color preview on frame cards
 
--  // Template card clicks
--  function wireTemplateCards(prefix) {
--    var grid = $(prefix + "-template-cards");
--    var hid = $(prefix + "-hook-template");
--    if (!grid || !hid) return;
--    grid.addEventListener("click", function(e) {
--      var btn = e.target.closest("[data-hooktemplate]");
--      if (!btn) return;
--      var cards = grid.querySelectorAll(".sub-card");
--      for (var i = 0; i < cards.length; i++) cards[i].classList.remove("sel");
--      btn.classList.add("sel");
--      hid.value = btn.getAttribute("data-hooktemplate") || "";
--    });
--  }
--  wireTemplateCards("long");
--  wireTemplateCards("rank");
-
-
-   // The little caption preview box is gone: the style cards already show
-@@ -672,7 +655,6 @@
+@@ -654,7 +670,7 @@
+           fd.append("trends", longTrends);
            fd.append("hook", longHook.enabled ? "1" : "0");
            fd.append("hookMode", longHook.mode);
-           fd.append("hookStyle", longHook.style);
--          fd.append("hookTemplate", longHook.template);
+-          fd.append("hookStyle", longHook.style);
++          fd.append("hookTemplate", longHook.template);
            res = await fetch("/api/clip/upload", { method: "POST", body: fd });
          } else {
            res = await fetch("/api/clip/from-url", {
-@@ -692,7 +674,6 @@
+@@ -673,7 +689,7 @@
+               trends: longTrends,
                hook: longHook.enabled,
                hookMode: longHook.mode,
-               hookStyle: longHook.style,
--              hookTemplate: longHook.template,
+-              hookStyle: longHook.style,
++              hookTemplate: longHook.template,
              }),
            });
          }
-@@ -917,7 +898,6 @@
+@@ -897,7 +913,7 @@
+           fd.append("trends", rankTrends);
            fd.append("hook", rankHook.enabled ? "1" : "0");
            fd.append("hookMode", rankHook.mode);
-           fd.append("hookStyle", rankHook.style);
--          fd.append("hookTemplate", rankHook.template);
+-          fd.append("hookStyle", rankHook.style);
++          fd.append("hookTemplate", rankHook.template);
            res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
          } else {
            res = await fetch("/api/rank/video/links", {
-@@ -937,7 +917,6 @@
+@@ -916,7 +932,7 @@
+               trends: rankTrends,
                hook: rankHook.enabled,
                hookMode: rankHook.mode,
-               hookStyle: rankHook.style,
--              hookTemplate: rankHook.template,
+-              hookStyle: rankHook.style,
++              hookTemplate: rankHook.template,
              }),
            });
          }
 diff --git a/clipery/server.js b/clipery/server.js
-index 135e689..78118c6 100644
+index 78118c6..c0a813b 100644
 --- a/clipery/server.js
 +++ b/clipery/server.js
-@@ -25,7 +25,7 @@ const {
-   processLinksToRankingVideo,
-   downloadUrl,
- } = require("./lib/linkVideoEngine");
--const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor, normalizeHookPos, normalizeHookTemplate } = require("./lib/subtitles");
-+const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor, normalizeHookPos } = require("./lib/subtitles");
- const auth = require("./lib/auth");
- const promo = require("./lib/promo");
- const oauth = require("./lib/oauth");
-@@ -671,7 +671,6 @@ function readHook(get) {
-     style: normalizeHookStyle(get("hookStyle")),
-     color: normalizeHookColor(get("hookColor")),
-     pos: normalizeHookPos(get("hookPos")),
--    template: normalizeHookTemplate(get("hookTemplate")),
-   };
- }
-
-@@ -1091,12 +1090,12 @@ const server = http.createServer(async (req, res) => {
+@@ -1090,12 +1090,12 @@ const server = http.createServer(async (req, res) => {
        const dest = path.join(UPLOADS, `${jobId}${ext}`);
        fs.renameSync(filePart.path, dest);
        const genre = readGenre(get("genre"));
--      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookTemplate: hookOpts.template, trends, genre });
-+      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends, genre });
+-      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends, genre });
++      seedJob(jobId, { userId: owner && owner.id, ...owner.planLimits, mode, sourceName: orig, subtitles, subStyle, hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTemplate: hookOpts.template, trends, genre });
        const q = enqueue(dest, {
          userId: owner && owner.id,
          ...owner.planLimits,
          jobId, sourceName: orig, mode, subtitles, subStyle, genre,
--        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookTemplate: hookOpts.template, trends,
-+        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
+-        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
++        hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTemplate: hookOpts.template, trends,
        });
        return send(res, 202, {
          ok: true,
-@@ -1137,7 +1136,7 @@ const server = http.createServer(async (req, res) => {
+@@ -1136,7 +1136,7 @@ const server = http.createServer(async (req, res) => {
          subtitles,
          subStyle,
          hook: hookOpts.enabled,
--        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookTemplate: hookOpts.template,
-+        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
+-        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
++        hookMode: hookOpts.mode, hookTemplate: hookOpts.template,
          trends,
        });
        const q = enqueueItem({
-@@ -1147,7 +1146,7 @@ const server = http.createServer(async (req, res) => {
+@@ -1146,7 +1146,7 @@ const server = http.createServer(async (req, res) => {
            userId: owner && owner.id,
            ...owner.planLimits,
            jobId, sourceName: videoUrl.slice(0, 120), mode, subtitles, subStyle, genre,
--          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookTemplate: hookOpts.template, trends,
-+          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
+-          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
++          hook: hookOpts.enabled, hookMode: hookOpts.mode, hookTemplate: hookOpts.template, trends,
          },
        });
        return send(res, 202, {
-@@ -1194,7 +1193,7 @@ const server = http.createServer(async (req, res) => {
+@@ -1193,7 +1193,7 @@ const server = http.createServer(async (req, res) => {
        fs.renameSync(filePart.path, dest);
        const meta = {
          userId: owner.id, ...owner.planLimits, jobId, sourceName: orig, mode,
--        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookTemplate: hookOpts.template, trends,
-+        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
+-        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, trends,
++        subtitles, subStyle, hook: hookOpts.enabled && !subtitles, hookMode: hookOpts.mode, hookTemplate: hookOpts.template, trends,
          genre: readGenre(get("genre")),
          review: true, manual, editor: true,
        };
-@@ -1445,7 +1444,7 @@ const server = http.createServer(async (req, res) => {
+@@ -1444,7 +1444,7 @@ const server = http.createServer(async (req, res) => {
          subtitles,
          subStyle,
          hook: hookOpts.enabled,
--        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookTemplate: hookOpts.template,
-+        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
+-        hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
++        hookMode: hookOpts.mode, hookTemplate: hookOpts.template,
          trends,
        });
        const boardTitle = String(body.boardTitle || body.name || "Top Videos").trim().slice(0, 28) || "Top Videos";
-@@ -1461,7 +1460,7 @@ const server = http.createServer(async (req, res) => {
+@@ -1460,7 +1460,7 @@ const server = http.createServer(async (req, res) => {
            subtitles,
            subStyle,
            hook: hookOpts.enabled,
--          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos, hookTemplate: hookOpts.template,
-+          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
+-          hookMode: hookOpts.mode, hookStyle: hookOpts.style, hookColor: hookOpts.color, hookPos: hookOpts.pos,
++          hookMode: hookOpts.mode, hookTemplate: hookOpts.template,
            trends,
          },
        });
-@@ -1560,7 +1559,7 @@ const server = http.createServer(async (req, res) => {
+@@ -1559,7 +1559,7 @@ const server = http.createServer(async (req, res) => {
          subtitles,
          subStyle,
          hook: hookOptsUp.enabled,
--        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, hookTemplate: hookOptsUp.template,
-+        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos,
+-        hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos,
++        hookMode: hookOptsUp.mode, hookTemplate: hookOptsUp.template,
          trends: trendsUp,
        });
        const q = enqueueItem({
-@@ -1570,7 +1569,7 @@ const server = http.createServer(async (req, res) => {
+@@ -1569,7 +1569,7 @@ const server = http.createServer(async (req, res) => {
            userId: owner && owner.id,
            ...owner.planLimits,
            jobId, sourceName: boardTitle, boardTitle, subtitles, subStyle,
--          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, hookTemplate: hookOptsUp.template, trends: trendsUp,
-+          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, trends: trendsUp,
+-          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookStyle: hookOptsUp.style, hookColor: hookOptsUp.color, hookPos: hookOptsUp.pos, trends: trendsUp,
++          hook: hookOptsUp.enabled, hookMode: hookOptsUp.mode, hookTemplate: hookOptsUp.template, trends: trendsUp,
          },
        });
        return send(res, 202, {
