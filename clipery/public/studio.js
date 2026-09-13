@@ -74,7 +74,7 @@
     var p = $(prefix + "-hook-template");
     var b = $(prefix + "-hook-bg");
     var ps = $(prefix + "-hook-pos");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top" };
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", template: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top" };
   }
 
 
