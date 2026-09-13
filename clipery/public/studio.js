@@ -71,7 +71,8 @@
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
     var c = $(prefix + "-hook-color");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white" };
+    var p = $(prefix + "-hook-template");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", template: p ? p.value : "" };
   }
 
 
@@ -110,6 +111,23 @@
   // Live color preview on frame cards
   wireHookColor("long");
   wireHookColor("rank");
+
+  // Template card clicks
+  function wireTemplateCards(prefix) {
+    var grid = $(prefix + "-template-cards");
+    var hid = $(prefix + "-hook-template");
+    if (!grid || !hid) return;
+    grid.addEventListener("click", function(e) {
+      var btn = e.target.closest("[data-hooktemplate]");
+      if (!btn) return;
+      var cards = grid.querySelectorAll(".sub-card");
+      for (var i = 0; i < cards.length; i++) cards[i].classList.remove("sel");
+      btn.classList.add("sel");
+      hid.value = btn.getAttribute("data-hooktemplate") || "";
+    });
+  }
+  wireTemplateCards("long");
+  wireTemplateCards("rank");
 
   /* Hook card samples wear the chosen text colour (fixed-colour boxes excepted). */
   function wireHookColor(prefix) {
@@ -676,6 +694,7 @@
           fd.append("hookMode", longHook.mode);
           fd.append("hookStyle", longHook.style);
           fd.append("hookColor", longHook.color);
+          fd.append("hookTemplate", longHook.template);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -696,6 +715,7 @@
               hookMode: longHook.mode,
               hookStyle: longHook.style,
               hookColor: longHook.color,
+              hookTemplate: longHook.template,
             }),
           });
         }
@@ -921,6 +941,7 @@
           fd.append("hookMode", rankHook.mode);
           fd.append("hookStyle", rankHook.style);
           fd.append("hookColor", rankHook.color);
+          fd.append("hookTemplate", rankHook.template);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -941,6 +962,7 @@
               hookMode: rankHook.mode,
               hookStyle: rankHook.style,
               hookColor: rankHook.color,
+              hookTemplate: rankHook.template,
             }),
           });
         }

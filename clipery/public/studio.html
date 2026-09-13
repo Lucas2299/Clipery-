@@ -118,6 +118,16 @@
       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
     
+    .template-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:0.45rem;margin:0 0 0.35rem}
+    .template-cards .sub-card.t-headline .sc-cap{background:#FF3B3B;font-family:Impact,sans-serif;text-transform:uppercase;border:1px solid #fff}
+    .template-cards .sub-card.t-badge .sc-cap{background:#fff;color:#111!important;border-radius:20px;font-family:Montserrat,Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+    .template-cards .sub-card.t-badge .sc-cap .w{color:#111!important}
+    .template-cards .sub-card.t-minimal .sc-cap{background:rgba(0,0,0,0.5);text-transform:lowercase;font-family:Inter,Roboto,sans-serif}
+    .template-cards .sub-card.t-highlight .sc-cap{background:transparent}
+    .template-cards .sub-card.t-highlight .sc-cap .w{background:#FFE74C;color:#111!important;padding:0 2px;border-radius:2px}
+    .template-cards .sub-card.t-retro .sc-cap{background:#DCDCDC;color:#3C3C3C!important;font-family:"Courier New",monospace;box-shadow:3px 3px 0 #000}
+    .template-cards .sub-card.t-retro .sc-cap .w{color:#3C3C3C!important}
+    .template-cards .sub-card.t-dual .sc-cap{background:linear-gradient(180deg,#FF3B3B 0%,#FF3B3B 50%,#FFE74C 50%,#FFE74C 100%)}
 </style>
   </head>
   <body class="studio-app">
@@ -333,7 +343,17 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
-            <label>Text color
+            <label>Template</label>
+            <div class="template-cards sc-styles" id="long-template-cards">
+              <button type="button" class="sub-card t-headline" data-hooktemplate="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
+              <button type="button" class="sub-card t-badge" data-hooktemplate="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
+              <button type="button" class="sub-card t-minimal" data-hooktemplate="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
+              <button type="button" class="sub-card t-highlight" data-hooktemplate="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
+              <button type="button" class="sub-card t-retro" data-hooktemplate="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
+              <button type="button" class="sub-card t-dual" data-hooktemplate="dual"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dual Tone</span></button>
+            </div>
+            <input type="hidden" id="long-hook-template" value="" />
+                        <label>Text color
               <select id="long-hook-color">
                 <option value="white" selected>White</option>
                 <option value="yellow">Yellow</option>
@@ -525,7 +545,17 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
-            <label>Text color
+            <label>Template</label>
+            <div class="template-cards sc-styles" id="rank-template-cards">
+              <button type="button" class="sub-card t-headline" data-hooktemplate="headline"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Headline</span></button>
+              <button type="button" class="sub-card t-badge" data-hooktemplate="badge"><span class="sc-cap"><span class="w wt">Hook</span><br><span class="w wt">Title</span></span><span class="sc-name">Badge</span></button>
+              <button type="button" class="sub-card t-minimal" data-hooktemplate="minimal"><span class="sc-cap"><span class="w wt">hook</span><br><span class="w wt">title</span></span><span class="sc-name">Minimal</span></button>
+              <button type="button" class="sub-card t-highlight" data-hooktemplate="highlight"><span class="sc-cap"><span class="w wt">HOOK</span> <span class="w wt">TITLE</span></span><span class="sc-name">Highlighter</span></button>
+              <button type="button" class="sub-card t-retro" data-hooktemplate="retro"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Retro</span></button>
+              <button type="button" class="sub-card t-dual" data-hooktemplate="dual"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dual Tone</span></button>
+            </div>
+            <input type="hidden" id="rank-hook-template" value="" />
+                        <label>Text color
               <select id="rank-hook-color">
                 <option value="white" selected>White</option>
                 <option value="yellow">Yellow</option>
