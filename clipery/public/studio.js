@@ -70,9 +70,8 @@
   function collectHook(prefix) {
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
-    var c = $(prefix + "-hook-color");
     var p = $(prefix + "-hook-template");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", template: p ? p.value : "" };
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", template: p ? p.value : "" };
   }
 
 
@@ -109,8 +108,6 @@
   wireHookToggle("rank");
 
   // Live color preview on frame cards
-  wireHookColor("long");
-  wireHookColor("rank");
 
   // Template card clicks
   function wireTemplateCards(prefix) {
@@ -129,24 +126,6 @@
   wireTemplateCards("long");
   wireTemplateCards("rank");
 
-  /* Hook card samples wear the chosen text colour (fixed-colour boxes excepted). */
-  function wireHookColor(prefix) {
-    var sel = $(prefix + "-hook-color");
-    var grid = $(prefix + "-hook-cards");
-    if (!sel || !grid) return;
-    var COLORS = { white: "#ffffff", yellow: "#FFE74C", pink: "#FF4D6D", orange: "#FF8A4C",
-      red: "#FF3B3B", green: "#30D158", cyan: "#3CD4F5", blue: "#4C8AFF", purple: "#A86BFF" };
-    sel.addEventListener("change", function () {
-      var col = COLORS[sel.value] || "#ffffff";
-      var cards = grid.querySelectorAll(".sub-card");
-      for (var i = 0; i < cards.length; i++) {
-        var cls = cards[i].className;
-        var fixed = /sc-bwhite/.test(cls) ? "#17171B" : /sc-bred|sc-bblack/.test(cls) ? "#ffffff" : col;
-        var ws = cards[i].querySelectorAll(".sc-cap .w");
-        for (var j = 0; j < ws.length; j++) ws[j].style.color = fixed;
-      }
-    });
-  }
 
   // The little caption preview box is gone: the style cards already show
   // the real look, and the box only took space.
@@ -693,7 +672,6 @@
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
           fd.append("hookStyle", longHook.style);
-          fd.append("hookColor", longHook.color);
           fd.append("hookTemplate", longHook.template);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
@@ -714,7 +692,6 @@
               hook: longHook.enabled,
               hookMode: longHook.mode,
               hookStyle: longHook.style,
-              hookColor: longHook.color,
               hookTemplate: longHook.template,
             }),
           });
@@ -940,7 +917,6 @@
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
           fd.append("hookStyle", rankHook.style);
-          fd.append("hookColor", rankHook.color);
           fd.append("hookTemplate", rankHook.template);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
@@ -961,7 +937,6 @@
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
               hookStyle: rankHook.style,
-              hookColor: rankHook.color,
               hookTemplate: rankHook.template,
             }),
           });

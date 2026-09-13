@@ -118,7 +118,7 @@
       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
     
-    .template-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:0.45rem;margin:0 0 0.35rem}
+    .template-cards{display:flex;gap:0.45rem;flex-wrap:wrap;margin:0 0 0.35rem}
     .template-cards .sub-card.t-headline .sc-cap{background:#FF3B3B;font-family:Impact,sans-serif;text-transform:uppercase;border:1px solid #fff}
     .template-cards .sub-card.t-badge .sc-cap{background:#fff;color:#111!important;border-radius:20px;font-family:Montserrat,Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
     .template-cards .sub-card.t-badge .sc-cap .w{color:#111!important}
@@ -353,20 +353,7 @@
               <button type="button" class="sub-card t-dual" data-hooktemplate="dual"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dual Tone</span></button>
             </div>
             <input type="hidden" id="long-hook-template" value="" />
-                        <label>Text color
-              <select id="long-hook-color">
-                <option value="white" selected>White</option>
-                <option value="yellow">Yellow</option>
-                <option value="pink">Clipery pink</option>
-                <option value="orange">Orange</option>
-                <option value="red">Red</option>
-                <option value="green">Green</option>
-                <option value="cyan">Cyan</option>
-                <option value="blue">Blue</option>
-                <option value="purple">Purple</option>
-                <option value="black">Black</option>
-              </select>
-            </label>
+            
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
               <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
@@ -555,20 +542,7 @@
               <button type="button" class="sub-card t-dual" data-hooktemplate="dual"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Dual Tone</span></button>
             </div>
             <input type="hidden" id="rank-hook-template" value="" />
-                        <label>Text color
-              <select id="rank-hook-color">
-                <option value="white" selected>White</option>
-                <option value="yellow">Yellow</option>
-                <option value="pink">Clipery pink</option>
-                <option value="orange">Orange</option>
-                <option value="red">Red</option>
-                <option value="green">Green</option>
-                <option value="cyan">Cyan</option>
-                <option value="blue">Blue</option>
-                <option value="purple">Purple</option>
-                <option value="black">Black</option>
-              </select>
-            </label>
+            
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
               <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
