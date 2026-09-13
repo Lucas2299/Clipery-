@@ -70,7 +70,8 @@
   function collectHook(prefix) {
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark" };
+    var p = $(prefix + "-hook-template");
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", template: p ? p.value : "news" };
   }
 
 
@@ -105,6 +106,21 @@
   }
   wireHookToggle("long");
   wireHookToggle("rank");
+  function wireHookTemplateCards(prefix) {
+    var grid = $(prefix + "-hook-cards");
+    var hid = $(prefix + "-hook-template");
+    if (!grid || !hid) return;
+    grid.addEventListener("click", function(e) {
+      var btn = e.target.closest("[data-hooktemplate]");
+      if (!btn) return;
+      var cards = grid.querySelectorAll(".sub-card");
+      for (var i = 0; i < cards.length; i++) cards[i].classList.remove("sel");
+      btn.classList.add("sel");
+      hid.value = btn.getAttribute("data-hooktemplate") || "news";
+    });
+  }
+  wireHookTemplateCards("long");
+  wireHookTemplateCards("rank");
 
   // Live color preview on frame cards
 
@@ -654,7 +670,7 @@
           fd.append("trends", longTrends);
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
-          fd.append("hookStyle", longHook.style);
+          fd.append("hookTemplate", longHook.template);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -673,7 +689,7 @@
               trends: longTrends,
               hook: longHook.enabled,
               hookMode: longHook.mode,
-              hookStyle: longHook.style,
+              hookTemplate: longHook.template,
             }),
           });
         }
@@ -897,7 +913,7 @@
           fd.append("trends", rankTrends);
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
-          fd.append("hookStyle", rankHook.style);
+          fd.append("hookTemplate", rankHook.template);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -916,7 +932,7 @@
               trends: rankTrends,
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
-              hookStyle: rankHook.style,
+              hookTemplate: rankHook.template,
             }),
           });
         }

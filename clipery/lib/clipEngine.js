@@ -1371,7 +1371,7 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
           ? {
               clipDur: +(c.end - c.start).toFixed(2),
               subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
-              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle, color: options.hookColor, pos: options.hookPos } : null,
+              hook: clipHook ? { enabled: true, mode: options.hookMode, template: options.hookTemplate } : null,
               trends: options.trends,
               edit: c.edit || null,
               layout: c.layout && c.layout !== "auto" ? c.layout : null,

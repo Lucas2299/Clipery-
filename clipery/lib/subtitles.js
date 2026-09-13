@@ -292,6 +292,16 @@ function normalizeHookPos(v) {
   const t = String(v || "top").toLowerCase().trim();
   return HOOK_POSITIONS.hasOwnProperty(t) ? t : "top";
 }
+const HOOK_TEMPLATES = {
+  news:      { font: "Impact",     case: "caps",   box: "red",      textCol: "white", bord: 0, shad: 0 },
+  pill:      { font: "Montserrat", case: "title",  box: "white",    textCol: "black", bord: 0, shad: 3 },
+  highlight: { font: "Arial",      case: null,     box: "green",    textCol: "black", bord: 0, shad: 0 },
+};
+function normalizeHookTemplate(v) {
+  const t = String(v || "").toLowerCase().trim();
+  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "news";
+}
+
 // Hook frame layouts: control container shape, position, and text effects.
 /** Resolved hook look: fixed shout size, shared decoration + text colour. */
 function resolveHookLook(style, colorKey, pos) {
@@ -378,10 +388,9 @@ function buildHook(words, clipDur, mode, trends, look) {
   const dur = Math.max(clipDur || 0, 0.6);
   const hookDur = 5;
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
-  const st = normalizeHookStyle(look && look.style);
-  const col = normalizeHookColor(look && look.color);
+  const tpl = normalizeHookTemplate(look && look.template);
   const pos = normalizeHookPos(look && look.pos);
-  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos };
+  return { text, rows: hookRows(text), start: 0, end, template: tpl, pos };
 }
 
 async function probeDuration(p) {
@@ -451,10 +460,33 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   if (hook && hook.rows && hook.rows.length) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
-      const hl = resolveHookLook(hook.style, hook.color, hook.pos);
-      events.push(
-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
-      );
+      const tpl = HOOK_TEMPLATES[hook.template] || HOOK_TEMPLATES.news;
+      const tStart = assTime(hook.start), tEnd = assTime(hook.end);
+      const font = tpl.font;
+      const fs = 28;
+      const an = 8; // top center
+      const mv = 50;
+      const tcol = SUB_COLORS[tpl.textCol];
+      const bg = SUB_COLORS[tpl.box];
+      const caseTag = tpl.case === "caps" ? "\\fe1" : "";
+      const words = hookText.split("\\\\N");
+      if (hook.template === "highlight") {
+        // Per-word green highlight rectangles
+        const hlCol = SUB_COLORS.green;
+        const plain = hookText.replace(/\\\\N/g, " ");
+        const wordList = plain.split(" ");
+        let x = 192 - Math.min(wordList.length * 14, 170);
+        for (const w of wordList) {
+          const wLen = w.length * 10 + 8;
+          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\bord0\\shad0\\1c${hlCol}\\pos(${x},${mv})\\p1}m -${wLen} -12 l ${wLen} -12 ${wLen} 12 -${wLen} 12{\\p0}`);
+          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(${x},${mv})\\1c${tcol}}${w}`);
+          x += wLen * 2 + 6;
+        }
+      } else {
+        // Box background + text overlay
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${tpl.bord}\\shad${tpl.shad}\\1c${bg}\\pos(192,${mv})}${hookText}`);
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,${mv})\\1c${tcol}}${caseTag}${hookText}`);
+      }
     }
   }
   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
@@ -733,8 +765,6 @@ module.exports = {
   buildHook,
   pickHookText,
   normalizeSubStyle,
-  normalizeHookStyle,
-  normalizeHookColor,
-  normalizeHookPos,
-  HOOK_STYLES,
+  normalizeHookTemplate,
+  HOOK_TEMPLATES,
 };
