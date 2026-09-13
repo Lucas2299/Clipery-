@@ -1,32 +1,13 @@
-diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index 506f9fe..e1e0d73 100644
---- a/clipery/lib/subtitles.js
-+++ b/clipery/lib/subtitles.js
-@@ -392,10 +392,11 @@ function buildHook(words, clipDur, mode, trends, look) {
-   const dur = Math.max(clipDur || 0, 0.6);
-   const hookDur = 5;
-   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
--  const st = normalizeHookStyle(look && look.style);
-+  const tpl = normalizeHookTemplate(look && look.template);
-+  // When a template is set, use "plain" style so DECO doesn't override template colors
-+  const st = tpl ? "plain" : normalizeHookStyle(look && look.style);
-   const col = normalizeHookColor(look && look.color);
-   const pos = normalizeHookPos(look && look.pos);
--  const tpl = normalizeHookTemplate(look && look.template);
-   return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos, template: tpl };
- }
-
 diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 0eebafb..233da4f 100644
+index 233da4f..9731db0 100644
 --- a/clipery/public/studio.html
 +++ b/clipery/public/studio.html
-@@ -118,7 +118,8 @@
+@@ -118,7 +118,7 @@
        .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
        .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
 
--    .template-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:0.45rem;margin:0 0 0.35rem}
-+    .template-cards{display:flex;gap:0.45rem;margin:0 0 0.35rem;overflow-x:auto}
-+    .template-cards .sub-card{min-width:92px;flex:0 0 auto}
+-    .template-cards{display:flex;gap:0.45rem;margin:0 0 0.35rem;overflow-x:auto}
++    .template-cards{display:flex;gap:0.45rem;flex-wrap:wrap;margin:0 0 0.35rem}
+     .template-cards .sub-card{min-width:92px;flex:0 0 auto}
      .template-cards .sub-card.t-headline .sc-cap{background:#FF3B3B;font-family:Impact,sans-serif;text-transform:uppercase;border:1px solid #fff}
      .template-cards .sub-card.t-badge .sc-cap{background:#fff;color:#111!important;border-radius:20px;font-family:Montserrat,Arial,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
-     .template-cards .sub-card.t-badge .sc-cap .w{color:#111!important}
