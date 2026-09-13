@@ -1,46 +1,50 @@
-diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index e831ab3..254c7f3 100644
---- a/clipery/lib/subtitles.js
-+++ b/clipery/lib/subtitles.js
-@@ -296,6 +296,7 @@ const HOOK_TEMPLATES = {
-   news:      { font: "Impact",     case: "caps",   box: "red",      textCol: "white", bord: 0, shad: 0 },
-   pill:      { font: "Montserrat", case: "title",  box: "white",    textCol: "black", bord: 0, shad: 3 },
-   highlight: { font: "Arial",      case: null,     box: "green",    textCol: "black", bord: 0, shad: 0 },
-+  shadow:    { font: "Arial Black", case: null,     box: "none",     textCol: "white", bord: 0, shad: 4 },
- };
- function normalizeHookTemplate(v) {
-   const t = String(v || "").toLowerCase().trim();
-@@ -484,8 +485,11 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
-         }
-       } else {
-         // Box background + text overlay
--        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${tpl.bord}\\shad${tpl.shad}\\1c${bg}\\pos(192,${mv})}${hookText}`);
--        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,${mv})\\1c${tcol}}${caseTag}${hookText}`);
-+        if (tpl.box !== "none") {
-+          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${tpl.bord}\\shad${tpl.shad}\\1c${bg}\\pos(192,${mv})}${hookText}`);
-+        }
-+        const shadTag = tpl.box === "none" && tpl.shad > 0 ? `\\shad${tpl.shad}\\4c&H00000000\\4a&H00&` : "\\shad0";
-+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0${shadTag}\\pos(192,${mv})\\1c${tcol}}${caseTag}${hookText}`);
-       }
-     }
-   }
-diff --git a/clipery/public/studio.html b/clipery/public/studio.html
-index 7af5f91..5b238e1 100644
---- a/clipery/public/studio.html
-+++ b/clipery/public/studio.html
-@@ -338,6 +338,7 @@
-               <button type="button" class="sub-card sc-bred sel" data-hooktemplate="news"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Breaking News</span></button>
-               <button type="button" class="sub-card sc-bwhite" data-hooktemplate="pill"><span class="sc-cap" style="color:#111"><span class="w" style="color:#111">Hook</span><br><span class="w" style="color:#111">Title</span></span><span class="sc-name">Social Pill</span></button>
-               <button type="button" class="sub-card" data-hooktemplate="highlight" style="background:rgba(57,255,20,0.15)"><span class="sc-cap"><span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">HOOK</span> <span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">TITLE</span></span><span class="sc-name">Highlighter</span></button>
-+              <button type="button" class="sub-card" data-hooktemplate="shadow" style="background:#222"><span class="sc-cap" style="text-shadow:3px 3px 8px rgba(0,0,0,0.9)"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Drop Shadow</span></button>
-             </div>
-             <input type="hidden" id="long-hook-template" value="news" />
-             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
-@@ -523,6 +524,7 @@
-               <button type="button" class="sub-card sc-bred sel" data-hooktemplate="news"><span class="sc-cap"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Breaking News</span></button>
-               <button type="button" class="sub-card sc-bwhite" data-hooktemplate="pill"><span class="sc-cap" style="color:#111"><span class="w" style="color:#111">Hook</span><br><span class="w" style="color:#111">Title</span></span><span class="sc-name">Social Pill</span></button>
-               <button type="button" class="sub-card" data-hooktemplate="highlight" style="background:rgba(57,255,20,0.15)"><span class="sc-cap"><span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">HOOK</span> <span class="w wt" style="background:#39FF14;color:#111;padding:0 3px;border-radius:2px">TITLE</span></span><span class="sc-name">Highlighter</span></button>
-+              <button type="button" class="sub-card" data-hooktemplate="shadow" style="background:#222"><span class="sc-cap" style="text-shadow:3px 3px 8px rgba(0,0,0,0.9)"><span class="w wt">HOOK</span><br><span class="w wt">TITLE</span></span><span class="sc-name">Drop Shadow</span></button>
-             </div>
-             <input type="hidden" id="rank-hook-template" value="news" />
-             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
+diff --git a/clipery/lib/clipEngine.js b/clipery/lib/clipEngine.js
+index 98c6424..065bb9c 100644
+--- a/clipery/lib/clipEngine.js
++++ b/clipery/lib/clipEngine.js
+@@ -1283,9 +1283,7 @@ async function processVideo(sourcePath, options = {}) {
+           subStyle: options.subStyle || null,
+           hook: !!options.hook,
+           hookMode: options.hookMode || "intro",
+-          hookStyle: options.hookStyle || "boxdark",
+-          hookColor: options.hookColor || "white",
+-          hookPos: options.hookPos || "top",
++          hookTemplate: options.hookTemplate || "news",
+           trends: options.trends || [],
+           maxClips: clipBudget,
+           watermark: options.watermark !== false,
+@@ -1582,9 +1580,7 @@ async function planManual(sourcePath, options = {}) {
+         subStyle: options.subStyle || null,
+         hook: false,
+         hookMode: "intro",
+-        hookStyle: options.hookStyle || "boxdark",
+-        hookColor: options.hookColor || "white",
+-        hookPos: options.hookPos || "top",
++        hookTemplate: options.hookTemplate || "news",
+         trends: [],
+         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+         watermark: options.watermark !== false,
+diff --git a/clipery/server.js b/clipery/server.js
+index c0a813b..75bb2a6 100644
+--- a/clipery/server.js
++++ b/clipery/server.js
+@@ -25,7 +25,7 @@ const {
+   processLinksToRankingVideo,
+   downloadUrl,
+ } = require("./lib/linkVideoEngine");
+-const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor, normalizeHookPos } = require("./lib/subtitles");
++const { normalizeSubStyle, normalizeHookTemplate } = require("./lib/subtitles");
+ const auth = require("./lib/auth");
+ const promo = require("./lib/promo");
+ const oauth = require("./lib/oauth");
+@@ -668,9 +668,7 @@ function readHook(get) {
+   return {
+     enabled: wantSubtitles(get("hook")),
+     mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
+-    style: normalizeHookStyle(get("hookStyle")),
+-    color: normalizeHookColor(get("hookColor")),
+-    pos: normalizeHookPos(get("hookPos")),
++    template: normalizeHookTemplate(get("hookTemplate")),
+   };
+ }
+

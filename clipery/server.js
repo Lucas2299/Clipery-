@@ -25,7 +25,7 @@ const {
   processLinksToRankingVideo,
   downloadUrl,
 } = require("./lib/linkVideoEngine");
-const { normalizeSubStyle, normalizeHookStyle, normalizeHookColor, normalizeHookPos } = require("./lib/subtitles");
+const { normalizeSubStyle, normalizeHookTemplate } = require("./lib/subtitles");
 const auth = require("./lib/auth");
 const promo = require("./lib/promo");
 const oauth = require("./lib/oauth");
@@ -668,9 +668,7 @@ function readHook(get) {
   return {
     enabled: wantSubtitles(get("hook")),
     mode: String(get("hookMode") || "").toLowerCase() === "full" ? "full" : "intro",
-    style: normalizeHookStyle(get("hookStyle")),
-    color: normalizeHookColor(get("hookColor")),
-    pos: normalizeHookPos(get("hookPos")),
+    template: normalizeHookTemplate(get("hookTemplate")),
   };
 }
 
