@@ -392,10 +392,11 @@ function buildHook(words, clipDur, mode, trends, look) {
   const dur = Math.max(clipDur || 0, 0.6);
   const hookDur = 5;
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
-  const st = normalizeHookStyle(look && look.style);
+  const tpl = normalizeHookTemplate(look && look.template);
+  // When a template is set, use "plain" style so DECO doesn't override template colors
+  const st = tpl ? "plain" : normalizeHookStyle(look && look.style);
   const col = normalizeHookColor(look && look.color);
   const pos = normalizeHookPos(look && look.pos);
-  const tpl = normalizeHookTemplate(look && look.template);
   return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos, template: tpl };
 }
 
