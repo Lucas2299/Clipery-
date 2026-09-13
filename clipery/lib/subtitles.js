@@ -285,20 +285,6 @@ function normalizeHookColor(v) {
   const t = String(v || "white").toLowerCase().trim();
   return SUB_COLORS.hasOwnProperty(t) ? t : "white";
 }
-// Hook title templates: preset visual styles for hook titles.
-const HOOK_TEMPLATES = {
-  headline:  { font: "Impact",        case: "caps",   box: "red",   textCol: "white", bordCol: "white", bord: 1, shad: 0 },
-  badge:     { font: "Montserrat",    case: "title",  box: "white", textCol: "black", bord: 0, shad: 3 },
-  minimal:   { font: "Inter",         case: "lower",  box: null,    textCol: "white", bord: 0, shad: 0 },
-  highlight: { font: "Arial",         case: null,     box: "hl",    textCol: "black", bord: 0, shad: 0 },
-  retro:     { font: "Courier New",   case: null,     box: "grey",  textCol: "charcoal", bord: 4, bordCol: "black", shad: 0 },
-  dual:      { font: "Impact",        case: "caps",   box: "dual",  textCol: "white", bord: 0, shad: 0 },
-};
-function normalizeHookTemplate(v) {
-  const t = String(v || "").toLowerCase().trim();
-  return HOOK_TEMPLATES.hasOwnProperty(t) ? t : "";
-}
-
 // Hook placement: top of frame (classic) or screen middle. MarginV is measured
 // from the top edge (Alignment 8), middle matches the caption middle safe zone.
 const HOOK_POSITIONS = { top: 72, middle: 303 };
@@ -392,12 +378,10 @@ function buildHook(words, clipDur, mode, trends, look) {
   const dur = Math.max(clipDur || 0, 0.6);
   const hookDur = 5;
   const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
-  const tpl = normalizeHookTemplate(look && look.template);
-  // When a template is set, use "plain" style so DECO doesn't override template colors
-  const st = tpl ? "plain" : normalizeHookStyle(look && look.style);
+  const st = normalizeHookStyle(look && look.style);
   const col = normalizeHookColor(look && look.color);
   const pos = normalizeHookPos(look && look.pos);
-  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos, template: tpl };
+  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos };
 }
 
 async function probeDuration(p) {
@@ -468,40 +452,9 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
       const hl = resolveHookLook(hook.style, hook.color, hook.pos);
-      const tpl = hook.template && HOOK_TEMPLATES[hook.template] ? HOOK_TEMPLATES[hook.template] : null;
-      const tStart = assTime(hook.start), tEnd = assTime(hook.end);
-      if (tpl) {
-        const font = tpl.font || "DejaVu Sans";
-        const fs = 28;
-        const an = 5;
-        const tcol = SUB_COLORS[tpl.textCol] || SUB_COLORS.white;
-        const caseTag = tpl.case === "caps" ? "\\fe1" : tpl.case === "lower" ? "\\fe2" : "";
-        if (tpl.box === "dual") {
-          const topBg = SUB_COLORS.red;
-          const botBg = SUB_COLORS.yellow;
-          const topCol = SUB_COLORS.white;
-          const botCol = SUB_COLORS.black;
-          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\bord0\\shad0\\pos(192,56)\\1c${topBg}}${hookText}`);
-          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,56)\\1c${topCol}}\\fe1${hookText}`);
-          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an2\\bord0\\shad0\\pos(192,628)\\1c${botBg}}${hookText}`);
-          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an2\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,628)\\1c${botCol}}\\fe1${hookText}`);
-        } else if (tpl.box === "hl") {
-          const hlCol = SUB_COLORS.yellow;
-          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord0\\shad0\\1c${hlCol}\\3a&H60&\\pos(192,60)\\p1}m -100 -15 l 100 -15 100 15 -100 15{\\p0}`);
-          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,60)\\1c${tcol}}${caseTag}${hookText}`);
-        } else {
-          const bg = tpl.box ? SUB_COLORS[tpl.box] || SUB_COLORS.red : null;
-          const bord = tpl.bord != null ? tpl.bord : 0;
-          const shad = tpl.shad != null ? tpl.shad : 0;
-          const bordCol = tpl.bordCol ? SUB_COLORS[tpl.bordCol] || SUB_COLORS.black : tcol;
-          if (bg) {
-            events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\bord${bord}\\shad${shad}\\3c${bordCol}\\1c${bg}\\pos(192,60)}${hookText}`);
-          }
-          events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an${an}\\fn${font}\\fs${fs}\\bord${bord}\\shad${shad}\\3c${bordCol}\\pos(192,60)\\1c${tcol}}${caseTag}${hookText}`);
-        }
-      } else {
-        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`);
-      }
+      events.push(
+        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${hl.color}}${hookText}`
+      );
     }
   }
   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
@@ -783,6 +736,5 @@ module.exports = {
   normalizeHookStyle,
   normalizeHookColor,
   normalizeHookPos,
-  normalizeHookTemplate,
   HOOK_STYLES,
 };

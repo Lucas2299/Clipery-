@@ -70,8 +70,7 @@
   function collectHook(prefix) {
     var t = $(prefix + "-hook");
     var m = $(prefix + "-hook-mode");
-    var p = $(prefix + "-hook-template");
-    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", template: p ? p.value : "" };
+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark" };
   }
 
 
@@ -109,22 +108,6 @@
 
   // Live color preview on frame cards
 
-  // Template card clicks
-  function wireTemplateCards(prefix) {
-    var grid = $(prefix + "-template-cards");
-    var hid = $(prefix + "-hook-template");
-    if (!grid || !hid) return;
-    grid.addEventListener("click", function(e) {
-      var btn = e.target.closest("[data-hooktemplate]");
-      if (!btn) return;
-      var cards = grid.querySelectorAll(".sub-card");
-      for (var i = 0; i < cards.length; i++) cards[i].classList.remove("sel");
-      btn.classList.add("sel");
-      hid.value = btn.getAttribute("data-hooktemplate") || "";
-    });
-  }
-  wireTemplateCards("long");
-  wireTemplateCards("rank");
 
 
   // The little caption preview box is gone: the style cards already show
@@ -672,7 +655,6 @@
           fd.append("hook", longHook.enabled ? "1" : "0");
           fd.append("hookMode", longHook.mode);
           fd.append("hookStyle", longHook.style);
-          fd.append("hookTemplate", longHook.template);
           res = await fetch("/api/clip/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/clip/from-url", {
@@ -692,7 +674,6 @@
               hook: longHook.enabled,
               hookMode: longHook.mode,
               hookStyle: longHook.style,
-              hookTemplate: longHook.template,
             }),
           });
         }
@@ -917,7 +898,6 @@
           fd.append("hook", rankHook.enabled ? "1" : "0");
           fd.append("hookMode", rankHook.mode);
           fd.append("hookStyle", rankHook.style);
-          fd.append("hookTemplate", rankHook.template);
           res = await fetch("/api/rank/video/upload", { method: "POST", body: fd });
         } else {
           res = await fetch("/api/rank/video/links", {
@@ -937,7 +917,6 @@
               hook: rankHook.enabled,
               hookMode: rankHook.mode,
               hookStyle: rankHook.style,
-              hookTemplate: rankHook.template,
             }),
           });
         }
