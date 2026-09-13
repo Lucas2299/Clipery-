@@ -295,7 +295,7 @@ function normalizeHookPos(v) {
 const HOOK_TEMPLATES = {
   news:      { font: "Impact",     case: "caps",   box: "red",      textCol: "white", bord: 0, shad: 0 },
   pill:      { font: "Montserrat", case: "title",  box: "white",    textCol: "black", bord: 0, shad: 3 },
-  highlight: { font: "Arial",      case: null,     box: "green",    textCol: "green", bord: 12, shad: 0 },
+  highlight: { font: "Arial",      case: null,     box: "green",    textCol: "black", bord: 12, shad: 0 },
   shadow:    { font: "Arial Black", case: null,     box: "none",     textCol: "white", bord: 0, shad: 4 },
 };
 function normalizeHookTemplate(v) {
@@ -469,18 +469,22 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
       const bg = SUB_COLORS[tpl.box];
       const caseTag = tpl.case === "caps" ? "\\fe1" : "";
       const plain = hookText.replace(/\\\\N/g, " ");
+      const pos = `\\an8\\fn${font}\\fs${fs}\\pos(192,50)`;
       if (hook.template === "shadow") {
-        // White text + deep blurry black drop shadow (no box)
-        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad4\\4c&H00000000\\pos(192,50)\\1c${tcol}}${plain}`);
+        // White text + deep blurry black drop shadow, no box
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{${pos}\\bord0\\shad4\\4c&H00000000\\1c${tcol}}${plain}`);
       } else if (hook.template === "highlight") {
-        // Black text + green thick outline acts as highlight bar behind text
-        const hlCol = SUB_COLORS.green;
-        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord12\\shad0\\pos(192,50)\\1c${hlCol}\\3c${hlCol}\\1a&H00&\\3a&H40&} ${plain} `);
-        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,50)\\1c${tcol}}${plain}`);
+        // Green thick outline behind black text = highlight bar effect
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{${pos}\\bord${tpl.bord}\\shad0\\1c${bg}\\3c${bg}}${plain}`);
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{${pos}\\bord0\\shad0\\1c${tcol}}${plain}`);
       } else {
-        // news/pill: box layer + text layer on top
-        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad${tpl.shad}\\pos(192,50)\\1c${bg}} ${plain} `);
-        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\fn${font}\\fs${fs}\\bord0\\shad0\\pos(192,50)\\1c${tcol}}${caseTag}${plain}`);
+        // news/pill: ASS OpaqueBox (BorderStyle 3) = solid bg behind text
+        // Layer 0: drop shadow (same text, dark, shifted down-right with outline)
+        if (tpl.shad > 0) {
+          events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{${pos}\\bord3\\shad${tpl.shad}\\1c${bg}\\3c&H00000000\\4c&H00000000} ${plain} `);
+        }
+        // Layer 1: opaque box with text color
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{${pos}\\bord3\\shad0\\1c${tcol}\\3c${bg}\\4c${bg}}${caseTag}${plain}`);
       }
     }
   }
