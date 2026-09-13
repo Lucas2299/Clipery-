@@ -443,7 +443,7 @@ function buildHook(words, clipDur, mode, trends, look) {
   const pos = normalizeHookPos(look && look.pos);
   const frame = normalizeHookTemplate(look && look.template);
   const bgColor = (look && look.bgColor) || "";
-  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, template: frame, bgColor };
+  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos, template: frame, bgColor };
 }
 
 async function probeDuration(p) {

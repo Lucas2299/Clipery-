@@ -1,81 +1,13 @@
 diff --git a/clipery/lib/subtitles.js b/clipery/lib/subtitles.js
-index b3733f2..cbcc478 100644
+index cbcc478..9abada2 100644
 --- a/clipery/lib/subtitles.js
 +++ b/clipery/lib/subtitles.js
-@@ -319,25 +319,31 @@ function resolveHookTemplate(lk, frame, bgColor) {
-   lk.marginV = F.mv;
-   lk.an = F.an;
-   lk.fs = 28;
-+  lk.shad = F.shad != null ? F.shad : (F.frame ? 0 : 4);
-   if (F.font) lk.font = F.font;
-   if (F.case) lk.textCase = F.case;
-   // user bg color → ASS box behind text
-   const bg = SUB_COLORS.hasOwnProperty(bgColor) ? SUB_COLORS[bgColor] : null;
--  if (bg) {
--    lk.bg = bg; // SUB_COLORS already stores ASS BGR
--  }
-+  if (bg) lk.bg = bg;
-   const fx = ["\\fad(200,150)"];
-   if (F.frame === "bar") {
-     lk.bg = lk.bg || "&H000000FF";
-     lk.bord = 0;
-+    lk.backCol = "&H00000000";
-     lk.an = 8; lk.marginV = 50;
--  } else if (lk.bg || F.frame === "box") {
-+  } else if (F.frame === "box") {
-     lk.bord = F.bord != null ? F.bord : 0;
-     if (F.bordW) lk.bordW = F.bordW;
-+    // outline colour: bg if set, else white for headline, else text colour
-+    if (f === "headline") lk.outlineCol = "&H00FFFFFF";
-+    else if (f === "retro") lk.outlineCol = "&H00000000";
-+    else lk.outlineCol = bg || lk.color;
-+    if (lk.bg) lk.backCol = lk.bg;
-+  } else {
-+    lk.bord = F.bord != null ? F.bord : 3;
-+    lk.outlineCol = lk.color;
-   }
--  if (F.shad != null) fx.push("\\shad" + F.shad);
--  else if (!F.frame) fx.push("\\shad4");
--  else fx.push("\\shad0");
-+  fx.push("\\shad" + lk.shad);
-   if (F.rad) lk.pill = true;
-   if (F.offX) { lk.offX = F.offX; lk.offY = F.offY; }
-   if (F.hl) lk.hl = true;
-@@ -349,9 +355,12 @@ function hookStyleLine(style, colorKey, pos, frame, bgColor) {
-   const an = T.an || 8;
-   const font = T.font || "DejaVu Sans";
-   const bord = T.bord != null ? T.bord : 3;
--  const bordCol = T.bordCol || T.color;
--  const oc = T.deco.split(",")[0]; // outline colour from deco
--  return `Style: Hook,${font},${fs},${T.color},${T.color},${bordCol},&H00000000,1,0,0,0,100,100,0,0,1,${bord},0,${an},12,12,${T.marginV},1`;
-+  const shad = T.shad != null ? T.shad : 0;
-+  const oc = T.outlineCol || T.color;
-+  const bc = T.backCol || "&H00000000";
-+  // ASS Style fields: Name,Font,Size,Primary,Secondary,OutlineColour,BackColour,Bold,Italic,...
-+  // ...BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-+  return `Style: Hook,${font},${fs},${T.color},${T.color},${oc},${bc},1,0,0,0,100,100,0,0,1,${bord},${shad},${an},12,12,${T.marginV},1`;
- }
-
- /**
-@@ -434,7 +443,7 @@ function buildHook(words, clipDur, mode, trends, look) {
+@@ -443,7 +443,7 @@ function buildHook(words, clipDur, mode, trends, look) {
    const pos = normalizeHookPos(look && look.pos);
    const frame = normalizeHookTemplate(look && look.template);
    const bgColor = (look && look.bgColor) || "";
--  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, frame, bgColor };
-+  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, template: frame, bgColor };
+-  return { text, rows: hookRows(text), start: 0.1, end, style: st, color: col, pos, template: frame, bgColor };
++  return { text, rows: hookRows(text), start: 0, end, style: st, color: col, pos, template: frame, bgColor };
  }
 
  async function probeDuration(p) {
-diff --git a/clipery/public/studio.js b/clipery/public/studio.js
-index dd543ba..c43778f 100644
---- a/clipery/public/studio.js
-+++ b/clipery/public/studio.js
-@@ -74,7 +74,7 @@
-     var p = $(prefix + "-hook-template");
-     var b = $(prefix + "-hook-bg");
-     var ps = $(prefix + "-hook-pos");
--    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", frame: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top" };
-+    return { enabled: !!(t && t.checked), mode: m ? m.value : "intro", style: "boxdark", color: c ? c.value : "white", template: p ? p.value : "", bg: b ? b.value : "", pos: ps ? ps.value : "top" };
-   }
-
-
