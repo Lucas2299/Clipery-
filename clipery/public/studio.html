@@ -117,7 +117,8 @@
       .sub-preview-wm{position:absolute;left:0;right:0;bottom:5px;text-align:center;font-size:0.42rem;color:rgba(255,255,255,0.8);letter-spacing:0.04em}
       .sub-preview-hook{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:0.58rem;font-weight:800;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.95);letter-spacing:0.02em}
       .sub-preview-tag{font-size:0.72rem;color:#9a96a8;font-weight:600;max-width:150px;line-height:1.35}
-    </style>
+    
+</style>
   </head>
   <body class="studio-app">
     <div class="bg-grid" aria-hidden="true"></div>
@@ -332,6 +333,13 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
+            
+            <div class="sub-cards sc-styles" id="long-hook-cards" style="flex-basis:100%">
+              <button type="button" class="sub-card sc-bred sel" data-hookstyle="headline"><span class="sc-cap"><span class="w y">HEADLINE</span></span><span class="sc-name">Headline Box</span></button>
+              <button type="button" class="sub-card sc-bblack" data-hookstyle="bar"><span class="sc-cap" style="background:#000"><span class="w wt">BAR / BANNER</span></span><span class="sc-name">Bar Banner</span></button>
+              <button type="button" class="sub-card sc-bwhite" data-hookstyle="polaroid"><span class="sc-cap" style="background:#fff;color:#111"><span class="w" style="color:#111">POLAROID</span></span><span class="sc-name">Polaroid Frame</span></button>
+            </div>
+            <input type="hidden" id="long-hook-style" value="headline" />
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
               <input type="text" id="long-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
@@ -510,6 +518,13 @@
                 <option value="full">Whole clip</option>
               </select>
             </label>
+            
+            <div class="sub-cards sc-styles" id="rank-hook-cards" style="flex-basis:100%">
+              <button type="button" class="sub-card sc-bred sel" data-hookstyle="headline"><span class="sc-cap"><span class="w y">HEADLINE</span></span><span class="sc-name">Headline Box</span></button>
+              <button type="button" class="sub-card sc-bblack" data-hookstyle="bar"><span class="sc-cap" style="background:#000"><span class="w wt">BAR / BANNER</span></span><span class="sc-name">Bar Banner</span></button>
+              <button type="button" class="sub-card sc-bwhite" data-hookstyle="polaroid"><span class="sc-cap" style="background:#fff;color:#111"><span class="w" style="color:#111">POLAROID</span></span><span class="sc-name">Polaroid Frame</span></button>
+            </div>
+            <input type="hidden" id="rank-hook-style" value="headline" />
             <label style="flex-basis:100%">📈 Trending words <span class="sub-hint">comma separated — boosts hooks &amp; ranking</span>
               <input type="text" id="rank-trends" placeholder="e.g. ai, world cup, bitcoin" />
             </label>
@@ -579,8 +594,8 @@
       }
       document.getElementById("year").textContent = new Date().getFullYear();
     </script>
-    <script src="/shared.js?v=2"></script>
-    <script src="/studio.js?v=4"></script>
+    <script src="/shared.js?v=4"></script>
+    <script src="/studio.js?v=84"></script>
     <script src="/editor.js?v=1"></script>
   </body>
 </html>
