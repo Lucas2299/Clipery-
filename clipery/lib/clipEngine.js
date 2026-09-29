@@ -544,8 +544,8 @@ function ENCODE_TIMEOUT_MS(dur) {
 //   CLIPERY_TRIM=0       keep dead air inside clips
 //   CLIPERY_EMPHASIS=0   plain captions, no bold key words
 const offFlag = (k) => /^(0|off|false)$/i.test(String(process.env[k] || ""));
-const ENCODE_PRESET = process.env.CLIPERY_PRESET || (FAST_MODE ? "ultrafast" : "veryfast");
-const ENCODE_CRF = String(process.env.CLIPERY_CRF || (FAST_MODE ? 26 : 24));
+const ENCODE_PRESET = process.env.CLIPERY_PRESET || (FAST_MODE ? "veryfast" : "medium");
+const ENCODE_CRF = String(process.env.CLIPERY_CRF || (FAST_MODE ? 22 : 18));
 
 async function renderClip(source, outFile, start, end, label, sublabel, mode, srcMeta, subOpts) {
   const dur = Math.max(0.5, end - start);
@@ -572,7 +572,8 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
   });
   console.log(`[reframe] clip @${start.toFixed(1)}s -> ${rf.layout} (${rf.keys.length} camera moves)${forced ? " [chosen by you]" : genre !== "auto" ? ` [${genre}]` : ""}`);
 
-  const extras = [
+  // Watermark bar: Free plan only. Paid plans (Starter/Pro/Studio) export clean.
+  const extras = (subOpts && subOpts.noWatermark) ? [] : [
     `drawbox=x=0:y=ih-100:w=iw:h=100:color=black@0.45:t=fill`,
     `drawtext=text='Clipery ${mode.id === "viral" ? "viral" : "ranked"}':fontsize=20:fontcolor=white@0.9:x=(w-text_w)/2:y=h-58:font=Sans`,
   ];
@@ -717,7 +718,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
       (srcMeta && srcMeta.width) || 1920,
       Math.round((((srcMeta && srcMeta.height) || 1080) * targetW) / targetH)
     );
-    const plain = [`crop=${cropW}:ih:x=(iw-${cropW})/2:y=0`, `scale=${targetW}:${targetH}`, ...extras];
+    const plain = [`crop=${cropW}:ih:x=(iw-${cropW})/2:y=0`, `scale=${targetW}:${targetH}:flags=lanczos`, ...extras];
     try {
       await encode("-vf", [...plain, ...subFilter].join(","));
     } catch (e2) {
@@ -750,7 +751,7 @@ async function renderClip(source, outFile, start, end, label, sublabel, mode, sr
           "-i", source,
           "-ss", String(start),
           "-t", String(dur),
-          "-vf", `crop=${cropW}:ih:x=(iw-${cropW})/2:y=0,scale=${targetW}:${targetH}`,
+          "-vf", `crop=${cropW}:ih:x=(iw-${cropW})/2:y=0,scale=${targetW}:${targetH}:flags=lanczos`,
           "-c:v", "libx264", "-preset", ENCODE_PRESET, "-crf", ENCODE_CRF,
           "-pix_fmt", "yuv420p",
           "-c:a", "aac", "-b:a", "128k",
@@ -1284,6 +1285,7 @@ async function processVideo(sourcePath, options = {}) {
           hookMode: options.hookMode || "intro",
           trends: options.trends || [],
           maxClips: clipBudget,
+          watermark: options.watermark !== false,
         },
       };
       job.plan = top.map((c, i) => planEntry({ ...c, captions: !!options.subtitles }, i));
@@ -1351,6 +1353,8 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
       const clipCaptions = c.captions != null ? !!c.captions : !!options.subtitles;
       const clipHook = !clipCaptions && !!options.hook;
       const wantExtras = clipCaptions || clipHook || (c.layout && c.layout !== "auto");
+      // Paid plans render without the Clipery bar (default stays watermarked).
+      const noWatermark = options.watermark === false;
       const rendered = await renderClip(
         sourcePath,
         outFile,
@@ -1364,12 +1368,15 @@ async function renderPlan(job, sourcePath, meta, mode, top, options, outDir) {
           ? {
               clipDur: +(c.end - c.start).toFixed(2),
               subStyle: clipCaptions ? c.subStyle || options.subStyle : null,
-              hook: clipHook ? { enabled: true, mode: options.hookMode } : null,
+              hook: clipHook ? { enabled: true, mode: options.hookMode, style: options.hookStyle } : null,
               trends: options.trends,
               edit: c.edit || null,
               layout: c.layout && c.layout !== "auto" ? c.layout : null,
+              noWatermark,
             }
-          : null
+          : noWatermark
+            ? { noWatermark: true }
+            : null
       );
       if (c.edit && rendered.edits) {
         c.edit.applied = rendered.edits;
@@ -1574,6 +1581,7 @@ async function planManual(sourcePath, options = {}) {
         hookMode: "intro",
         trends: [],
         maxClips: Math.max(1, Number(options.maxClips) || mode.maxClips),
+        watermark: options.watermark !== false,
       },
     };
     job.plan = [];

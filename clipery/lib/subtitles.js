@@ -32,6 +32,9 @@ const SUB_COLORS = {
   cyan: "&H00F5D43C", // #3CD4F5
   blue: "&H00FF8A4C", // #4C8AFF
   purple: "&H00FF6BA8", // #A86BFF
+  black: "&H00000000",
+  grey: "&H00DCDCDC",
+  charcoal: "&H003C3C3C",
 };
 // dim "not-yet-spoken" karaoke colour (semi-transparent white);
 // for the "pop" style upcoming words stay fully hidden until spoken.
@@ -269,6 +272,34 @@ function trimHookTail(arr) {
   return arr;
 }
 
+/* ---------------- Hook title styles ---------------- */
+// Hook titles wear the SAME styles as the subtitle Styles tab: `style` picks
+// the decoration from the shared DECO table, `color` is any of the nine text
+// colours (light boxes force a readable colour, like captions do).
+const HOOK_STYLES = ["bar", "headline", "polaroid"];
+function normalizeHookStyle(v) {
+  const t = String(v || "headline").toLowerCase().trim();
+  return HOOK_STYLES.includes(t) ? t : "headline";
+}
+function normalizeHookColor(v) {
+  const t = String(v || "white").toLowerCase().trim();
+  return SUB_COLORS.hasOwnProperty(t) ? t : "white";
+}
+// Hook placement: top of frame (classic) or screen middle. MarginV is measured
+// from the top edge (Alignment 8), middle matches the caption middle safe zone.
+const HOOK_POSITIONS = { top: 72, middle: 303 };
+function normalizeHookPos(v) {
+  const t = String(v || "top").toLowerCase().trim();
+  return HOOK_POSITIONS.hasOwnProperty(t) ? t : "top";
+}
+
+// Hook frame layouts: control container shape, position, and text effects.
+/** Resolved hook look: fixed shout size, shared decoration + text colour. */
+function resolveHookLook(style, colorKey, pos) {
+  const st = normalizeHookStyle(style);
+  return { style: st, color: FIXED_PRIMARY[st] || SUB_COLORS[normalizeHookColor(colorKey)], deco: DECO[st] || DECO.outlined, marginV: HOOK_POSITIONS[normalizeHookPos(pos)] };
+}
+
 /**
  * Pick the punchiest phrase from the first seconds of a clip as its HOOK.
  * Heuristic: split early speech into phrases at pauses, score for power words,
@@ -310,28 +341,43 @@ function pickHookText(words, extraPower) {
   return clean ? clean.toUpperCase() : null;
 }
 
-/** Split hook text into up to 2 rows (max ~18 chars each), balanced at a word boundary. */
+/** Hook titles always take 2 rows: long hooks fill row 1 to the width limit,
+ * short hooks split at the most even word boundary. One word stays one row. */
 function hookRows(text) {
-  if (text.length <= 18) return [text];
   const ws = text.split(" ");
-  let r1 = "";
+  if (ws.length < 2) return [text];
+  // Most even word boundary first — a balanced card whenever it fits.
+  let best = 1;
+  let bestDiff = Infinity;
+  for (let i = 1; i < ws.length; i++) {
+    const d = Math.abs(ws.slice(0, i).join(" ").length - ws.slice(i).join(" ").length);
+    if (d < bestDiff) { bestDiff = d; best = i; }
+  }
+  let r1 = ws.slice(0, best).join(" ");
+  let r2 = ws.slice(best).join(" ");
+  if (r1.length <= 18 && r2.length <= 18) return [r1, r2];
+  // Too wide for balance: fill row 1 to the limit, rest on row 2.
+  r1 = "";
   for (const w of ws) {
     const t = r1 ? r1 + " " + w : w;
     if (t.length > 18 && r1) break;
     r1 = t;
   }
-  const r2 = text.slice(r1.length).trim();
+  r2 = text.slice(r1.length).trim();
   return r2 ? [r1, r2] : [r1];
 }
 
 /** Build hook info: text rows + display window. mode "intro" = first seconds, "full" = whole clip. */
-function buildHook(words, clipDur, mode, trends) {
+function buildHook(words, clipDur, mode, trends, look) {
   const extraPower = Array.isArray(trends) && trends.length ? new Set(trends) : null;
   const text = pickHookText(words, extraPower);
   if (!text) return null;
   const dur = Math.max(clipDur || 0, 0.6);
-  const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(3.2, Math.max(1.2, dur));
-  return { text, rows: hookRows(text), start: 0.1, end };
+  const hookDur = 5;
+  const end = mode === "full" ? Math.max(dur - 0.05, 0.6) : Math.min(hookDur, Math.max(1.2, dur));
+  const pos = normalizeHookPos(look && look.pos);
+  const hStyle = normalizeHookStyle(look && look.style);
+  return { text, rows: hookRows(text), start: 0, end, pos, style: hStyle };
 }
 
 async function probeDuration(p) {
@@ -390,8 +436,8 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Cap,DejaVu Sans,${size},${primary},${secondary},${deco},8,12,12,${marginV},1`,
-    // Hook title: big bold white with a strong outline, top of frame
-    "Style: Hook,DejaVu Sans,33,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,3,0,8,12,12,78,1",
+    // Hook title look: subtitle style + text colour + placement.
+    `Style: Hook,DejaVu Sans,33,${primary},${secondary},${deco},8,12,12,${hook ? HOOK_POSITIONS[hook.pos] || 72 : 72},1`,
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -401,10 +447,21 @@ function buildKaraokeAss(pages, sub = {}, hook = null) {
   if (hook && hook.rows && hook.rows.length) {
     const hookText = hook.rows.map((r) => r.replace(/[{}\\]/g, "").trim()).filter(Boolean).join("\\N");
     if (hookText) {
-      const col = SUB_COLORS[s.color];
-      events.push(
-        `Dialogue: 1,${assTime(hook.start)},${assTime(hook.end)},Hook,,0,0,0,,{\\1c${col}}${hookText}`
-      );
+      const tStart = assTime(hook.start), tEnd = assTime(hook.end);
+      const hookStyle = hook.style || "headline";
+      if (hookStyle === "bar") {
+        // Bar/Banner: full-width dark bar at top with white bold text
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\pos(192,50)\\p1\\bord0\\shad0\\1c&H00000000}m 0 0 l 384 0 l 384 50 l 0 50{\\p0}`);
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\pos(192,26)\\bord0\\shad0\\1c&H00FFFFFF}${hookText}`);
+      } else if (hookStyle === "polaroid") {
+        // Polaroid Frame: white border frame with text below
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an8\\pos(192,50)\\p1\\bord0\\shad0\\1c&H00FFFFFF}m 0 0 l 384 0 l 384 584 l 0 584 m 10 10 l 374 10 l 374 574 l 10 574{\\p0}`);
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an2\\pos(192,620)\\bord0\\shad0\\1c&H00000000}${hookText}`);
+      } else {
+        // Headline Box (default): black box with yellow text
+        events.push(`Dialogue: 0,${tStart},${tEnd},Hook,,0,0,0,,{\\an5\\pos(192,342)\\p1\\bord0\\shad0\\1c&H00000000}m -190 -35 l 190 -35 l 190 35 l -190 35{\\p0}`);
+        events.push(`Dialogue: 1,${tStart},${tEnd},Hook,,0,0,0,,{\\an5\\pos(192,342)\\bord0\\shad0\\1c&H0000E5FF}${hookText}`);
+      }
     }
   }
   const starts = pages.map((p) => (p.intro || !p.r2.length ? p.r1[0].s - 0.06 : p.r2[0].s - 0.08));
@@ -513,7 +570,7 @@ async function burnAss(videoPath, assPath) {
         "-y", "-hide_banner", "-loglevel", "error",
         "-i", videoPath,
         "-vf", vf,
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
         "-pix_fmt", "yuv420p",
         "-c:a", "copy",
         "-movflags", "+faststart",
@@ -564,7 +621,7 @@ async function tryEnhanceClip(videoPath, opts = {}) {
   let hook = null;
   if (wantHook && words.length) {
     const dur = opts.clipDur || (await probeDuration(videoPath));
-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook);
   }
 
   if (!pages.length && !hook) {
@@ -648,7 +705,7 @@ async function prepareClipAss(source, start, dur, outFile, opts = {}) {
 
   let hook = null;
   if (wantHook) {
-    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends);
+    hook = buildHook(words, dur, (opts.hook && opts.hook.mode) || "intro", opts.trends, opts.hook);
   }
 
   if (!pages.length && !hook) return null;
